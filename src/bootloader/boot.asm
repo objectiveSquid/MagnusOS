@@ -2,7 +2,7 @@ org 0x7C00
 bits 16
 
 ; Same as \r\n
-%define ENDL 0x0D, 0x0A
+%define ENDLINE 0x0D, 0x0A
 
 ; FAT12 header
 jmp short start
@@ -34,8 +34,9 @@ start:
 
 ; 
 ; Prints a string to the screen
-; - Parameters:
+; - Input parameters:
 ;   - ds:si ---> Points to a null-terminated string
+; - Output:
 ;
 puts:
     push si
@@ -62,17 +63,136 @@ main:
     mov ss, ax
     mov sp, 0x7C00  ;; Stack pointer
 
-    ; Print hello world
+    ; Read something from the disk
+    mov [ebr_drive_number], dl
+
+    mov ax, 1  ;; Second sector
+    mov cl, 1
+    mov bx, 0x7E00
+    call read_lba
+
+    ; Print hello messages
     mov si, msg_hello
     call puts
 
+    jmp halt
+
+floppy_error:
+    mov si, msg_floppy_failed
+    call puts
+
+    jmp wait_key_and_reboot
+
+wait_key_and_reboot:
+    mov ah, 0x00
+    int 0x16
+    jmp 0FFFFh:0  ;; Jump to beginning of BIOS, thus rebooting 
+
+halt:
+    cli  ;; Disable interrupts, so the CPU cant exit the halt
     hlt
 
-.halt:
-    jmp .halt
+;
+; Converts an LBA address into a CHS address
+; - Input parameters:
+;   - ax: An LBA address
+; - Output:
+;   - cx [bits 0-5]: Sector number
+;   - cx [bits 6-15]: Cylinder number
+;   - dh: Head number
+;
+lba_to_chs:
+    push ax
+    push dx
+
+    xor dx, dx                          ;; dx = 0x00
+    div word [bdb_sectors_per_track]    ;; ax = LBA / SectorsPerTrack
+                                        ;; dx = LBA % SectorsPerTrack
+
+    inc dx                              ;; dx = ((LBA % SectorsPerTrack) + 1) = Sector number
+    mov cx, dx
+
+    xor dx, dx                          ;; dx = 0x00
+    div word [bdb_heads]                ;; ax = (LBA / SectorsPerTrack) / Heads
+                                        ;; dx = (LBA / SectorsPerTrack) % Heads
+
+    mov dh, dl
+    mov ch, al
+    shl ah, 6
+    or cl, ah
+
+    ; Restore registers
+    pop ax
+    mov dl, al
+    pop ax
+    ret
+
+;
+; Reads sectors from a disk
+; - Input parameters:
+;   - ax: An LBA adress
+;   - cl: Number of sectors to read (up to 128)
+;   - dl: Drive number
+;   - es:bx: Output data
+;
+read_lba:
+    push ax
+    push bx
+    push cx
+    push dx
+    push di
+
+    push cx
+    call lba_to_chs
+    pop ax
+
+    mov ah, 0x02
+    mov di, 3           ;; Read retry count
+
+.read_lba_retry:
+    pusha
+    stc
+    int 0x13
+    jnc .read_lba_done
+
+    ; Failed to read from floppy
+    popa
+    call disk_reset
+
+    dec di
+    test di, di
+    jnz .read_lba_retry
+.read_lba_fail:
+    jmp floppy_error
+.read_lba_done:
+    popa
+
+    pop di
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+
+    ret
+
+;
+; Resets the disk controller
+; - Inputs:
+;   dl: Drive number to reset
+disk_reset:
+    pusha
+    mov ah, 0x00
+    stc
+    int 0x13
+    jc floppy_error
+    popa
+    ret
 
 msg_hello:
-    db "Hello world!", 0x00
+    db "Hello world!", ENDLINE, 0x00
+
+msg_floppy_failed:
+    db "Failed to read floppy", ENDLINE, 0x00
 
 times 510-($-$$) db 0
 db 0x55, 0xAA
