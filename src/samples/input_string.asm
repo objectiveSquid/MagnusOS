@@ -5,7 +5,7 @@ input_string:
     int 0x16
     mov [bx], al
     inc bx
-    cmp bx, buffer + 5
+    cmp bx, buffer + 9
     je print_string
     jmp input_string
 
