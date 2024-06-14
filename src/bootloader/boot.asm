@@ -12,9 +12,9 @@ bdb_bytes_per_sector:       dw 512
 bdb_bytes_per_cluster:      db 1
 bdb_reserved_sectors:       dw 1
 bdb_fat_count:              db 2
-bdb_dir_entries_count:      dw 0E0h
+bdb_dir_entries_count:      dw 0xE0
 bdb_total_sectors:          dw 2880  ;; 2880 * 512 = 1.44MB
-bdb_media_descriptor_type:  db 0F0h  ;; F0 = 3.5" floppy disk
+bdb_media_descriptor_type:  db 0xF0  ;; F0 = 3.5" floppy disk
 bdb_sectors_per_fat:        dw 9
 bdb_sectors_per_track:      dw 18
 bdb_heads:                  dw 2
@@ -24,8 +24,8 @@ bdb_large_sector_count:     dd 0
 ; Extended boot record
 ebr_drive_number:           db 0  ;; 0x00 = Floppy, 0x80 = HDD
                             db 0  ;; Reserved
-ebr_signature:              db 29h
-ebr_volume_id:              db 12h, 34h, 56h, 78h  ;; Serial number, doesn't matter
+ebr_signature:              db 0x29
+ebr_volume_id:              db 0x12, 0x34, 0x56, 0x78  ;; Serial number, doesn't matter
 ebr_volume_label:           db 'MagnusOS   '  ;; Label, must be 11 bytes
 ebr_system_id:              db 'FAT12   '  ;; Filesystem id, must be 8 bytes
 
