@@ -5,9 +5,9 @@ SRC_DIR=src
 BUILD_DIR=build
 TOOLS_DIR=$(SRC_DIR)/tools
 
-.PHONY: all floppy_image kernel bootloader clean always tools_fat
+.PHONY: all floppy_image kernel bootloader clean always tools
 
-all: floppy_image tools_fat
+all: floppy_image
 
 #
 # Floppy image
@@ -47,10 +47,11 @@ $(BUILD_DIR)/kernel.bin: always
 #
 # FAT Tools
 #
+tools: tools_fat
+
 tools_fat: $(BUILD_DIR)/tools/fat12
 $(BUILD_DIR)/tools/fat12: always $(TOOLS_DIR)/fat/fat12.c
-	mkdir -p $(BUILD_DIR)/tools
-	$(CC) -g -o $(BUILD_DIR)/tools/fat12 $(TOOLS_DIR)/fat/fat12.c
+	$(MAKE) -C $(SRC_DIR)/tools/fat BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Always
@@ -65,4 +66,5 @@ clean:
 	$(MAKE) -C $(SRC_DIR)/bootloader/stage_1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C $(SRC_DIR)/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C $(SRC_DIR)/tools/fat BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	rm -r $(BUILD_DIR)/
