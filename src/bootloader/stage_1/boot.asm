@@ -317,11 +317,11 @@ msg_hello:
 msg_floppy_failed:
     db "Floppy disk error!", ENDLINE, 0x00
 msg_kernel_not_found:
-    db "KERNEL.BIN file not found!", ENDLINE, 0x00
+    db "STAGE2.BIN file not found!", ENDLINE, 0x00
 
 ; Other
 kernel_filename:
-    db "KERNEL  BIN"
+    db "STAGE2  BIN"
 kernel_cluster:
     dw 0
 
