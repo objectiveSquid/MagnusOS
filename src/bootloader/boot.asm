@@ -7,7 +7,7 @@ bits 16
 ; FAT12 header
 jmp short start
 nop
-bdb_oem:                    db 'MSWIN4.1'  ;; OEM identifier, must be 8 bytes
+bdb_oem:                    db "MSWIN4.1"  ;; OEM identifier, must be 8 bytes
 bdb_bytes_per_sector:       dw 512
 bdb_bytes_per_cluster:      db 1
 bdb_reserved_sectors:       dw 1
@@ -26,11 +26,172 @@ ebr_drive_number:           db 0  ;; 0x00 = Floppy, 0x80 = HDD
                             db 0  ;; Reserved
 ebr_signature:              db 0x29
 ebr_volume_id:              db 0x12, 0x34, 0x56, 0x78  ;; Serial number, doesn't matter
-ebr_volume_label:           db 'MagnusOS   '  ;; Label, must be 11 bytes
-ebr_system_id:              db 'FAT12   '  ;; Filesystem id, must be 8 bytes
+ebr_volume_label:           db "MagnusOS   "  ;; Label, must be 11 bytes
+ebr_system_id:              db "FAT12   "  ;; Filesystem id, must be 8 bytes
 
 start:
-    jmp main
+    ; Set up the data segments
+    mov ax, 0
+    mov ds, ax
+    mov es, ax
+
+    ; Set up the stack
+    mov ss, ax
+    mov sp, 0x7C00  ;; Stack pointer
+
+    push es
+    push word .after_basic_setup
+    retf
+
+.after_basic_setup:
+
+    ; Read something from the disk
+    mov [ebr_drive_number], dl
+
+    ; Print hello messages
+    mov si, msg_hello
+    call puts
+
+    ; read drive parameters
+    push es
+    mov ah, 0x8
+    int 0x13
+    jc floppy_error
+    pop es
+
+    and cl, 0x3F
+    xor ch, ch
+    mov [bdb_sectors_per_track], cx
+
+    inc dh
+    mov [bdb_heads], dh
+
+    ; calculate lba of fat root directory
+    mov ax, [bdb_sectors_per_fat]
+    mov bl, [bdb_fat_count]
+    xor bh, bh
+    mul bx
+    add ax, [bdb_reserved_sectors]          ;; ax = lba of fat root directory
+    push ax                                 ;; save ax to the stack
+
+    ; calculate size of fat root directory
+    mov ax, [bdb_dir_entries_count]
+    shl ax, 5                               ;; (ax << 5) == (ax *= 32)
+    xor dx, dx
+    div word [bdb_bytes_per_sector]
+
+    test dx, dx
+    jz .read_root_dir_after
+    inc ax
+.read_root_dir_after:
+    ; read root directory
+    mov cl, al
+    pop ax
+    mov dl, [ebr_drive_number]
+    mov bx, misc_buffer
+    call disk_read
+
+    ; search for the kernel (kernel.bin)
+    xor bx, bx
+    mov di, misc_buffer         ;; the file name is the first 11 bytes of a directory entry
+.search_kernel_loop:
+    mov si, kernel_filename
+    mov cx, 11
+    push di
+    repe cmpsb                      ;; repe = repeat until equal
+                                    ;; cmpsb = compare (string) bytes, and decrement cx
+    pop di
+    je .found_kernel
+
+    add di, 32
+    inc bx
+    cmp bx, [bdb_dir_entries_count]
+    jl .search_kernel_loop          ;; jl = jump if less than
+    jmp kernel_not_found_error
+
+.found_kernel:
+    mov ax, [di + 26]               ;; the first cluster position is at the 26th byte
+    mov [kernel_cluster], ax
+
+    ; load fat from disk into memory
+    mov ax, [bdb_reserved_sectors]
+    mov cl, [bdb_sectors_per_fat]
+    mov dl, [ebr_drive_number]
+    mov bx, misc_buffer
+    call disk_read
+
+    ; read kernel and process fat chain
+    mov bx, KERNEL_LOAD_SEGMENT
+    mov es, bx
+    mov bx, KERNEL_LOAD_OFFSET
+.read_kernel_loop:
+    mov ax, [kernel_cluster]
+
+    add ax, 31
+    mov cl, 1
+    mov dl, [ebr_drive_number]
+    call disk_read
+
+    add bx, [bdb_bytes_per_sector]
+
+    ; compute location of the next cluster
+    mov ax, [kernel_cluster]
+    mov cx, 3
+    mul cx
+    mov cx, 2
+    div cx
+
+    mov si, misc_buffer
+    add si, ax
+    mov ax, [ds:si]
+
+    or dx, dx
+    jz .even
+
+.odd:
+    shr ax, 4
+    jmp .next_cluster_after
+
+.even:
+    and ax, 0x0FFF
+
+.next_cluster_after:
+    cmp ax, 0x0FF8
+    jae .read_kernel_finish                 ;; jae = jump above or equal
+    ; if this jumps, we are done reading the kernel file
+
+    mov [kernel_cluster], ax
+    jmp .read_kernel_loop
+
+.read_kernel_finish:
+    ; far jump to the kernel
+    mov dl, [ebr_drive_number]              ;; dl = boot device
+    mov ax, KERNEL_LOAD_SEGMENT
+    mov ds, ax
+    mov es, ax
+
+    jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
+
+    jmp wait_key_and_reboot
+
+floppy_error:
+    mov si, msg_floppy_failed
+    call puts
+    jmp wait_key_and_reboot
+
+kernel_not_found_error:
+    mov si, msg_kernel_not_found
+    call puts
+    jmp wait_key_and_reboot
+
+wait_key_and_reboot:
+    mov ah, 0x00
+    int 0x16
+    jmp 0FFFFh:0  ;; Jump to beginning of BIOS, thus rebooting 
+
+halt:
+    cli  ;; Disable interrupts, so the CPU cant exit the halt
+    hlt
 
 ; 
 ; Prints a string to the screen
@@ -42,55 +203,16 @@ puts:
     push si
     push ax
     mov ah, 0x0E
-.puts_loop
+.puts_loop:
     lodsb
     cmp al, 0x00
     je .puts_end
     int 0x10
     jmp .puts_loop
-.puts_end
+.puts_end:
     pop ax
     pop si
     ret
-
-main:
-    ; Set up the data segments
-    mov ax, 0
-    mov ds, ax
-    mov es, ax
-
-    ; Set up the stack
-    mov ss, ax
-    mov sp, 0x7C00  ;; Stack pointer
-
-    ; Read something from the disk
-    mov [ebr_drive_number], dl
-
-    mov ax, 1  ;; Second sector
-    mov cl, 1
-    mov bx, 0x7E00
-    call read_lba
-
-    ; Print hello messages
-    mov si, msg_hello
-    call puts
-
-    jmp halt
-
-floppy_error:
-    mov si, msg_floppy_failed
-    call puts
-
-    jmp wait_key_and_reboot
-
-wait_key_and_reboot:
-    mov ah, 0x00
-    int 0x16
-    jmp 0FFFFh:0  ;; Jump to beginning of BIOS, thus rebooting 
-
-halt:
-    cli  ;; Disable interrupts, so the CPU cant exit the halt
-    hlt
 
 ;
 ; Converts an LBA address into a CHS address
@@ -135,7 +257,7 @@ lba_to_chs:
 ;   - dl: Drive number
 ;   - es:bx: Output data
 ;
-read_lba:
+disk_read:
     push ax
     push bx
     push cx
@@ -149,11 +271,11 @@ read_lba:
     mov ah, 0x02
     mov di, 3           ;; Read retry count
 
-.read_lba_retry:
+.disk_read_retry:
     pusha
     stc
     int 0x13
-    jnc .read_lba_done
+    jnc .disk_read_done
 
     ; Failed to read from floppy
     popa
@@ -161,10 +283,10 @@ read_lba:
 
     dec di
     test di, di
-    jnz .read_lba_retry
-.read_lba_fail:
+    jnz .disk_read_retry
+.disk_read_fail:
     jmp floppy_error
-.read_lba_done:
+.disk_read_done:
     popa
 
     pop di
@@ -179,6 +301,7 @@ read_lba:
 ; Resets the disk controller
 ; - Inputs:
 ;   dl: Drive number to reset
+;
 disk_reset:
     pusha
     mov ah, 0x00
@@ -188,11 +311,24 @@ disk_reset:
     popa
     ret
 
+; Messages
 msg_hello:
-    db "Hello world!", ENDLINE, 0x00
-
+    db "Loading MagnusOS...", ENDLINE, 0x00
 msg_floppy_failed:
-    db "Failed to read floppy", ENDLINE, 0x00
+    db "Floppy disk error!", ENDLINE, 0x00
+msg_kernel_not_found:
+    db "KERNEL.BIN file not found!", ENDLINE, 0x00
+
+; Other
+kernel_filename:
+    db "KERNEL  BIN"
+kernel_cluster:
+    dw 0
+
+KERNEL_LOAD_SEGMENT         equ 0x2000
+KERNEL_LOAD_OFFSET          equ 0
 
 times 510-($-$$) db 0
 db 0x55, 0xAA
+
+misc_buffer:
