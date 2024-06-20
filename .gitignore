@@ -1,2 +1,8 @@
+# Build directory
 build
+
+# VSCode configuration
 .vscode
+
+# Open Watcom v2 error files
+*.err

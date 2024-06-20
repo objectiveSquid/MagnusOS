@@ -5,11 +5,13 @@ I'm now starting over following [Building an OS](https://www.youtube.com/watch?v
 
 ## Requirements
 ### Building the OS
+  - Open Watcom v2
   - make
   - nasm
-  - gcc
+  - wget (for downloading watcom)
 ```sh
-sudo apt-get install make nasm gcc
+sudo apt-get install make nasm wget
+sudo ./scripts/install_open-watcom-v2.sh
 ```
 ### Debugging with Bochs
   - bochs
@@ -23,4 +25,9 @@ sudo apt-get install bochs bochs-sdl bochsbios vgabios
   - qemu
 ```sh
 sudo apt-get install qemu
+```
+### Building the tools
+  - gcc
+```sh
+sudo apt-get install gcc
 ```

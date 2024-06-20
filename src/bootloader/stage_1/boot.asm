@@ -91,27 +91,27 @@ start:
     mov bx, misc_buffer
     call disk_read
 
-    ; search for the kernel (kernel.bin)
+    ; search for the stage_2 (bootloader_stage_2.bin)
     xor bx, bx
     mov di, misc_buffer         ;; the file name is the first 11 bytes of a directory entry
-.search_kernel_loop:
-    mov si, kernel_filename
+.search_stage_2_loop:
+    mov si, stage_2_filename
     mov cx, 11
     push di
     repe cmpsb                      ;; repe = repeat until equal
                                     ;; cmpsb = compare (string) bytes, and decrement cx
     pop di
-    je .found_kernel
+    je .found_stage_2
 
     add di, 32
     inc bx
     cmp bx, [bdb_dir_entries_count]
-    jl .search_kernel_loop          ;; jl = jump if less than
-    jmp kernel_not_found_error
+    jl .search_stage_2_loop          ;; jl = jump if less than
+    jmp stage_2_not_found_error
 
-.found_kernel:
+.found_stage_2:
     mov ax, [di + 26]               ;; the first cluster position is at the 26th byte
-    mov [kernel_cluster], ax
+    mov [stage_2_cluster], ax
 
     ; load fat from disk into memory
     mov ax, [bdb_reserved_sectors]
@@ -120,12 +120,12 @@ start:
     mov bx, misc_buffer
     call disk_read
 
-    ; read kernel and process fat chain
+    ; read stage_2 and process fat chain
     mov bx, KERNEL_LOAD_SEGMENT
     mov es, bx
     mov bx, KERNEL_LOAD_OFFSET
-.read_kernel_loop:
-    mov ax, [kernel_cluster]
+.read_stage_2_loop:
+    mov ax, [stage_2_cluster]
 
     add ax, 31
     mov cl, 1
@@ -135,7 +135,7 @@ start:
     add bx, [bdb_bytes_per_sector]
 
     ; compute location of the next cluster
-    mov ax, [kernel_cluster]
+    mov ax, [stage_2_cluster]
     mov cx, 3
     mul cx
     mov cx, 2
@@ -157,14 +157,14 @@ start:
 
 .next_cluster_after:
     cmp ax, 0x0FF8
-    jae .read_kernel_finish                 ;; jae = jump above or equal
-    ; if this jumps, we are done reading the kernel file
+    jae .read_stage_2_finish                 ;; jae = jump above or equal
+    ; if this jumps, we are done reading the bootloader_stage_2.bin file
 
-    mov [kernel_cluster], ax
-    jmp .read_kernel_loop
+    mov [stage_2_cluster], ax
+    jmp .read_stage_2_loop
 
-.read_kernel_finish:
-    ; far jump to the kernel
+.read_stage_2_finish:
+    ; far jump to the second stage
     mov dl, [ebr_drive_number]              ;; dl = boot device
     mov ax, KERNEL_LOAD_SEGMENT
     mov ds, ax
@@ -172,15 +172,15 @@ start:
 
     jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
 
-    jmp wait_key_and_reboot
+    jmp wait_key_and_reboot                 ;; this should never run
 
 floppy_error:
     mov si, msg_floppy_failed
     call puts
     jmp wait_key_and_reboot
 
-kernel_not_found_error:
-    mov si, msg_kernel_not_found
+stage_2_not_found_error:
+    mov si, msg_stage_2_not_found
     call puts
     jmp wait_key_and_reboot
 
@@ -316,13 +316,13 @@ msg_hello:
     db "Loading MagnusOS...", ENDLINE, 0x00
 msg_floppy_failed:
     db "Floppy disk error!", ENDLINE, 0x00
-msg_kernel_not_found:
+msg_stage_2_not_found:
     db "STAGE2.BIN file not found!", ENDLINE, 0x00
 
 ; Other
-kernel_filename:
+stage_2_filename:
     db "STAGE2  BIN"
-kernel_cluster:
+stage_2_cluster:
     dw 0
 
 KERNEL_LOAD_SEGMENT         equ 0x2000

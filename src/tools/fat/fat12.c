@@ -74,7 +74,7 @@ bool readRootDirectory(FILE *disk) {
     uint32_t size = sizeof(DirectoryEntry) * g_bootSector.DirEntryCount;
     uint32_t sectors = (size / g_bootSector.BytesPerSector);
     if (size % g_bootSector.BytesPerSector != 0)
-        sectors++;
+        ++sectors;
 
     g_rootDirectoryEnd = lba + sectors;
     g_rootDirectory = (DirectoryEntry *)malloc(sectors * g_bootSector.BytesPerSector);
