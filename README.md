@@ -13,6 +13,9 @@ I'm now starting over following [Building an OS](https://www.youtube.com/watch?v
 sudo apt-get install make nasm wget
 sudo ./scripts/install_open-watcom-v2.sh
 ```
+```sh
+make
+```
 ### Debugging with Bochs
   - bochs
   - bochs-sdl
@@ -21,13 +24,23 @@ sudo ./scripts/install_open-watcom-v2.sh
 ```sh
 sudo apt-get install bochs bochs-sdl bochsbios vgabios
 ```
+```sh
+./scripts/debug.sh
+```
 ### Running with Qemu
   - qemu
 ```sh
 sudo apt-get install qemu
 ```
+```sh
+./scripts/run.sh
+```
 ### Building the tools
   - gcc
+  - make
 ```sh
-sudo apt-get install gcc
+sudo apt-get install gcc make
+```
+```sh
+make tools
 ```

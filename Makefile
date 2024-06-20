@@ -5,7 +5,7 @@ LD16="/usr/bin/watcom/binl64/wlink"
 
 SRC_DIR=src
 BUILD_DIR=build
-TOOLS_DIR=$(SRC_DIR)/tools
+TOOLS_DIR=tools
 
 .PHONY: all floppy_image kernel bootloader clean always tools
 
@@ -53,7 +53,7 @@ tools: tools_fat
 
 tools_fat: $(BUILD_DIR)/tools/fat12
 $(BUILD_DIR)/tools/fat12: always $(TOOLS_DIR)/fat/fat12.c
-	$(MAKE) -C $(SRC_DIR)/tools/fat BUILD_DIR=$(abspath $(BUILD_DIR))
+	$(MAKE) -C $(TOOLS_DIR)/fat BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Always
@@ -68,5 +68,5 @@ clean:
 	$(MAKE) -C $(SRC_DIR)/bootloader/stage_1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C $(SRC_DIR)/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C $(SRC_DIR)/tools/fat BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C $(TOOLS_DIR)/fat BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	rm -r $(BUILD_DIR)/
