@@ -68,3 +68,15 @@ _x86_halt:
     hlt
 
     ret ; this should never run
+
+global _x86_Keyboard_ReadChar
+_x86_Keyboard_ReadChar:
+    push bp
+    mov bp, sp
+
+    mov ah, 0x00
+    int 0x16        ; al = the input character
+
+    mov sp, bp
+    pop bp
+    ret

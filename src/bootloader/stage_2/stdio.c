@@ -198,3 +198,23 @@ void puts(const char *buf) {
     for (; *buf; ++buf)
         putc(*buf);
 }
+
+char getch() {
+    return x86_Keyboard_ReadChar();
+}
+
+size_t input(char *outputBuffer, uint64_t maxInput, char stopChar, bool nullTerm) {
+    char currentChar;
+    size_t i = 0;
+    for (; i < maxInput; ++i) {
+        currentChar = getch();
+        if (currentChar == stopChar)
+            break;
+        outputBuffer[i] = currentChar;
+        putc(currentChar);
+    }
+    if (nullTerm)
+        outputBuffer[i + 1] = '\0';
+
+    return i;
+}

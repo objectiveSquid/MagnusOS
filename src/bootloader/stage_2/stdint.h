@@ -23,3 +23,6 @@ typedef long int lint_t;
 typedef signed long long int sllint_t;
 typedef unsigned long long int ullint_t;
 typedef long long int llint_t;
+
+typedef signed long long int ssize_t;
+typedef unsigned long long int size_t;
