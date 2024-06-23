@@ -73,7 +73,7 @@ int *printf_number(int *arg_pointer, int length, bool sign, uint_t radix) {
 
     do {
         uint32_t remainder;
-        x86_div64_32(number, radix, &number, &remainder);
+        x86_Math_Div_64_32(number, radix, &number, &remainder);
         outputBuffer[bufferPosition++] = g_hexChars[remainder];
     } while (number > 0);
 

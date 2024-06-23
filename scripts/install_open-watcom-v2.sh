@@ -10,7 +10,7 @@ else
     wget "https://github.com/open-watcom/open-watcom-v2/releases/download/Current-build/open-watcom-2_0-c-linux-x86" -O open-watcom-v2-installer 2> /dev/null
 fi
 
-echo "In the installer you must select 16-bit compilers,"
+echo "In the installer you must select 16-bit compilers."
 echo "And the installation directory must be /usr/bin/watcom"
 read -p "Press enter to run the installer."
 

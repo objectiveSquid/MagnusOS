@@ -8,7 +8,6 @@ all: tools_fat
 
 tools_fat: $(BUILD_DIR)/tools/fat12
 $(BUILD_DIR)/tools/fat12: always
-	pwd
 	$(CC) -g -o $(BUILD_DIR)/tools/fat12 ./$(TOOLS_DIR)/fat/fat12.c
 
 always:

@@ -1,14 +1,9 @@
-
-
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef uint8_t bool;
-#define true 1;
-#define false 0;
 
 typedef struct {
     uint8_t BootJumpInstruction[3];
@@ -55,7 +50,9 @@ void *g_fat = NULL;
 DirectoryEntry *g_rootDirectory = NULL;
 uint32_t g_rootDirectoryEnd;
 
-bool readBootSector(FILE *disk) { return fread(&g_bootSector, sizeof(g_bootSector), 1, disk) > 0; }
+bool readBootSector(FILE *disk) {
+    return fread(&g_bootSector, sizeof(g_bootSector), 1, disk) > 0;
+}
 
 bool readSectors(FILE *disk, uint32_t lba, uint32_t count, void *outputBuffer) {
     bool success = true;

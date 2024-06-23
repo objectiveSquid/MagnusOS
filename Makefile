@@ -22,6 +22,8 @@ $(BUILD_DIR)/main_floppy.img: bootloader kernel
 	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/bootloader_stage_2.bin "::stage2.bin"
 	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
 
+	mcopy -i $(BUILD_DIR)/main_floppy.img README.md "::README.md"
+
 #
 # Bootloader
 #
@@ -51,8 +53,8 @@ $(BUILD_DIR)/kernel.bin: always
 #
 tools: tools_fat
 
-tools_fat: $(BUILD_DIR)/tools/fat12
-$(BUILD_DIR)/tools/fat12: always $(TOOLS_DIR)/fat/fat12.c
+tools_fat: $(BUILD_DIR)/tools/fat
+$(BUILD_DIR)/tools/fat: always
 	$(MAKE) -C $(TOOLS_DIR)/fat BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
