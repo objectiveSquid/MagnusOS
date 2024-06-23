@@ -5,12 +5,13 @@ I'm now starting over following [Building an OS](https://www.youtube.com/watch?v
 
 ## Requirements
 ### Building the OS
-  - Open Watcom v2
   - make
   - nasm
   - wget (for downloading watcom)
+  - mtools
+  - Open Watcom v2
 ```sh
-sudo apt-get install make nasm wget
+sudo apt-get install make nasm wget mtools
 sudo ./scripts/install_open-watcom-v2.sh
 ```
 ```sh
