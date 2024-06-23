@@ -1,4 +1,5 @@
 #include "disk.h"
+#include "stdbool.h"
 #include "stdint.h"
 #include "x86.h"
 
@@ -29,8 +30,6 @@ void DISK_LbaToChs(DISK *disk, uint32_t lba, uint16_t *cylinderOutput, uint16_t 
     // sector = (lba % sectors per track) + 1
     *sectorOutput = lba % disk->sectors + 1;
 }
-
-#include "stdio.h"
 
 bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t count, void __far *dataOutput) {
     uint16_t cylinder, head, sector;

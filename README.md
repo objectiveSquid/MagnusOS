@@ -34,7 +34,7 @@ sudo apt-get install bochs bochs-sdl bochsbios vgabios
 sudo apt-get install qemu
 ```
 ```sh
-./scripts/run.sh
+./scripts/run_gui.sh
 ```
 ### Building the tools
   - gcc

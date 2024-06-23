@@ -27,11 +27,14 @@ void _cdecl cstart_(uint16_t bootDrive) {
 
     char fileBuffer[64];
     uint32_t read;
-    FAT_File __far *fd = FAT_Open(&disk, "README.md");
-    while (read = FAT_Read(&disk, fd, sizeof(fileBuffer), fileBuffer))
-        for (uint32_t i = 0; i < read; ++i)
+    FAT_File __far *readmeFd = FAT_Open(&disk, "info/readme.md");
+    while (read = FAT_Read(&disk, readmeFd, sizeof(fileBuffer), fileBuffer))
+        for (uint32_t i = 0; i < read; ++i) {
+            if (fileBuffer[i] == '\n')
+                putc('\r');
             putc(fileBuffer[i]);
-    FAT_Close(fd);
+        }
+    FAT_Close(readmeFd);
 
 end:
     x86_Misc_Halt();

@@ -243,8 +243,8 @@ _x86_Disk_GetDriveParams:
     mov si, [bp + 12]
     mov [si], cx
 
-    xor cx, cx
-    mov cl, dh          ;; heads
+    xor cx, cx          ;; heads
+    mov cl, dh
     mov si, [bp + 10]
     mov [si], cx
 
