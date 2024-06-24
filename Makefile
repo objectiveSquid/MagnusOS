@@ -1,5 +1,5 @@
 ASM=nasm
-CC="gcc"
+CC=gcc
 CC16="/usr/bin/watcom/binl64/wcc"
 LD16="/usr/bin/watcom/binl64/wlink"
 

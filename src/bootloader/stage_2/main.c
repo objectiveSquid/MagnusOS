@@ -24,6 +24,7 @@ void _cdecl cstart_(uint16_t bootDrive) {
         puts("\r\n");
     }
     FAT_Close(rootDirectoryFd);
+    goto end;
 
     char fileBuffer[64];
     uint32_t read;
