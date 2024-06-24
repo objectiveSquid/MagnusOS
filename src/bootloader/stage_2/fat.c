@@ -42,8 +42,7 @@ typedef struct {
 } FAT_BootSector;
 #pragma pack(pop)
 
-typedef struct
-{
+typedef struct {
     char buffer[SECTOR_SIZE];
     FAT_File public;
     bool open;
@@ -52,8 +51,7 @@ typedef struct
     uint32_t currentSectorInCluster;
 } FAT_FileData;
 
-typedef struct
-{
+typedef struct {
     union {
         FAT_BootSector bootSector;
         char bootSectorBytes[SECTOR_SIZE];
