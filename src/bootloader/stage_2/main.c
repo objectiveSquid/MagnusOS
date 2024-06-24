@@ -18,7 +18,7 @@ void _cdecl cstart_(uint16_t bootDrive) {
 
     FAT_File __far *rootDirectoryFd = FAT_Open(&disk, "/");
     FAT_DirectoryEntry entry;
-    for (uint8_t i = 0; FAT_ReadEntry(&disk, rootDirectoryFd, &entry) && i < 5; ++i) {
+    for (uint8_t i = 0; FAT_ReadEntry(&disk, rootDirectoryFd, &entry) && i < 4; ++i) {
         for (uint8_t i = 0; i < 11; ++i)
             putc(entry.name[i]);
         puts("\r\n");
