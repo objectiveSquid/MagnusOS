@@ -19,7 +19,7 @@ make
 ```
 ### Debugging with Bochs
   - bochs
-  - bochs-sdl
+  - bochs-x
   - bochsbios
   - vgabios
 ```sh
