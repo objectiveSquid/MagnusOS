@@ -14,4 +14,4 @@ always:
 	mkdir -p $(BUILD_DIR)/tools
 
 clean:
-	rm $(BUILD_DIR)/tools/fat12
+	rm -f $(BUILD_DIR)/tools/fat12

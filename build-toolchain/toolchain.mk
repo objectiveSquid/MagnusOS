@@ -55,4 +55,7 @@ toolchain_always:
 	sudo apt-get update
 	sudo apt-get install gcc-multilib
 
+toolchain_clean:
+	rm -rf $(TOOLCHAIN_DIRECTORY)
+
 .PHONY: build_toolchain toolchain_binutils toolchain_gcc

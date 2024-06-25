@@ -10,4 +10,4 @@ $(BUILD_DIR)/bootloader_stage_1.bin:
 	$(ASM) boot.asm -f bin -o $(BUILD_DIR)/bootloader_stage_1.bin
 
 clean:
-	rm $(BUILD_DIR)/bootloader_stage_1.bin
+	rm -f $(BUILD_DIR)/bootloader_stage_1.bin

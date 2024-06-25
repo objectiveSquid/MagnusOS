@@ -30,4 +30,4 @@ always:
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/asm
 
 clean:
-	rm $(BUILD_DIR)/bootloader_stage_2.bin
+	rm -f $(BUILD_DIR)/bootloader_stage_2.bin
