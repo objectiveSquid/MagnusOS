@@ -9,7 +9,7 @@ I'm now starting over following [Building an OS](https://www.youtube.com/watch?v
 For building the OS you will need to set up a crosscompiler, this is done in `scripts/setup_gcc-cross.sh`
   - make
   - nasm
-  - wget (for downloading watcom)
+  - wget (for downloading files)
   - mtools
   - gcc-10
   - Open Watcom v2
