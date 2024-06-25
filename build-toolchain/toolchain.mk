@@ -58,4 +58,4 @@ toolchain_always:
 toolchain_clean:
 	rm -rf $(TOOLCHAIN_DIRECTORY)
 
-.PHONY: build_toolchain toolchain_binutils toolchain_gcc
+.PHONY: build_toolchain toolchain_binutils toolchain_gcc toolchain_clean

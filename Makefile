@@ -75,4 +75,5 @@ clean:
 	$(MAKE) -C $(SRC_DIR)/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C $(TOOLS_DIR)/fat BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	rm -rf $(BUILD_DIR)/
+	$(MAKE) -C build-toolchain clean
+	rm -rf $(BUILD_DIR)
