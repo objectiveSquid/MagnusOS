@@ -4,14 +4,19 @@ I was following the [Making and OS](https://www.youtube.com/watch?v=MwPjvJ9ulSc&
 I'm now starting over following [Building an OS](https://www.youtube.com/watch?v=9t-SPC7Tczc&list=PLFjM7v6KGMpiH2G-kT781ByCNC_0pKpPN) series by [nanobyte](https://www.youtube.com/@nanobyte-dev), also on Youtube.
 
 ## Requirements
+### WARNING: These instructions are only for debian-based linux distributions, for anything else, you are on your own!
 ### Building the OS
+For building the OS you will need to set up a crosscompiler, this is done in `scripts/setup_gcc-cross.sh`
   - make
   - nasm
   - wget (for downloading watcom)
   - mtools
+  - gcc-10
   - Open Watcom v2
 ```sh
-sudo apt-get install make nasm wget mtools
+sudo apt-get update
+sudo apt-get install make nasm wget mtools gcc-10
+sudo ./scripts/setup_gcc-cross.sh
 sudo ./scripts/install_open-watcom-v2.sh
 ```
 ```sh
@@ -23,14 +28,16 @@ make
   - bochsbios
   - vgabios
 ```sh
+sudo apt-get update
 sudo apt-get install bochs bochs-sdl bochsbios vgabios
 ```
 ```sh
 ./scripts/debug.sh
 ```
 ### Running with Qemu
-  - qemu
+  - qemu-system-x86
 ```sh
+sudo apt-get update
 sudo apt-get install qemu
 ```
 ```sh
@@ -40,6 +47,7 @@ sudo apt-get install qemu
   - gcc
   - make
 ```sh
+sudo apt-get update
 sudo apt-get install gcc make
 ```
 ```sh
