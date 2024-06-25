@@ -6,17 +6,16 @@ I'm now starting over following [Building an OS](https://www.youtube.com/watch?v
 ## Requirements
 ### WARNING: These instructions are only for debian-based linux distributions, for anything else, you are on your own!
 ### Building the OS
-For building the OS you will need to set up a crosscompiler, this is done in `scripts/setup_gcc-cross.sh`
+For building the OS you will need to set up a crosscompiler, this is done in `scripts/toolchain.mk`
   - make
   - nasm
   - wget (for downloading files)
   - mtools
-  - gcc-10
   - Open Watcom v2
 ```sh
 sudo apt-get update
-sudo apt-get install make nasm wget mtools gcc-10
-sudo ./scripts/setup_gcc-cross.sh
+sudo apt-get install make nasm wget mtools
+make build_toolchain
 sudo ./scripts/install_open-watcom-v2.sh
 ```
 ```sh

@@ -11,4 +11,4 @@ build
 bx_enh_dbg.ini
 
 # Build toolchain
-.build-toolchain
+.toolchain
