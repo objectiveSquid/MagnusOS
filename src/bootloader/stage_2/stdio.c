@@ -280,6 +280,7 @@ void __attribute__((cdecl)) printf(const char *format, ...) {
             length = PRINTF_LENGTH_DEFAULT;
             radix = PRINTF_RADIX_DEFAULT;
             sign = PRINTF_SIGN_DEFAULT;
+            number = false;
             break;
         }
 

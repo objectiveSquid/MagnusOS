@@ -23,7 +23,7 @@ cstart(uint16_t bootDrive) {
 
     if (!FAT_Initialize(&disk)) {
         puts("Failed to initialize FAT.\r\n");
-        goto end;
+        return;
     }
 
     FAT_File *kernelFd = FAT_Open(&disk, "kernel.bin");
@@ -38,9 +38,4 @@ cstart(uint16_t bootDrive) {
 
     KernelStart kernelStart = (KernelStart)kernel;
     kernelStart();
-
-end:
-    asm(
-        "cli;"
-        "hlt;");
 }
