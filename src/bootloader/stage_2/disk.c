@@ -1,7 +1,7 @@
 #include "disk.h"
-#include "stdbool.h"
-#include "stdint.h"
 #include "x86.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 #define DISK_READ_RETRY_COUNT 3
 
@@ -13,8 +13,8 @@ bool DISK_Initialize(DISK *disk, uint8_t driveNumber) {
         return false;
 
     disk->id = driveNumber;
-    disk->cylinders = cylinders + 1;
-    disk->heads = heads + 1;
+    disk->cylinders = cylinders;
+    disk->heads = heads;
     disk->sectors = sectors;
 
     return true;
@@ -31,7 +31,7 @@ void DISK_LbaToChs(DISK *disk, uint32_t lba, uint16_t *cylinderOutput, uint16_t 
     *sectorOutput = lba % disk->sectors + 1;
 }
 
-bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t count, void __far *dataOutput) {
+bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t count, void *dataOutput) {
     uint16_t cylinder, head, sector;
 
     DISK_LbaToChs(disk, lba, &cylinder, &head, &sector);

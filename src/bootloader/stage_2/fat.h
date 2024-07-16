@@ -1,9 +1,10 @@
 #pragma once
 #include "disk.h"
-#include "stdbool.h"
-#include "stdint.h"
+#include "other.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#pragma pack(push, 1)
 typedef struct {
     char name[11];
     uint8_t attributes;
@@ -17,11 +18,9 @@ typedef struct {
     uint16_t modifiedDate;
     uint16_t firstClusterLow;
     uint32_t size;
-} FAT_DirectoryEntry;
-#pragma pack(pop)
+} __attribute__((packed)) FAT_DirectoryEntry;
 
-typedef struct
-{
+typedef struct {
     ssize_t handle;
     bool isDirectory;
     uint32_t position;
@@ -39,7 +38,7 @@ enum FAT_Attributes {
 };
 
 bool FAT_Initialize(DISK *disk);
-FAT_File __far *FAT_Open(DISK *disk, const char *path);
-uint32_t FAT_Read(DISK *disk, FAT_File __far *file, uint32_t byteCount, void *dataOut);
-bool FAT_ReadEntry(DISK *disk, FAT_File __far *file, FAT_DirectoryEntry *directoryEntryOutput);
-void FAT_Close(FAT_File __far *file);
+FAT_File *FAT_Open(DISK *disk, const char *path);
+uint32_t FAT_Read(DISK *disk, FAT_File *file, uint32_t byteCount, void *dataOut);
+bool FAT_ReadEntry(DISK *disk, FAT_File *file, FAT_DirectoryEntry *directoryEntryOutput);
+void FAT_Close(FAT_File *file);

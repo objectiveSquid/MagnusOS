@@ -1,17 +1,10 @@
+include make-stuff/config.mk
+
 CPU_CORES=$(shell nproc --all)
 SYSTEM_TRIPLET=$(shell make -v | grep -oP "(?<=Built for )\S+")
 
-TOOLCHAIN_DIRECTORY=.toolchain
-TOOLCHAIN_PREFIX=$(abspath $(TOOLCHAIN_DIRECTORY)/$(TARGET))
-
 GCC_BUILD=$(TOOLCHAIN_DIRECTORY)/gcc-build
 BINUTILS_BUILD=$(TOOLCHAIN_DIRECTORY)/binutils-build
-
-export PATH := $(PATH):($TOOLCHAIN_PREFIX)/bin
-
-export TARGET_CC = $(TARGET)-gcc
-export TARGET_CXX = $(TARGET)-g++
-export TARGET_LD = $(TARGET)-gcc
 
 build_toolchain: toolchain_binutils toolchain_gcc
 

@@ -121,9 +121,9 @@ start:
     call disk_read
 
     ; read stage_2 and process fat chain
-    mov bx, KERNEL_LOAD_SEGMENT
+    mov bx, STAGE_2_LOAD_SEGMENT
     mov es, bx
-    mov bx, KERNEL_LOAD_OFFSET
+    mov bx, STAGE_2_LOAD_OFFSET
 .read_stage_2_loop:
     mov ax, [stage_2_cluster]
 
@@ -166,11 +166,11 @@ start:
 .read_stage_2_finish:
     ; far jump to the second stage
     mov dl, [ebr_drive_number]              ;; dl = boot device
-    mov ax, KERNEL_LOAD_SEGMENT
+    mov ax, STAGE_2_LOAD_SEGMENT
     mov ds, ax
     mov es, ax
 
-    jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
+    jmp STAGE_2_LOAD_SEGMENT:STAGE_2_LOAD_OFFSET
 
     jmp wait_key_and_reboot                 ;; this should never run
 
@@ -325,8 +325,8 @@ stage_2_filename:
 stage_2_cluster:
     dw 0
 
-KERNEL_LOAD_SEGMENT         equ 0x2000
-KERNEL_LOAD_OFFSET          equ 0
+STAGE_2_LOAD_SEGMENT        equ 0x0
+STAGE_2_LOAD_OFFSET         equ 0x500
 
 times 510-($-$$) db 0
 db 0x55, 0xAA

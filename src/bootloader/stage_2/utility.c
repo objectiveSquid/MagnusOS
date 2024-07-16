@@ -1,6 +1,6 @@
 #include "utility.h"
-#include "stdbool.h"
-#include "stdint.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 uint32_t align(uint32_t number, uint32_t alignTo) {
     if (alignTo == 0)

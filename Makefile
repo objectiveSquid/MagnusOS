@@ -1,19 +1,12 @@
-ASM=nasm
-CC=gcc
-CC16="/usr/bin/watcom/binl64/wcc"
-LD16="/usr/bin/watcom/binl64/wlink"
-
-SRC_DIR=src
-BUILD_DIR=build
-TOOLS_DIR=tools
-
-include build-toolchain/config.mk
+include make-stuff/config.mk
 
 .PHONY: all floppy_image kernel bootloader clean always tools
 
-all: build_toolchain floppy_image tools_fat
+all: floppy_image
 
-include build-toolchain/toolchain.mk
+include make-stuff/toolchain.mk
+
+export PATH := $(PATH):$(TOOLCHAIN_PREFIX)/bin
 
 #
 # Floppy image
@@ -35,22 +28,20 @@ bootloader: bootloader_stage_1 bootloader_stage_2
 
 # Stage 1
 bootloader_stage_1: $(BUILD_DIR)/bootloader_stage_1.bin
-
 $(BUILD_DIR)/bootloader_stage_1.bin: always
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage_1 BUILD_DIR=$(abspath $(BUILD_DIR))
+	$(MAKE) -C src/bootloader/stage_1 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 # Stage 2
 bootloader_stage_2: $(BUILD_DIR)/bootloader_stage_2.bin
-
 $(BUILD_DIR)/bootloader_stage_2.bin: always
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR))
+	$(MAKE) -C src/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Kernel
 #
 kernel: $(BUILD_DIR)/kernel.bin
 $(BUILD_DIR)/kernel.bin: always
-	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
+	$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # FAT Tools
@@ -59,7 +50,7 @@ tools: tools_fat
 
 tools_fat: $(BUILD_DIR)/tools/fat
 $(BUILD_DIR)/tools/fat: always
-	$(MAKE) -C $(TOOLS_DIR)/fat BUILD_DIR=$(abspath $(BUILD_DIR))
+	$(MAKE) -C tools/fat BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Always
@@ -71,9 +62,9 @@ always:
 # Clean
 #
 clean:
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage_1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C $(TOOLS_DIR)/fat BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C build-toolchain clean
+	$(MAKE) -C src/bootloader/stage_1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C src/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C tools/fat BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C make-stuff clean
 	rm -rf $(BUILD_DIR)

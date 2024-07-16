@@ -1,6 +1,3 @@
-BUILD_DIR?=build
-ASM?=nasm
-
 .PHONY: all bootloader_stage_2 clean
 
 all: bootloader_stage_1

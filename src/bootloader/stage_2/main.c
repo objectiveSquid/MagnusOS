@@ -1,42 +1,46 @@
 #include "disk.h"
 #include "fat.h"
-#include "stdbool.h"
-#include "stdint.h"
+#include "memdefs.h"
+#include "memory.h"
 #include "stdio.h"
 #include "x86.h"
+#include <stdint.h>
 
-void _cdecl cstart_(uint16_t bootDrive) {
+char *kernelLoadBuffer = (char *)MEMORY_LOAD_KERNEL;
+char *kernel = (char *)MEMORY_KERNEL_ADDRESS;
+
+typedef void (*KernelStart)();
+
+void __attribute__((cdecl))
+cstart(uint16_t bootDrive) {
+    clearScreen();
+
     DISK disk;
     if (!DISK_Initialize(&disk, bootDrive)) {
         puts("Failed to initialize disk.\r\n");
-        goto end;
+        return;
     }
+
     if (!FAT_Initialize(&disk)) {
         puts("Failed to initialize FAT.\r\n");
         goto end;
     }
 
-    FAT_File __far *rootDirectoryFd = FAT_Open(&disk, "/");
+    FAT_File *kernelFd = FAT_Open(&disk, "kernel.bin");
     FAT_DirectoryEntry entry;
-    for (uint8_t i = 0; FAT_ReadEntry(&disk, rootDirectoryFd, &entry) && i < 4; ++i) {
-        for (uint8_t i = 0; i < 11; ++i)
-            putc(entry.name[i]);
-        puts("\r\n");
+    uint32_t readCount;
+    char *kernelBuffer = kernel;
+    while (readCount = FAT_Read(&disk, kernelFd, MEMORY_LOAD_SIZE, kernelLoadBuffer)) {
+        memcpy(kernelBuffer, kernelLoadBuffer, readCount);
+        kernelBuffer += readCount;
     }
-    FAT_Close(rootDirectoryFd);
-    goto end;
+    FAT_Close(kernelFd);
 
-    char fileBuffer[64];
-    uint32_t read;
-    FAT_File __far *readmeFd = FAT_Open(&disk, "info/readme.md");
-    while (read = FAT_Read(&disk, readmeFd, sizeof(fileBuffer), fileBuffer))
-        for (uint32_t i = 0; i < read; ++i) {
-            if (fileBuffer[i] == '\n')
-                putc('\r');
-            putc(fileBuffer[i]);
-        }
-    FAT_Close(readmeFd);
+    KernelStart kernelStart = (KernelStart)kernel;
+    kernelStart();
 
 end:
-    x86_Misc_Halt();
+    asm(
+        "cli;"
+        "hlt;");
 }
