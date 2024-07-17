@@ -1,10 +1,10 @@
-include make-stuff/config.mk
+include build-scripts/config.mk
 
 .PHONY: all floppy_image kernel bootloader clean always tools
 
 all: floppy_image
 
-include make-stuff/toolchain.mk
+include build-scripts/toolchain.mk
 
 export PATH := $(PATH):$(TOOLCHAIN_PREFIX)/bin
 
@@ -66,5 +66,5 @@ clean:
 	$(MAKE) -C src/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C tools/fat BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C make-stuff clean
+	$(MAKE) -C build-scripts clean
 	rm -rf $(BUILD_DIR)

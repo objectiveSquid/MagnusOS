@@ -12,7 +12,7 @@ typedef struct {
 
 typedef struct {
     uint16_t limit;
-    IDTEntry *ptr
+    IDTEntry *ptr;
 } __attribute__((packed)) IDTDescriptor;
 
 IDTEntry g_IDT[256];
@@ -25,7 +25,7 @@ void i686_IDT_SetGate(int interrupt, void *base, uint16_t segmentDescriptor, uin
     g_IDT[interrupt].segmentSelector = segmentDescriptor;
     g_IDT[interrupt]._Reserved = 0;
     g_IDT[interrupt].flags = flags;
-    g_IDT[interrupt].baseHigh = (((uint32_t)base) >> 16) & 0xFFFF;
+    g_IDT[interrupt].baseHigh = ((uint32_t)base >> 16) & 0xFFFF;
 }
 
 void i686_IDT_EnableGate(int interrupt) {

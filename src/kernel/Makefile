@@ -26,6 +26,11 @@ $(BUILD_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM) always
 	$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 
 always:
+	$(ROOT_DIR)/build-scripts/generate-isr.sh arch/i686
+	$(eval HEADERS_C+=arch/i686/isr_gen.h)
+	$(eval SOURCES_C+=arch/i686/isr_gen.c)
+	$(eval HEADERS_ASM+=arch/i686/isr_gen.inc)
+	
 	mkdir -p $(BUILD_DIR)/kernel/c
 	mkdir -p $(BUILD_DIR)/kernel/c/hal
 	mkdir -p $(BUILD_DIR)/kernel/c/arch/i686

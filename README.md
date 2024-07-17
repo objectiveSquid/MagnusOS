@@ -6,7 +6,7 @@ I'm now starting over following [Building an OS](https://www.youtube.com/watch?v
 ## Requirements
 ### WARNING: These instructions are only for debian-based linux distributions, for anything else, you are on your own!
 ### Building the OS
-For building the OS you will need to set up a crosscompiler, this is done in `scripts/toolchain.mk`
+For building the OS you will need to set up a crosscompiler, this is done in `build-scripts/toolchain.mk`
   - make
   - nasm
   - wget (for downloading files)

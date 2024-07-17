@@ -1,3 +1,5 @@
+[bits 32]
+
 global x86_OutByte
 x86_OutByte:
     mov dx, [esp + 4]

@@ -1,4 +1,4 @@
-include make-stuff/config.mk
+include build-scripts/config.mk
 
 CPU_CORES=$(shell nproc --all)
 SYSTEM_TRIPLET=$(shell make -v | grep -oP "(?<=Built for )\S+")
