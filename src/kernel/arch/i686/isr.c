@@ -68,3 +68,8 @@ void __attribute__((cdecl)) i686_ISR_Handler(Registers *registers) {
         i686_Halt();
     }
 }
+
+void i686_ISR_RegisterHandler(uint16_t interrupt, ISRHandler handler) {
+    g_ISRHandlers[interrupt] = handler;
+    i686_IDT_EnableGate(interrupt);
+}

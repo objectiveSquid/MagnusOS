@@ -24,10 +24,10 @@ uint8_t getColor(uint16_t x, uint16_t y) {
 void setCursurPosition(uint16_t x, uint16_t y) {
     uint16_t relativePosition = (y * SCREEN_WIDTH) + x;
 
-    x86_OutByte(0x3D4, 0x0F);
-    x86_OutByte(0x3D5, (uint8_t)(relativePosition & 0xFF)); // lower position byte
-    x86_OutByte(0x3D4, 0x0E);
-    x86_OutByte(0x3D5, (uint8_t)((relativePosition >> 8) & 0xFF)); // upper position byte
+    i686_OutByte(0x3D4, 0x0F);
+    i686_OutByte(0x3D5, (uint8_t)(relativePosition & 0xFF)); // lower position byte
+    i686_OutByte(0x3D4, 0x0E);
+    i686_OutByte(0x3D5, (uint8_t)((relativePosition >> 8) & 0xFF)); // upper position byte
 }
 
 void scrollBack(uint16_t lineCount) {
