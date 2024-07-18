@@ -3,11 +3,14 @@ TARGET_CFLAGS += -ffreestanding -nostdlib -I.
 TARGET_LIBS += -lgcc
 TARGET_LINKFLAGS += -T linker.ld -nostdlib
 
-HEADERS_C = $(shell find . -type f -name "*.h")
-SOURCES_C = $(shell find . -type f -name "*.c")
+HEADERS_C = ./arch/i686/isr_gen.h \
+			$(shell find . -type f -name "*.h")
+SOURCES_C = ./arch/i686/isr_gen.c \
+			$(shell find . -type f -name "*.c")
 OBJECTS_C = $(patsubst %.c, $(BUILD_DIR)/kernel/c/%.obj, $(SOURCES_C))
 
-HEADERS_ASM = $(shell find . -type f -name "*.inc")
+HEADERS_ASM = ./arch/i686/isr_gen.inc \
+				$(shell find . -type f -name "*.inc")
 SOURCES_ASM = $(shell find . -type f -name "*.asm")
 OBJECTS_ASM = $(patsubst %.asm, $(BUILD_DIR)/kernel/asm/%.obj, $(SOURCES_ASM))
 
@@ -15,7 +18,7 @@ OBJECTS_ASM = $(patsubst %.asm, $(BUILD_DIR)/kernel/asm/%.obj, $(SOURCES_ASM))
 
 all: kernel
 
-kernel: $(BUILD_DIR)/kernel.bin
+kernel: generate_isr $(BUILD_DIR)/kernel.bin
 $(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM)
 	$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
 
@@ -25,12 +28,10 @@ $(BUILD_DIR)/kernel/c/%.obj: %.c $(HEADERS_C) always
 $(BUILD_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM) always
 	$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 
-always:
+generate_isr:
 	$(ROOT_DIR)/build-scripts/generate-isr.sh arch/i686
-	$(eval HEADERS_C+=arch/i686/isr_gen.h)
-	$(eval SOURCES_C+=arch/i686/isr_gen.c)
-	$(eval HEADERS_ASM+=arch/i686/isr_gen.inc)
-	
+
+always:
 	mkdir -p $(BUILD_DIR)/kernel/c
 	mkdir -p $(BUILD_DIR)/kernel/c/hal
 	mkdir -p $(BUILD_DIR)/kernel/c/arch/i686

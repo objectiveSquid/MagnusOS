@@ -1,3 +1,4 @@
+#include <arch/i686/misc.h>
 #include <hal/hal.h>
 #include <memory.h>
 #include <stdint.h>
