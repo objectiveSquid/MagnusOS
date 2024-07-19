@@ -11,12 +11,10 @@ For building the OS you will need to set up a crosscompiler, this is done in `bu
   - nasm
   - wget (for downloading files)
   - mtools
-  - Open Watcom v2
 ```sh
 sudo apt-get update
-sudo apt-get install make nasm wget mtools
+sudo apt-get install make nasm mtools
 make build_toolchain
-sudo ./scripts/install_open-watcom-v2.sh
 ```
 ```sh
 make
