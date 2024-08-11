@@ -14,6 +14,9 @@
 
 // 0x00020000 - 0x00030000 - bootloader stage 2
 
+#define MEMORY_VESA_INFO ((void *)0x00030000)
+#define MEMORY_VESA_MODE_INFO ((void *)0x00040000)
+
 // 0x00030000 - 0x00080000 - free
 
 // 0x00080000 - 0x0009FFFF - extended BIOS data area

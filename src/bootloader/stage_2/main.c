@@ -3,6 +3,7 @@
 #include "memdefs.h"
 #include "memory.h"
 #include "stdio.h"
+#include "vbe.h"
 #include "x86.h"
 #include <stdint.h>
 
@@ -11,8 +12,15 @@ char *kernel = (char *)MEMORY_KERNEL_ADDRESS;
 
 typedef void (*KernelStart)();
 
-void __attribute__((cdecl))
-cstart(uint16_t bootDrive) {
+void writePixel(VbeModeInfo *vbeModeInfo, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b) {
+    uint8_t *pixelPointer = ((uint8_t *)(vbeModeInfo->framebuffer + (y * vbeModeInfo->pitch + x * (vbeModeInfo->bitsPerPixel >> 3))));
+    // assuming 8 bit color
+    pixelPointer[(16 - vbeModeInfo->redPosition) >> 3] = r;
+    pixelPointer[(16 - vbeModeInfo->greenPosition) >> 3] = g;
+    pixelPointer[(16 - vbeModeInfo->bluePosition) >> 3] = b;
+}
+
+void __attribute__((cdecl)) cstart(uint16_t bootDrive) {
     clearScreen();
 
     DISK disk;
@@ -36,6 +44,50 @@ cstart(uint16_t bootDrive) {
     }
     FAT_Close(kernelFd);
 
+    // skip the graphics
+    goto run_kernel;
+
+    uint16_t desiredWidth = 1920;
+    uint16_t desiredHeight = 1080;
+    uint8_t desiredBitsPerPixel = 24;
+    uint16_t pickedMode = UINT16_MAX;
+
+    VbeInfoBlock *vbeInfo = (VbeInfoBlock *)MEMORY_VESA_INFO;
+    VbeModeInfo *vbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
+    if (VBE_GetControllerInfo(vbeInfo)) {
+        puts("Got VBE controller info!\n");
+
+        uint16_t *modes = (uint16_t *)(vbeInfo->videoModePtr);
+        for (uint16_t i = 0; modes[i] != 0xFFFF; ++i) {
+            if (!VBE_GetModeInfo(modes[i], vbeModeInfo)) {
+                printf("Failed to get mode info for VBE extension: %hx\n", modes[i]);
+                continue;
+            }
+
+            if ((vbeModeInfo->attributes & 0x90) == 0x90 &&
+                desiredWidth == vbeModeInfo->width &&
+                desiredHeight == vbeModeInfo->height &&
+                desiredBitsPerPixel == vbeModeInfo->bitsPerPixel) {
+                pickedMode = modes[i];
+                break;
+            }
+        }
+    } else {
+        puts("Failed to get VBE controller info!\n");
+    }
+
+    if (pickedMode != UINT16_MAX && VBE_SetVideoMode(pickedMode)) {
+        uint8_t *frameBuffer = (uint8_t *)(vbeModeInfo->framebuffer);
+
+        for (uint16_t y = 0; y < vbeModeInfo->height; ++y)
+            for (uint16_t x = 0; x < vbeModeInfo->width; ++x)
+                writePixel(vbeModeInfo, x, y, 0, 128, 255);
+    } else {
+        puts("No VBE mode found!\n");
+        return;
+    }
+
+run_kernel:
     KernelStart kernelStart = (KernelStart)kernel;
     kernelStart();
 }

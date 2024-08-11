@@ -227,3 +227,98 @@ x86_Disk_Read:
     mov esp, ebp
     pop ebp
     ret
+
+;
+; uint8_t x86_VBE_GetControllerInfo(void *controllerInfoOutput);
+;
+global x86_VBE_GetControllerInfo
+x86_VBE_GetControllerInfo:
+    push ebp
+    mov ebp, esp
+
+    x86_EnterRealMode
+
+    push es
+    push edi
+
+    ConvertLinearAddress [bp + 8], es, edi, di
+    mov ax, 0x4F00
+    int 0x10
+
+    pop edi
+    pop es
+
+    push eax
+    x86_EnterProtectedMode
+    pop eax
+    mov al, ah ;; error code
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+;
+; uint8_t __attribute__((cdecl)) x86_VBE_GetModeInfo(uint16_t mode, void *infoOutput);
+;
+global x86_VBE_GetModeInfo
+x86_VBE_GetModeInfo:
+    push ebp
+    mov ebp, esp
+
+    x86_EnterRealMode
+
+    push es
+    push edi
+    push cx
+
+    ConvertLinearAddress [bp + 12], es, edi, di
+    mov ax, 0x4F01
+    mov cx, [bp + 8]
+    int 0x10
+
+    pop cx
+    pop edi
+    pop es
+
+    push eax
+    x86_EnterProtectedMode
+    pop eax
+    mov al, ah ;; error code
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+;
+; uint8_t __attribute__((cdecl)) x86_VBE_SetVideoMode(uint16_t mode);
+;
+global x86_VBE_SetVideoMode
+x86_VBE_SetVideoMode:
+    push ebp
+    mov ebp, esp
+
+    x86_EnterRealMode
+
+    push bx
+    push es
+    push edi
+
+    mov ax, 0
+    mov es, ax
+    mov edi, 0
+    mov ax, 0x4F02
+    mov bx, [bp + 8]
+    int 0x10
+
+    pop edi
+    pop es
+    pop bx
+
+    push eax
+    x86_EnterProtectedMode
+    pop eax
+    mov al, ah ;; error code
+
+    mov esp, ebp
+    pop ebp
+    ret
