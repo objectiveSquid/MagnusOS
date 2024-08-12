@@ -30,7 +30,7 @@ typedef struct {
     uint8_t bitsPerPixel; // bits per pixel in this mode
     uint8_t banks;        // deprecated; total number of banks in this mode
     uint8_t memoryModel;
-    uint8_t bankAize; // deprecated; size of a bank, almost always 64 KB but may be 16 KB...
+    uint8_t bankSize; // deprecated; size of a bank, almost always 64 KB but may be 16 KB...
     uint8_t imagePages;
     uint8_t _reserved;
 
