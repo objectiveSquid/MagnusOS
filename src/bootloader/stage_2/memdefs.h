@@ -9,7 +9,7 @@
 #define MEMORY_FAT_ADDRESS ((void *)0x20000)
 #define MEMORY_FAT_SIZE 0x00010000 // 64 kilobytes
 
-#define MEMORY_LOAD_KERNEL ((void *)0x30000)
+#define MEMORY_LOAD_KERNEL_BUFFER ((void *)0x30000)
 #define MEMORY_LOAD_KERNEL_CHUNK_SIZE 0x10000 // the kernel load chunk-size
 
 // 0x00020000 - 0x00030000 - bootloader stage 2
