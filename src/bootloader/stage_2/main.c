@@ -7,7 +7,7 @@
 #include "x86.h"
 #include <stdint.h>
 
-char *kernelLoadBuffer = (char *)MEMORY_LOAD_KERNEL;
+char *kernelLoadBuffer = (char *)MEMORY_LOAD_KERNEL_BUFFER;
 char *kernel = (char *)MEMORY_KERNEL_ADDRESS;
 
 typedef void (*KernelStart)();
@@ -38,7 +38,7 @@ void __attribute__((cdecl)) cstart(uint16_t bootDrive) {
     FAT_DirectoryEntry entry;
     uint32_t readCount;
     char *kernelBuffer = kernel;
-    while (readCount = FAT_Read(&disk, kernelFd, MEMORY_LOAD_SIZE, kernelLoadBuffer)) {
+    while (readCount = FAT_Read(&disk, kernelFd, MEMORY_LOAD_KERNEL_CHUNK_SIZE, kernelLoadBuffer)) {
         memcpy(kernelBuffer, kernelLoadBuffer, readCount);
         kernelBuffer += readCount;
     }

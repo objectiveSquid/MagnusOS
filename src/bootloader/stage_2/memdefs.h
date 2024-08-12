@@ -10,12 +10,12 @@
 #define MEMORY_FAT_SIZE 0x00010000 // 64 kilobytes
 
 #define MEMORY_LOAD_KERNEL ((void *)0x30000)
-#define MEMORY_LOAD_SIZE 0x10000
+#define MEMORY_LOAD_KERNEL_CHUNK_SIZE 0x10000 // the kernel load chunk-size
 
 // 0x00020000 - 0x00030000 - bootloader stage 2
 
 #define MEMORY_VESA_INFO ((void *)0x00030000)
-#define MEMORY_VESA_MODE_INFO ((void *)0x00040000)
+#define MEMORY_VESA_MODE_INFO ((void *)0x00030200) // the previous struct is 512 bytes (0x200 in hex)
 
 // 0x00030000 - 0x00080000 - free
 
