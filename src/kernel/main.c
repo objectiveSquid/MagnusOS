@@ -1,3 +1,4 @@
+#include "vbe.h"
 #include <arch/i686/irq.h>
 #include <arch/i686/misc.h>
 #include <hal/hal.h>
@@ -8,19 +9,11 @@
 extern char __bss_start;
 extern char __end;
 
-void onTimer(Registers *registers) {
-    printf("Timer hit!\n");
-}
-
-void __attribute__((section(".entry"))) start(uint16_t bootDrive) {
+void __attribute__((section(".entry"))) start(VbeModeInfo vbeModeInfo) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
 
-    printf("Hello from Kernel!\n");
     HAL_Initialize();
-
-    i686_IRQ_RegisterHandler(0, onTimer);
-    for (;;)
-        ;
+    clearScreen();
 
 end:
     i686_Halt();

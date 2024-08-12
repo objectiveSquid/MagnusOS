@@ -10,7 +10,7 @@
 char *kernelLoadBuffer = (char *)MEMORY_LOAD_KERNEL_BUFFER;
 char *kernel = (char *)MEMORY_KERNEL_ADDRESS;
 
-typedef void (*KernelStart)();
+typedef void (*KernelStart)(VbeModeInfo *);
 
 void writePixel(VbeModeInfo *vbeModeInfo, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b) {
     uint8_t *pixelPointer = ((uint8_t *)(vbeModeInfo->framebuffer + (y * vbeModeInfo->pitch + x * (vbeModeInfo->bitsPerPixel >> 3))));
@@ -76,18 +76,12 @@ void __attribute__((cdecl)) cstart(uint16_t bootDrive) {
         puts("Failed to get VBE controller info!\n");
     }
 
-    if (pickedMode != UINT16_MAX && VBE_SetVideoMode(pickedMode)) {
-        uint8_t *frameBuffer = (uint8_t *)(vbeModeInfo->framebuffer);
-
-        for (uint16_t y = 0; y < vbeModeInfo->height; ++y)
-            for (uint16_t x = 0; x < vbeModeInfo->width; ++x)
-                writePixel(vbeModeInfo, x, y, 0, 128, 255);
-    } else {
-        puts("No VBE mode found!\n");
+    if (pickedMode == UINT16_MAX || !VBE_SetVideoMode(pickedMode)) {
+        puts("No suitable VBE mode found!\n");
         return;
     }
 
 run_kernel:
     KernelStart kernelStart = (KernelStart)kernel;
-    kernelStart();
+    kernelStart(vbeModeInfo);
 }

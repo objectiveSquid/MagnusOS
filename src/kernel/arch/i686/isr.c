@@ -3,6 +3,7 @@
 #include "idt.h"
 #include "isr_gen.h"
 #include "misc.h"
+#include <stddef.h>
 #include <stdio.h>
 
 ISRHandler g_ISRHandlers[256];
@@ -49,7 +50,7 @@ void i686_ISR_Initialize() {
 }
 
 void __attribute__((cdecl)) i686_ISR_Handler(Registers *registers) {
-    if (g_ISRHandlers[registers->interrupt])
+    if (g_ISRHandlers[registers->interrupt] != NULL)
         g_ISRHandlers[registers->interrupt](registers);
     else if (registers->interrupt >= 32)
         printf("Unhandled interrupt %lu\n", registers->interrupt);

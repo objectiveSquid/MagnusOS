@@ -42,7 +42,8 @@ void i686_IRQ_Initialize() {
         i686_ISR_RegisterHandler(PIC_REMAP_OFFSET + i, i686_IRQ_Handler);
 
     i686_EnableInterrupts();
-};
+}
+
 void i686_IRQ_RegisterHandler(irq_t irq, IRQHandler handler) {
     g_IRQHandlers[irq] = handler;
 }

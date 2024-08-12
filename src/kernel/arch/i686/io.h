@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-#define i686_ClearInterrupts() asm("cli")
+#define i686_DisableInterrupts() asm("cli")
 #define i686_EnableInterrupts() asm("sti")
 
 // ASM functions
