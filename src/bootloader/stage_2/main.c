@@ -10,7 +10,7 @@
 char *kernelLoadBuffer = (char *)MEMORY_LOAD_KERNEL_BUFFER;
 char *kernel = (char *)MEMORY_KERNEL_ADDRESS;
 
-typedef void (*KernelStart)(VbeModeInfo *);
+typedef void (*KernelStart)();
 
 void writePixel(VbeModeInfo *vbeModeInfo, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b) {
     uint8_t *pixelPointer = ((uint8_t *)(vbeModeInfo->framebuffer + (y * vbeModeInfo->pitch + x * (vbeModeInfo->bitsPerPixel >> 3))));
@@ -83,5 +83,5 @@ void __attribute__((cdecl)) cstart(uint16_t bootDrive) {
 
 run_kernel:
     KernelStart kernelStart = (KernelStart)kernel;
-    kernelStart(vbeModeInfo);
+    kernelStart();
 }

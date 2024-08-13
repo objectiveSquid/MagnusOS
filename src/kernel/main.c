@@ -1,7 +1,7 @@
-#include <arch/i686/irq.h>
-#include <arch/i686/misc.h>
-#include <hal/hal.h>
-#include <memory.h>
+#include "arch/i686/irq.h"
+#include "arch/i686/misc.h"
+#include "hal/hal.h"
+#include "memory.h"
 #include <stdint.h>
 #include <stdio.h>
 
