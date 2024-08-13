@@ -1,4 +1,3 @@
-#include "vbe.h"
 #include <arch/i686/irq.h>
 #include <arch/i686/misc.h>
 #include <hal/hal.h>
