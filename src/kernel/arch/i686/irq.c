@@ -1,9 +1,10 @@
 #include "irq.h"
 #include "i8259.h"
 #include "io.h"
+#include "pic.h"
+#include "stdio.h"
+#include "util/arrays.h"
 #include <stddef.h>
-#include <stdio.h>
-#include <util/arrays.h>
 
 #define PIC_REMAP_OFFSET 0x20
 
@@ -16,7 +17,7 @@ void i686_IRQ_Handler(Registers *registers) {
     if (g_IRQHandlers[irq] != NULL)
         g_IRQHandlers[irq](registers);
     else
-        printf("Unhandled IRQ %u\n", irq);
+        printf("Unhandled IRQ %d\n", irq);
 
     g_Driver->sendEndOfInterrupt(irq);
 }

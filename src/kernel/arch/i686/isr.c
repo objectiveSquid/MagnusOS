@@ -1,10 +1,9 @@
 #include "isr.h"
-#include "gdt.h"
 #include "idt.h"
 #include "isr_gen.h"
 #include "misc.h"
+#include "stdio.h"
 #include <stddef.h>
-#include <stdio.h>
 
 ISRHandler g_ISRHandlers[256];
 
@@ -47,6 +46,8 @@ void i686_ISR_Initialize() {
     i686_ISR_InitializeGates();
     for (uint16_t interruptNumber = 0; interruptNumber < 256; ++interruptNumber)
         i686_IDT_EnableGate(interruptNumber);
+
+    i686_IDT_DisableGate(0x80);
 }
 
 void __attribute__((cdecl)) i686_ISR_Handler(Registers *registers) {

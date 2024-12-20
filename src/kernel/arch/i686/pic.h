@@ -1,18 +1,8 @@
 #pragma once
+
 #include "irq.h"
 #include <stdbool.h>
 #include <stdint.h>
-
-typedef union {
-    struct {
-        uint8_t first;
-        uint8_t second;
-    };
-    uint16_t both;
-} Split_uint16_t;
-
-typedef Split_uint16_t IRQRequestRegisters;
-typedef Split_uint16_t InServiceRegisters;
 
 typedef uint16_t picmask_t;
 

@@ -2,8 +2,8 @@
 #include "arch/i686/misc.h"
 #include "hal/hal.h"
 #include "memory.h"
+#include "stdio.h"
 #include <stdint.h>
-#include <stdio.h>
 
 extern char __bss_start;
 extern char __end;
@@ -13,6 +13,8 @@ void __attribute__((section(".entry"))) start() {
 
     HAL_Initialize();
     clearScreen();
+
+    printf("Hello from kernel!\n");
 
 end:
     i686_Halt();

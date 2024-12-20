@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
 
-#define i686_DisableInterrupts() asm("cli")
-#define i686_EnableInterrupts() asm("sti")
+uint8_t __attribute__((cdecl)) i686_EnableInterrupts();
+uint8_t __attribute__((cdecl)) i686_DisableInterrupts();
 
 // ASM functions
 void __attribute__((cdecl)) i686_OutByte(uint16_t port, uint8_t value);

@@ -34,7 +34,6 @@ enum {
 } PIC_CMD;
 
 static picmask_t g_PicMask = PICMASK_ALL;
-
 static bool g_AutoEndOfInterrupt = false;
 
 void i8259_SetMask(picmask_t newMask) {
@@ -106,27 +105,20 @@ void i8259_Unmask(irq_t irq) {
 
 // irr = in request register
 // this also means that they are pending (awaiting the cpu)
-IRQRequestRegisters i8259_GetIRQRequestRegister() {
+uint16_t i8259_GetIRQRequestRegister() {
     i686_OutByte(PIC_1_COMMAND_PORT, PIC_CMD_READ_IRR);
     i686_OutByte(PIC_2_COMMAND_PORT, PIC_CMD_READ_IRR);
 
-    IRQRequestRegisters output = {
-        .first = i686_InByte(PIC_1_DATA_PORT),
-        .second = i686_InByte(PIC_2_DATA_PORT)};
-    return output;
+    return ((uint16_t)i686_InByte(PIC_2_COMMAND_PORT)) | (((uint16_t)i686_InByte(PIC_2_COMMAND_PORT)) << 8);
 }
 
 // isr = in service register
 // meaning that they are currently being handled by the cpu
-InServiceRegisters i8259_GetInServiceRegister() {
+uint16_t i8259_GetInServiceRegister() {
     i686_OutByte(PIC_1_COMMAND_PORT, PIC_CMD_READ_ISR);
     i686_OutByte(PIC_2_COMMAND_PORT, PIC_CMD_READ_ISR);
 
-    InServiceRegisters output = {
-        .first = i686_InByte(PIC_1_DATA_PORT),
-        .second = i686_InByte(PIC_2_DATA_PORT),
-    };
-    return output;
+    return ((uint16_t)i686_InByte(PIC_2_COMMAND_PORT)) | (((uint16_t)i686_InByte(PIC_2_COMMAND_PORT)) << 8);
 }
 
 bool i8259_Probe() {
@@ -137,12 +129,12 @@ bool i8259_Probe() {
 
 static const PICDriver g_PicDriver = {
     .name = "i8259 PIC",
-    .sendEndOfInterrupt = i8259_SendEndOfInterrupt,
-    .probe = i8259_Probe,
-    .disable = i8259_Disable,
-    .initialize = i8259_Configure,
-    .unmask = i8259_Unmask,
-    .mask = i8259_Mask,
+    .sendEndOfInterrupt = &i8259_SendEndOfInterrupt,
+    .probe = &i8259_Probe,
+    .disable = &i8259_Disable,
+    .initialize = &i8259_Configure,
+    .unmask = &i8259_Unmask,
+    .mask = &i8259_Mask,
 };
 
 const PICDriver *i8259_GetDriver() {

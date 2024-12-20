@@ -1,7 +1,7 @@
 #pragma once
 #include "isr.h"
 
-typedef unsigned int irq_t;
+typedef int irq_t;
 
 typedef void (*IRQHandler)(Registers *registers);
 
