@@ -1,3 +1,5 @@
 #pragma once
 
-void __attribute__((cdecl)) i686_Halt();
+#include "util/misc.h"
+
+void ASMCALL i686_Halt();

@@ -3,6 +3,7 @@
 #include "isr_gen.h"
 #include "misc.h"
 #include "stdio.h"
+#include "util/misc.h"
 #include <stddef.h>
 
 ISRHandler g_ISRHandlers[256];
@@ -50,7 +51,7 @@ void i686_ISR_Initialize() {
     i686_IDT_DisableGate(0x80);
 }
 
-void __attribute__((cdecl)) i686_ISR_Handler(Registers *registers) {
+void ASMCALL i686_ISR_Handler(Registers *registers) {
     if (g_ISRHandlers[registers->interrupt] != NULL)
         g_ISRHandlers[registers->interrupt](registers);
     else if (registers->interrupt >= 32)

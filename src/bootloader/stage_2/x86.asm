@@ -74,7 +74,7 @@ x86_InByte:
 
 
 ;
-; bool __attribute__((cdecl)) x86_Disk_GetDriveParams(uint8_t drive, uint8_t *driveTypeOutput, uint16_t *cylindersOutput, uint16_t *headsOutput, uint16_t *sectorsOutput);
+; bool ASMCALL x86_Disk_GetDriveParams(uint8_t drive, uint8_t *driveTypeOutput, uint16_t *cylindersOutput, uint16_t *headsOutput, uint16_t *sectorsOutput);
 ;
 global x86_Disk_GetDriveParams
 x86_Disk_GetDriveParams:
@@ -151,7 +151,7 @@ x86_Disk_GetDriveParams:
 
 
 ;
-; bool __attribute__((cdecl)) x86_Disk_Reset(uint8_t drive);
+; bool ASMCALL x86_Disk_Reset(uint8_t drive);
 ;
 global x86_Disk_Reset
 x86_Disk_Reset:
@@ -181,7 +181,7 @@ x86_Disk_Reset:
     ret
 
 ;
-; bool __attribute__((cdecl)) x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t head, uint16_t sector, uint8_t count, void __far *dataOutput);
+; bool ASMCALL x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t head, uint16_t sector, uint8_t count, void __far *dataOutput);
 ;
 global x86_Disk_Read
 x86_Disk_Read:
@@ -258,7 +258,7 @@ x86_VBE_GetControllerInfo:
     ret
 
 ;
-; uint8_t __attribute__((cdecl)) x86_VBE_GetModeInfo(uint16_t mode, void *infoOutput);
+; uint8_t ASMCALL x86_VBE_GetModeInfo(uint16_t mode, void *infoOutput);
 ;
 global x86_VBE_GetModeInfo
 x86_VBE_GetModeInfo:
@@ -290,7 +290,7 @@ x86_VBE_GetModeInfo:
     ret
 
 ;
-; uint8_t __attribute__((cdecl)) x86_VBE_SetVideoMode(uint16_t mode);
+; uint8_t ASMCALL x86_VBE_SetVideoMode(uint16_t mode);
 ;
 global x86_VBE_SetVideoMode
 x86_VBE_SetVideoMode:
@@ -318,6 +318,74 @@ x86_VBE_SetVideoMode:
     x86_EnterProtectedMode
     pop eax
     mov al, ah ;; error code
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+;
+; int ASMCALL x86_GetNextBlock(E820MemoryBlock *block, uint32_t *continuationId);
+;
+E820Signature equ 0x534D4150
+
+global x86_GetNextBlock
+x86_GetNextBlock:
+    push ebp
+    mov ebp, esp
+
+    x86_EnterRealMode
+
+    ; save regs
+    push ebx
+    push ecx
+    push edx
+    push edi
+    push es
+    push esi
+    push ds
+
+    ; convert arguments
+    ConvertLinearAddress [bp + 8], es, edi, di   ;; es:di ptr to block struct
+    ConvertLinearAddress [bp + 12], ds, esi, si  ;; ebx - ptr to continuation id
+    mov ebx, ds:[si]
+
+    ; int 0x15 setup
+    mov eax, 0xE820         ;; function number
+    mov edx, E820Signature  ;; signature
+    mov ecx, 24             ;; size of struct
+
+    ; call int 0x15
+    int 0x15
+
+    ; test results (if eax is the signature the function is supported)
+    cmp eax, E820Signature
+    jne .error
+
+    ; path if success
+    mov eax, ecx        ;; return size
+    mov ds:[si], ebx    ;; fill continuation parameter
+    jmp .endif
+
+.error:
+    mov eax, -1         ;; return an error
+    jmp .endif   ;; technically not needed
+
+.endif:
+
+    ; restore regs
+    pop ds
+    pop esi
+    pop es
+    pop edi
+    pop edx
+    pop ecx
+    pop ebx
+
+    push eax
+
+    x86_EnterProtectedMode
+
+    push eax
 
     mov esp, ebp
     pop ebp

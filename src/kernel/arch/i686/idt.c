@@ -1,5 +1,6 @@
 #include "idt.h"
 #include "util/binary.h"
+#include "util/misc.h"
 #include <stdint.h>
 
 typedef struct {
@@ -18,7 +19,7 @@ typedef struct {
 IDTEntry g_IDT[256];
 IDTDescriptor g_IDTDescriptor = {sizeof(g_IDT) - 1, g_IDT};
 
-void __attribute__((cdecl)) i686_IDT_Load(IDTDescriptor *descriptor);
+void ASMCALL i686_IDT_Load(IDTDescriptor *descriptor);
 
 void i686_IDT_SetGate(int interrupt, void *base, uint16_t segmentDescriptor, uint8_t flags) {
     g_IDT[interrupt].baseLow = ((uint32_t)base) & 0xFFFF;

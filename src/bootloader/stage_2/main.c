@@ -20,7 +20,7 @@ void writePixel(VbeModeInfo *vbeModeInfo, uint16_t x, uint16_t y, uint8_t r, uin
     pixelPointer[(16 - vbeModeInfo->bluePosition) >> 3] = b;
 }
 
-void __attribute__((cdecl)) cstart(uint16_t bootDrive) {
+void ASMCALL cstart(uint16_t bootDrive) {
     clearScreen();
 
     DISK disk;
@@ -45,41 +45,7 @@ void __attribute__((cdecl)) cstart(uint16_t bootDrive) {
     FAT_Close(kernelFd);
 
     // skip the graphics
-    goto run_kernel;
-
-    uint16_t desiredWidth = 1920;
-    uint16_t desiredHeight = 1080;
-    uint8_t desiredBitsPerPixel = 24;
-    uint16_t pickedMode = UINT16_MAX;
-
-    VbeInfoBlock *vbeInfo = (VbeInfoBlock *)MEMORY_VESA_INFO;
-    VbeModeInfo *vbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
-    if (VBE_GetControllerInfo(vbeInfo)) {
-        puts("Got VBE controller info!\n");
-
-        uint16_t *modes = (uint16_t *)(vbeInfo->videoModePtr);
-        for (uint16_t i = 0; modes[i] != 0xFFFF; ++i) {
-            if (!VBE_GetModeInfo(modes[i], vbeModeInfo)) {
-                printf("Failed to get mode info for VBE extension: %hx\n", modes[i]);
-                continue;
-            }
-
-            if ((vbeModeInfo->attributes & 0x90) == 0x90 &&
-                desiredWidth == vbeModeInfo->width &&
-                desiredHeight == vbeModeInfo->height &&
-                desiredBitsPerPixel == vbeModeInfo->bitsPerPixel) {
-                pickedMode = modes[i];
-                break;
-            }
-        }
-    } else {
-        puts("Failed to get VBE controller info!\n");
-    }
-
-    if (pickedMode == UINT16_MAX || !VBE_SetVideoMode(pickedMode)) {
-        puts("No suitable VBE mode found!\n");
-        return;
-    }
+    // VBE_Initialize();
 
 run_kernel:
     KernelStart kernelStart = (KernelStart)kernel;

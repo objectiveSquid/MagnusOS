@@ -150,7 +150,7 @@ void printf_number_signed(int64_t number, uint8_t radix) {
 #define PRINTF_RADIX_DEFAULT 10
 #define PRINTF_SIGN_DEFAULT false
 
-void __attribute__((cdecl)) printf(const char *format, ...) {
+void ASMCALL printf(const char *format, ...) {
     va_list args;
     va_start(args, format);
 

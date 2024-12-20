@@ -1,4 +1,5 @@
 #include "gdt.h"
+#include "util/misc.h"
 #include <stdint.h>
 
 typedef struct {
@@ -51,15 +52,14 @@ typedef enum {
 #define GDT_FLAGS_LIMIT_HIGH(limit, flags) (((limit >> 16) & 0xF) | (flags & 0xF0))
 #define GDT_BASE_HIGH(base) ((base >> 24) & 0xFF)
 
-#define GDT_ENTRY(base, limit, access, flags)   \
-    {                                           \
-        GDT_LIMIT_LOW(limit),                   \
-            GDT_BASE_LOW(base),                 \
-            GDT_BASE_MIDDLE(base),              \
-            access,                             \
-            GDT_FLAGS_LIMIT_HIGH(limit, flags), \
-            GDT_BASE_HIGH(base)                 \
-    }
+#define GDT_ENTRY(base, limit, access, flags) \
+    {                                         \
+        GDT_LIMIT_LOW(limit),                 \
+        GDT_BASE_LOW(base),                   \
+        GDT_BASE_MIDDLE(base),                \
+        access,                               \
+        GDT_FLAGS_LIMIT_HIGH(limit, flags),   \
+        GDT_BASE_HIGH(base)}
 
 GDTEntry g_GDT[] = {
     // Null descriptor
@@ -80,7 +80,7 @@ GDTEntry g_GDT[] = {
 
 GDTDescriptor g_GDTDescriptor = {sizeof(g_GDT) - 1, g_GDT};
 
-void __attribute__((cdecl)) i686_GDT_Load(GDTDescriptor *descriptor, uint16_t codeSegment, uint16_t dataSegment);
+void ASMCALL i686_GDT_Load(GDTDescriptor *descriptor, uint16_t codeSegment, uint16_t dataSegment);
 
 void i686_GDT_Initialize() {
     i686_GDT_Load(&g_GDTDescriptor, i686_GDT_CODE_SEGMENT, i686_GDT_DATA_SEGMENT);
