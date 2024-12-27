@@ -29,143 +29,79 @@ ebr_volume_id:              db 0x12, 0x34, 0x56, 0x78  ;; Serial number, doesn't
 ebr_volume_label:           db "MagnusOS   "  ;; Label, must be 11 bytes
 ebr_system_id:              db "FAT12   "  ;; Filesystem id, must be 8 bytes
 
+times 90-($-$$) db 0
+
 start:
-    ; Set up the data segments
+    ; set up the data segments
     mov ax, 0
     mov ds, ax
     mov es, ax
 
-    ; Set up the stack
+    ; set up the stack
     mov ss, ax
-    mov sp, 0x7C00  ;; Stack pointer
+    mov sp, 0x7C00  ;; stack pointer
 
     push es
     push word .after_basic_setup
     retf
 
 .after_basic_setup:
-
-    ; Read something from the disk
     mov [ebr_drive_number], dl
 
-    ; Print hello messages
+    ; print hello message
     mov si, msg_hello
     call puts
 
-    ; read drive parameters
-    push es
-    mov ah, 0x8
+    ; check extensions present
+    mov ah, 0x41
+    mov bx, 0x55AA
+    stc
     int 0x13
-    jc floppy_error
-    pop es
 
-    and cl, 0x3F
-    xor ch, ch
-    mov [bdb_sectors_per_track], cx
+    jc .no_disk_extensions
+    cmp bx, 0xAA55  ;; technically not required
+    jne .no_disk_extensions
 
-    inc dh
-    mov [bdb_heads], dh
+    ; we know extensions are present
+    mov byte [extensions_present], 1
+    jmp .after_disk_extensions_check
 
-    ; calculate lba of fat root directory
-    mov ax, [bdb_sectors_per_fat]
-    mov bl, [bdb_fat_count]
-    xor bh, bh
-    mul bx
-    add ax, [bdb_reserved_sectors]          ;; ax = lba of fat root directory
-    push ax                                 ;; save ax to the stack
+.no_disk_extensions:
+    mov byte [extensions_present], 0
 
-    ; calculate size of fat root directory
-    mov ax, [bdb_dir_entries_count]
-    shl ax, 5                               ;; (ax << 5) == (ax *= 32)
-    xor dx, dx
-    div word [bdb_bytes_per_sector]
+.after_disk_extensions_check:
+    ; load stage 2
+    mov si, stage_2_location
 
-    test dx, dx
-    jz .read_root_dir_after
-    inc ax
-.read_root_dir_after:
-    ; read root directory
-    mov cl, al
-    pop ax
-    mov dl, [ebr_drive_number]
-    mov bx, misc_buffer
-    call disk_read
-
-    ; search for the stage_2 (bootloader_stage_2.bin)
-    xor bx, bx
-    mov di, misc_buffer         ;; the file name is the first 11 bytes of a directory entry
-.search_stage_2_loop:
-    mov si, stage_2_filename
-    mov cx, 11
-    push di
-    repe cmpsb                      ;; repe = repeat until equal
-                                    ;; cmpsb = compare (string) bytes, and decrement cx
-    pop di
-    je .found_stage_2
-
-    add di, 32
-    inc bx
-    cmp bx, [bdb_dir_entries_count]
-    jl .search_stage_2_loop          ;; jl = jump if less than
-    jmp stage_2_not_found_error
-
-.found_stage_2:
-    mov ax, [di + 26]               ;; the first cluster position is at the 26th byte
-    mov [stage_2_cluster], ax
-
-    ; load fat from disk into memory
-    mov ax, [bdb_reserved_sectors]
-    mov cl, [bdb_sectors_per_fat]
-    mov dl, [ebr_drive_number]
-    mov bx, misc_buffer
-    call disk_read
-
-    ; read stage_2 and process fat chain
-    mov bx, STAGE_2_LOAD_SEGMENT
-    mov es, bx
+    ; es:bx = stage 2 load address
+    mov ax, STAGE_2_LOAD_SEGMENT
+    mov es, ax
     mov bx, STAGE_2_LOAD_OFFSET
-.read_stage_2_loop:
-    mov ax, [stage_2_cluster]
 
-    add ax, 31
-    mov cl, 1
-    mov dl, [ebr_drive_number]
+.load_stage_2_loop:
+    mov eax, [si]  ;; lba
+    add si, 4
+    mov cl, [si]   ; length
+    inc si
+
+    cmp eax, 0
+    je .read_stage_2_finish
+
     call disk_read
 
-    add bx, [bdb_bytes_per_sector]
+    ; move to next stage 2 load address
+    xor ch, ch
+    shl cx, 5
+    mov di, es  ;; cant add directly to es
+    add di, cx
+    mov es, di
 
-    ; compute location of the next cluster
-    mov ax, [stage_2_cluster]
-    mov cx, 3
-    mul cx
-    mov cx, 2
-    div cx
-
-    mov si, misc_buffer
-    add si, ax
-    mov ax, [ds:si]
-
-    or dx, dx
-    jz .even
-
-.odd:
-    shr ax, 4
-    jmp .next_cluster_after
-
-.even:
-    and ax, 0x0FFF
-
-.next_cluster_after:
-    cmp ax, 0x0FF8
-    jae .read_stage_2_finish                 ;; jae = jump above or equal
-    ; if this jumps, we are done reading the bootloader_stage_2.bin file
-
-    mov [stage_2_cluster], ax
-    jmp .read_stage_2_loop
+    jmp .load_stage_2_loop
 
 .read_stage_2_finish:
     ; far jump to the second stage
     mov dl, [ebr_drive_number]              ;; dl = boot device
+
     mov ax, STAGE_2_LOAD_SEGMENT
     mov ds, ax
     mov es, ax
@@ -173,6 +109,8 @@ start:
     jmp STAGE_2_LOAD_SEGMENT:STAGE_2_LOAD_OFFSET
 
     jmp wait_key_and_reboot                 ;; this should never run
+
+    jmp halt                                ;; safeguard, also should never run
 
 floppy_error:
     mov si, msg_floppy_failed
@@ -187,7 +125,7 @@ stage_2_not_found_error:
 wait_key_and_reboot:
     mov ah, 0x00
     int 0x16
-    jmp 0FFFFh:0  ;; Jump to beginning of BIOS, thus rebooting 
+    jmp 0xFFFF:0  ;; Jump to beginning of BIOS, thus rebooting 
 
 halt:
     cli  ;; Disable interrupts, so the CPU cant exit the halt
@@ -252,18 +190,35 @@ lba_to_chs:
 ;
 ; Reads sectors from a disk
 ; - Input parameters:
-;   - ax: An LBA adress
+;   - eax: An LBA adress
 ;   - cl: Number of sectors to read (up to 128)
 ;   - dl: Drive number
 ;   - es:bx: Output data
 ;
 disk_read:
-    push ax
+    push eax
     push bx
     push cx
     push dx
+    push si
     push di
 
+    cmp byte [extensions_present], 1
+    jne .disk_read_no_extensions
+
+    ; here is with extensions
+    ; setup dap struct
+    mov [extensions_dap.lba], eax
+    mov [extensions_dap.segment], es
+    mov [extensions_dap.offset], bx
+    mov [extensions_dap.sector_count], cl
+
+    mov ah, 0x42
+    mov si, extensions_dap
+    mov di, 3
+    jmp .disk_read_retry
+
+.disk_read_no_extensions:
     push cx
     call lba_to_chs
     pop ax
@@ -290,10 +245,11 @@ disk_read:
     popa
 
     pop di
+    pop si
     pop dx
     pop cx
     pop bx
-    pop ax
+    pop eax
 
     ret
 
@@ -311,24 +267,36 @@ disk_reset:
     popa
     ret
 
-; Messages
+; texts
 msg_hello:
     db "Loading MagnusOS...", ENDLINE, 0x00
 msg_floppy_failed:
     db "Floppy disk error!", ENDLINE, 0x00
 msg_stage_2_not_found:
     db "STAGE2.BIN file not found!", ENDLINE, 0x00
-
-; Other
 stage_2_filename:
     db "STAGE2  BIN"
-stage_2_cluster:
-    dw 0
+
+; global vars
+extensions_present:
+    db 0
+
+extensions_dap:
+    .size           db 0x10
+                    db 0
+    .sector_count   dw 0
+    .offset         dw 0
+    .segment        dw 0
+    .lba            dq 0
 
 STAGE_2_LOAD_SEGMENT        equ 0x0
 STAGE_2_LOAD_OFFSET         equ 0x500
 
-times 510-($-$$) db 0
+times 510-30-($-$$) db 0
+
+stage_2_location:
+    times 30 db 0
+
 db 0x55, 0xAA
 
 misc_buffer:
