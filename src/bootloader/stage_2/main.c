@@ -14,7 +14,7 @@ char *kernel = (char *)MEMORY_KERNEL_ADDRESS;
 typedef void (*KernelStart)();
 
 void ASMCALL cstart(uint16_t bootDrive) {
-    clearScreen();
+    VGA_ClearScreen();
 
     DISK disk;
     if (!DISK_Initialize(&disk, bootDrive)) {
@@ -37,21 +37,13 @@ void ASMCALL cstart(uint16_t bootDrive) {
     }
     FAT_Close(kernelFd);
 
-    // graphics
-    VbeModeInfo *vbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
+    // kernel doesnt support graphics yet
+    goto run_kernel;
+
     if (!VBE_Initialize()) {
         puts("Failed to initialize graphics.\r\n");
         return;
     }
-
-    FONT_Character tempCharacter = EMPTY_CHARACTER;
-    for (uint8_t x = 0; x < 12; ++x) {
-        tempCharacter.typed.character = "Hello world!"[x];
-        FONT_WriteCharacter(vbeModeInfo, tempCharacter);
-    }
-
-    for (;;)
-        ;
 
 run_kernel:
     KernelStart kernelStart = (KernelStart)kernel;
