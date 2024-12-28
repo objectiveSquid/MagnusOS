@@ -1,4 +1,6 @@
 #pragma once
+
+#include "memdefs.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -53,3 +55,5 @@ typedef struct {
 bool VBE_GetControllerInfo(VbeInfoBlock *infoOutput);
 bool VBE_GetModeInfo(uint16_t mode, VbeModeInfo *infoOutput);
 bool VBE_SetVideoMode(uint16_t mode);
+bool VBE_Initialize();
+bool VBE_IsInitialized();

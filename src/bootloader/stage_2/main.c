@@ -1,5 +1,6 @@
 #include "disk.h"
 #include "fat.h"
+#include "graphics.h"
 #include "memdefs.h"
 #include "memory.h"
 #include "stdio.h"
@@ -11,14 +12,6 @@ char *kernelLoadBuffer = (char *)MEMORY_LOAD_KERNEL_BUFFER;
 char *kernel = (char *)MEMORY_KERNEL_ADDRESS;
 
 typedef void (*KernelStart)();
-
-void writePixel(VbeModeInfo *vbeModeInfo, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b) {
-    uint8_t *pixelPointer = ((uint8_t *)(vbeModeInfo->framebuffer + (y * vbeModeInfo->pitch + x * (vbeModeInfo->bitsPerPixel >> 3))));
-    // assuming 8 bit color
-    pixelPointer[(16 - vbeModeInfo->redPosition) >> 3] = r;
-    pixelPointer[(16 - vbeModeInfo->greenPosition) >> 3] = g;
-    pixelPointer[(16 - vbeModeInfo->bluePosition) >> 3] = b;
-}
 
 void ASMCALL cstart(uint16_t bootDrive) {
     clearScreen();
@@ -44,8 +37,21 @@ void ASMCALL cstart(uint16_t bootDrive) {
     }
     FAT_Close(kernelFd);
 
-    // skip the graphics
-    // VBE_Initialize();
+    // graphics
+    VbeModeInfo *vbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
+    if (!VBE_Initialize()) {
+        puts("Failed to initialize graphics.\r\n");
+        return;
+    }
+
+    FONT_Character tempCharacter = EMPTY_CHARACTER;
+    for (uint8_t x = 0; x < 12; ++x) {
+        tempCharacter.typed.character = "Hello world!"[x];
+        FONT_WriteCharacter(vbeModeInfo, tempCharacter);
+    }
+
+    for (;;)
+        ;
 
 run_kernel:
     KernelStart kernelStart = (KernelStart)kernel;

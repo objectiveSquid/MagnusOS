@@ -15,7 +15,8 @@
 // 0x00020000 - 0x00030000 - bootloader stage 2
 
 #define MEMORY_VESA_INFO ((void *)0x00030000)
-#define MEMORY_VESA_MODE_INFO ((void *)0x00030200) // the previous struct is 512 bytes (0x200 in hex)
+#define MEMORY_VESA_MODE_INFO ((void *)0x00030200)   // the previous struct is 512 bytes (0x200 in hex)
+#define SCREEN_CHARACTER_BUFFER ((void *)0x00030400) // the previous struct is 512 bytes (0x200 in hex) (this is up to 0x7E900 in hex)
 
 // 0x00030000 - 0x00080000 - free
 
