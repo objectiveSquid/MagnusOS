@@ -1,5 +1,6 @@
 #include "disk.h"
 #include "fat.h"
+#include "font.h"
 #include "graphics.h"
 #include "memdefs.h"
 #include "memory.h"

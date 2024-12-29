@@ -5,6 +5,18 @@
 
 static VbeModeInfo *g_VbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
 
+void GRAPHICS_WriteScalePixel(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t scale) {
+    if (!VBE_VerifyInitialized()) {
+        return;
+    }
+
+    x = x * scale;
+    y = y * scale;
+    for (uint8_t relx = 0; relx < scale; ++relx)
+        for (uint8_t rely = 0; rely < scale; ++rely)
+            GRAPHICS_WritePixel(x + relx, y + rely, r, g, b);
+}
+
 void GRAPHICS_WritePixel(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b) {
     if (!VBE_VerifyInitialized()) {
         return;

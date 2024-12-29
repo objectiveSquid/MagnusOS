@@ -23,8 +23,8 @@ void putc(char character) {
 
     if (graphics) {
         fontCharacter.typed.character = character;
-        screenWidth = SCREEN_CHARACTER_WIDTH(g_VbeModeInfo);
-        screenHeight = SCREEN_CHARACTER_HEIGHT(g_VbeModeInfo);
+        screenWidth = FONT_ScreenCharacterWidth();
+        screenHeight = FONT_ScreenCharacterHeight();
     } else {
         screenWidth = VGA_TEXT_SCREEN_WIDTH;
         screenHeight = VGA_TEXT_SCREEN_HEIGHT;
