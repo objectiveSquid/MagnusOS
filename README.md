@@ -19,7 +19,7 @@ make build_toolchain
 ```sh
 make
 ```
-### Debugging with Bochs
+### Debugging with Bochs (Not currently working!)
   - bochs
   - bochs-x
   - bochsbios
