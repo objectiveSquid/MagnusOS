@@ -2,17 +2,18 @@
 #include "i8259.h"
 #include "io.h"
 #include "pic.h"
+#include "ps2.h"
 #include "stdio.h"
 #include "util/arrays.h"
 #include <stddef.h>
 
 #define PIC_REMAP_OFFSET 0x20
 
-IRQHandler g_IRQHandlers[16];
+IRQHandler g_IRQHandlers[16] = {NULL};
 static const PICDriver *g_Driver = NULL;
 
 void i686_IRQ_Handler(Registers *registers) {
-    irq_t irq = registers->interrupt - PIC_REMAP_OFFSET;
+    int irq = registers->interrupt - PIC_REMAP_OFFSET;
 
     if (g_IRQHandlers[irq] != NULL)
         g_IRQHandlers[irq](registers);
@@ -45,6 +46,14 @@ void i686_IRQ_Initialize() {
     i686_EnableInterrupts();
 }
 
-void i686_IRQ_RegisterHandler(irq_t irq, IRQHandler handler) {
+const PICDriver *i686_IRQ_GetDriver() {
+    return g_Driver;
+}
+
+void i686_IRQ_RegisterHandler(int irq, IRQHandler handler) {
     g_IRQHandlers[irq] = handler;
+}
+
+void i686_IRQ_UnregisterHandler(int irq) {
+    g_IRQHandlers[irq] = NULL;
 }

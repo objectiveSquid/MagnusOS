@@ -2,6 +2,7 @@
 #include "arch/i686/misc.h"
 #include "hal/hal.h"
 #include "memory.h"
+#include "ps2.h"
 #include "stdio.h"
 #include <stdint.h>
 
@@ -15,6 +16,10 @@ void __attribute__((section(".entry"))) start() {
     clearScreen();
 
     printf("Hello from kernel!\n");
+
+    PS2_Initialize();
+    for (;;)
+        ;
 
 end:
     i686_Halt();
