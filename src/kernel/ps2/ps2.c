@@ -269,7 +269,6 @@ bool isScancodeHeld(uint16_t scancode) {
 }
 
 void setScancodeHeld(uint16_t scancode, bool held) {
-    printf("setScancodeHeld(%x, %x)\n", scancode, held);
     if (held) {
         g_ScancodesHeld[scancode / 8] |= (1 << (scancode % 8));
     } else {
