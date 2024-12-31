@@ -2,7 +2,7 @@
 #include "arch/i686/misc.h"
 #include "hal/hal.h"
 #include "memory.h"
-#include "ps2.h"
+#include "ps2/ps2.h"
 #include "stdio.h"
 #include <stdint.h>
 

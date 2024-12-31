@@ -3,6 +3,7 @@
 #include "ps2.h"
 #include "arch/i686/io.h"
 #include "arch/i686/irq.h"
+#include "scancode.h"
 #include "stdbool.h"
 #include "stdio.h"
 #include "util/binary.h"
@@ -29,11 +30,20 @@
 #define PS2_CMD_INTERFACE_TEST_PORT_2 0xA9
 #define PS2_CMD_WRITE_TO_PORT_2 0xD4
 
-// other
+// ps2 keyboard response codes
+#define PS2_KEY_DETECTION_ERROR 0x00
+#define PS2_RESET_SUCCESS 0xAA
+#define PS2_ECHO_RESPONSE 0xEE
 #define PS2_ACK 0xFA
 #define PS2_RESEND 0xFE
+#define PS2_KEY_DETECTION_ERROR_2 0xFF
+
+// other
 #define PS2_NEW_KEYBOARD 0x61
-#define PS2_RESET_SUCCESS 0xAA
+#define PS2_SCANCODE_EXTENDED 0xE0
+#define PS2_SCANCODE_KEY_RELEASE 0xF0
+#define PS2_SCANCODE_SHORT_PRINT_SCREEN 0xE012
+#define PS2_SCANCODE_SHORT_PAUSE 0xE114
 
 typedef struct {
     const uint8_t scancode;
@@ -55,11 +65,11 @@ uint8_t makePS2LedState(bool numLock, bool capsLock, bool scrollLock) {
     uint8_t output = 0;
 
     if (scrollLock)
-        output |= 0b1;
+        FLAG_SET(output, 0b1);
     if (numLock)
-        output |= 0b10;
+        FLAG_SET(output, 0b10);
     if (capsLock)
-        output |= 0b100;
+        FLAG_SET(output, 0b100);
 
     return output;
 }
@@ -208,8 +218,7 @@ bool isScancodeHeld(uint16_t scancode) {
 }
 
 void setScancodeHeld(uint16_t scancode, bool held) {
-    if (scancode & 0xE000) { // extended scancode
-    }
+    printf("setScancodeHeld(%x, %x)\n", scancode, held);
     if (held) {
         g_ScancodesHeld[scancode / 8] |= (1 << (scancode % 8));
     } else {
@@ -279,7 +288,7 @@ uint8_t runPS2InterfaceTests(bool isDualChannel) {
     return output;
 }
 
-void PS2Set1Handler(Registers *registers) {
+void PS2Set2Handler(Registers *registers) {
     if (g_SkipPS2Interrupts) {
         i686_InByte(PS2_DATA_PORT); // ignore
         --g_SkipPS2Interrupts;
@@ -299,45 +308,53 @@ void PS2Set1Handler(Registers *registers) {
     case PS2_RESEND:
         puts("Spillover PS2 command resend response\n");
         return;
+    case PS2_KEY_DETECTION_ERROR:
+    case PS2_KEY_DETECTION_ERROR_2:
+        puts("Spillover PS2 key detection error or internal buffer overrun.\n");
+        return;
+    case PS2_ECHO_RESPONSE:
+        puts("Spillover PS2 echo response\n");
+        return;
+    case PS2_RESET_SUCCESS:
+        puts("Spillover PS2 reset success response\n");
+        return;
     }
 
-    // extended scancode check
-    if (g_ExtendedScancode) { // extended scancode now
-        scancode |= (uint16_t)0xE000;
-        g_ExtendedScancode = false;
-    } else if (scancode == 0xE0) { // extended scancode incoming
-        g_ExtendedScancode = true;
-        return;
-    } else if (scancode == 0xE1) {     // always "pause pressed"
-        setScancodeHeld(0xE145, true); // there is no "pause released" scancode, the os will deal with it
-        // printf("Pressed: %x\n", 0xE145);
-        g_SkipPS2Interrupts = 5;
-        return;
-    } else {
-        goto after_extended_scancode_check;
-    }
-
-    // special extended codes (print screen released/pressed)
     switch (scancode) {
-    case 0xE02A:
-        setScancodeHeld(0xE02A, true);
-        // printf("Pressed: %x\n", 0xE12A);
-        g_SkipPS2Interrupts = 2;
+    case 0xE1:                                           // always "pause pressed"
+        setScancodeHeld(PS2_SCANCODE_SHORT_PAUSE, true); // there is no "pause released" scancode, the os will deal with it
+        g_SkipPS2Interrupts = 7;                         // skip next 7 interrupts
         return;
-    case 0xE145:
-        setScancodeHeld(0xE02A, false);
-        // printf("Released: %x\n", 0xE12A);
-        g_SkipPS2Interrupts = 2;
-        return;
-    }
+    case PS2_SCANCODE_EXTENDED:                                  // extended scancode
+        scancode = (scancode << 8) | i686_InByte(PS2_DATA_PORT); // read next byte
+        g_SkipPS2Interrupts = 1;
 
-after_extended_scancode_check:
-    if (isScancodeHeld(scancode - 0x80) && scancode > 0x80) {
-        // printf("Released: %x\n", scancode - 0x80);
-        setScancodeHeld(scancode - 0x80, false);
-    } else {
-        // printf("Pressed: %x\n", scancode);
+        if ((uint8_t)scancode == PS2_SCANCODE_KEY_RELEASE) { // extended scancode release
+            scancode &= ~PS2_SCANCODE_KEY_RELEASE;
+            scancode |= i686_InByte(PS2_DATA_PORT);
+            if ((uint8_t)scancode == 0x7C) { // always "print screen released"
+                g_SkipPS2Interrupts = 3;
+                setScancodeHeld(PS2_SCANCODE_SHORT_PRINT_SCREEN, false);
+            } else {
+                setScancodeHeld(scancode, false);
+            }
+        } else {
+            if ((uint8_t)scancode == 0x12) { // always "print screen pressed"
+                g_SkipPS2Interrupts = 2;
+                setScancodeHeld(PS2_SCANCODE_SHORT_PRINT_SCREEN, true);
+            } else {
+                setScancodeHeld(scancode, true);
+            }
+        }
+        return;
+    case PS2_SCANCODE_KEY_RELEASE: // single byte scancode release
+        setScancodeHeld(i686_InByte(PS2_DATA_PORT), false);
+        g_SkipPS2Interrupts = 1;
+        return;
+
+    default: // single byte scancode press
         setScancodeHeld(scancode, true);
+        return;
     }
 }
 
@@ -358,13 +375,13 @@ bool PS2_Initialize() {
     setPS2ControllerConfiguration(usingPort1, usingPort2);
     resetPS2Keyboard(usingPort1, usingPort2); // error probably not critical, so not handling it
 
-    setPS2ScancodeSet(1);
+    setPS2ScancodeSet(2);
     if (usingPort1) {
-        i686_IRQ_RegisterHandler(PS2_PORT_1_IRQ, PS2Set1Handler);
+        i686_IRQ_RegisterHandler(PS2_PORT_1_IRQ, PS2Set2Handler);
         i686_IRQ_GetDriver()->unmask(PS2_PORT_1_IRQ);
     }
     if (usingPort2) {
-        i686_IRQ_RegisterHandler(PS2_PORT_2_IRQ, PS2Set1Handler);
+        i686_IRQ_RegisterHandler(PS2_PORT_2_IRQ, PS2Set2Handler);
         i686_IRQ_GetDriver()->unmask(PS2_PORT_2_IRQ);
     }
 
