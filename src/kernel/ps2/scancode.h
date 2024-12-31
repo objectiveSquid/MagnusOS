@@ -120,7 +120,7 @@ typedef enum {
     END = 0xE069,
     CURSOR_LEFT = 0xE06B,
     HOME = 0xE06C,
-    INSER = 0xE070,
+    INSERT = 0xE070,
     DELETE = 0xE071,
     CURSOR_DOWN = 0xE072,
     CURSOR_RIGHT = 0xE074,
