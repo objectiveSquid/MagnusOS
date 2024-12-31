@@ -45,33 +45,22 @@
 #define PS2_SCANCODE_SHORT_PRINT_SCREEN 0xE012
 #define PS2_SCANCODE_SHORT_PAUSE 0xE114
 
-typedef struct {
-    const uint8_t scancode;
-    const uint8_t extension;
-    bool held;
-} PS2_Set1Scancode;
+typedef enum {
+    LED_SET_IGNORE = 0,
+    LED_SET_ON = 1,
+    LED_SET_OFF = 2,
+    LED_SET_TOGGLE = 3,
+} SetLEDNumber;
 
 static bool g_ExtendedScancode = false;
 static bool g_KeyboardDetected = false;
+static uint8_t g_LEDState = 0;
 static uint8_t g_SkipPS2Interrupts = 0;
 static uint8_t g_ScancodesHeld[(256 / 8) * 2] = {0}; // scancodes set 1 (1 byte and extended (up to 2 bytes index))
 
 void clearPS2Buffer() {
     while (i686_InByte(PS2_CMD_PORT) & 1)
         i686_InByte(PS2_DATA_PORT);
-}
-
-uint8_t makePS2LedState(bool numLock, bool capsLock, bool scrollLock) {
-    uint8_t output = 0;
-
-    if (scrollLock)
-        FLAG_SET(output, 0b1);
-    if (numLock)
-        FLAG_SET(output, 0b10);
-    if (capsLock)
-        FLAG_SET(output, 0b100);
-
-    return output;
 }
 
 void waitForPS2Controller() {
@@ -188,6 +177,68 @@ bool setPS2LEDState(uint8_t ledState) {
     if (!getPS2Success()) {
         puts("Could not write LED state to PS2 keyboard\n");
         return false;
+    }
+
+    g_LEDState = ledState;
+
+    return true;
+}
+
+bool addPS2LEDState(SetLEDNumber scrollLock, SetLEDNumber numLock, SetLEDNumber capsLock) {
+    uint8_t oldLEDState = g_LEDState;
+
+    if (scrollLock == LED_SET_ON)
+        FLAG_SET(g_LEDState, 0b1);
+    if (scrollLock == LED_SET_OFF)
+        FLAG_UNSET(g_LEDState, 0b1);
+    if (scrollLock == LED_SET_TOGGLE)
+        if (g_LEDState & 0b1)
+            FLAG_UNSET(g_LEDState, 0b1);
+        else
+            FLAG_SET(g_LEDState, 0b1);
+
+    if (numLock == LED_SET_ON)
+        FLAG_SET(g_LEDState, 0b10);
+    if (numLock == LED_SET_OFF)
+        FLAG_UNSET(g_LEDState, 0b10);
+    if (numLock == LED_SET_TOGGLE)
+        if (g_LEDState & 0b10)
+            FLAG_UNSET(g_LEDState, 0b10);
+        else
+            FLAG_SET(g_LEDState, 0b10);
+
+    if (capsLock == LED_SET_ON)
+        FLAG_SET(g_LEDState, 0b100);
+    if (capsLock == LED_SET_OFF)
+        FLAG_UNSET(g_LEDState, 0b100);
+    if (capsLock == LED_SET_TOGGLE)
+        if (g_LEDState & 0b100)
+            FLAG_UNSET(g_LEDState, 0b100);
+        else
+            FLAG_SET(g_LEDState, 0b100);
+
+    if (!setPS2LEDState(g_LEDState)) {
+        g_LEDState = oldLEDState; // revert on error
+        return false;
+    }
+
+    return true;
+}
+
+bool set2CheckPS2LEDState(uint8_t scancode, bool press) {
+    bool value;
+    if (press)
+        value = LED_SET_ON;
+    else
+        value = LED_SET_OFF;
+
+    switch (scancode) {
+    case SET_2_SCROLLLOCK:
+        return addPS2LEDState(value, LED_SET_IGNORE, LED_SET_IGNORE);
+    case SET_2_NUMLOCK:
+        return addPS2LEDState(LED_SET_IGNORE, value, LED_SET_IGNORE);
+    case SET_2_CAPSLOCK:
+        return addPS2LEDState(LED_SET_IGNORE, LED_SET_IGNORE, value);
     }
 
     return true;
@@ -348,11 +399,14 @@ void PS2Set2Handler(Registers *registers) {
         }
         return;
     case PS2_SCANCODE_KEY_RELEASE: // single byte scancode release
-        setScancodeHeld(i686_InByte(PS2_DATA_PORT), false);
+        scancode = i686_InByte(PS2_DATA_PORT);
+        set2CheckPS2LEDState(scancode, false);
+        setScancodeHeld(scancode, false);
         g_SkipPS2Interrupts = 1;
         return;
 
     default: // single byte scancode press
+        set2CheckPS2LEDState(scancode, true);
         setScancodeHeld(scancode, true);
         return;
     }
