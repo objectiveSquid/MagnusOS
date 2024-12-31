@@ -35,9 +35,10 @@ always:
 	mkdir -p $(BUILD_DIR)/kernel/c
 	mkdir -p $(BUILD_DIR)/kernel/c/hal
 	mkdir -p $(BUILD_DIR)/kernel/c/arch/i686
+	mkdir -p $(BUILD_DIR)/kernel/c/ps2
+	mkdir -p $(BUILD_DIR)/kernel/c/util
 	mkdir -p $(BUILD_DIR)/kernel/asm
 	mkdir -p $(BUILD_DIR)/kernel/asm/arch/i686
-	mkdir -p $(BUILD_DIR)/kernel/c/ps2
 
 clean:
 	rm -f $(BUILD_DIR)/kernel.bin

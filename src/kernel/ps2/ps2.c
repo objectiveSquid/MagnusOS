@@ -6,6 +6,7 @@
 #include "scancode.h"
 #include "stdbool.h"
 #include "stdio.h"
+#include "util/arrays.h"
 #include "util/binary.h"
 
 #define PS2_CMD_PORT 0x64
@@ -29,6 +30,9 @@
 #define PS2_CMD_INTERFACE_TEST_PORT_1 0xAB
 #define PS2_CMD_INTERFACE_TEST_PORT_2 0xA9
 #define PS2_CMD_WRITE_TO_PORT_2 0xD4
+
+// ps2 controller response codes
+#define PS2_SELF_TEST_SUCCESS 0x55
 
 // ps2 keyboard response codes
 #define PS2_KEY_DETECTION_ERROR 0x00
@@ -56,7 +60,7 @@ static bool g_ExtendedScancode = false;
 static bool g_KeyboardDetected = false;
 static uint8_t g_LEDState = 0;
 static uint8_t g_SkipPS2Interrupts = 0;
-static uint8_t g_ScancodesHeld[(256 / 8) * 2] = {0}; // scancodes set 1 (1 byte and extended (up to 2 bytes index))
+static uint8_t g_ScancodesHeld[((125 + 8) / 8)] = {0}; // add 8 then divide by 8 to round up
 
 void clearPS2Buffer() {
     while (i686_InByte(PS2_CMD_PORT) & 1)
@@ -265,22 +269,33 @@ bool setPS2ScancodeSet(uint8_t scancodeSet) {
 }
 
 bool isScancodeHeld(uint16_t scancode) {
-    return g_ScancodesHeld[scancode / 8] & (1 << (scancode % 8));
+    int64_t bitIndex = findElementInArray(SCANCODE_SET_2_INDEXES, ARRAY_SIZE(SCANCODE_SET_2_INDEXES), scancode);
+    if (bitIndex == -1) {
+        printf("Unknown scancode %x (on check)\n", scancode);
+        return false;
+    }
+
+    return g_ScancodesHeld[bitIndex] & (1 << (bitIndex % 8));
 }
 
 void setScancodeHeld(uint16_t scancode, bool held) {
-    if (held) {
-        g_ScancodesHeld[scancode / 8] |= (1 << (scancode % 8));
-    } else {
-        g_ScancodesHeld[scancode / 8] &= ~(1 << (scancode % 8));
+    int64_t bitIndex = findElementInArray(SCANCODE_SET_2_INDEXES, ARRAY_SIZE(SCANCODE_SET_2_INDEXES), scancode);
+    if (bitIndex == -1) {
+        printf("Unknown scancode %x (on set)\n", scancode);
+        return;
     }
+
+    if (held)
+        g_ScancodesHeld[bitIndex] |= (1 << (bitIndex % 8));
+    else
+        g_ScancodesHeld[bitIndex / 8] &= ~(1 << (bitIndex % 8));
 }
 
 bool runPS2ControllerSelfTest() {
     waitForPS2Controller();
     i686_OutByte(PS2_CMD_PORT, PS2_CMD_CONTROLLER_SELF_TEST);
 
-    if (i686_InByte(PS2_DATA_PORT) != 0x55) {
+    if (i686_InByte(PS2_DATA_PORT) != PS2_SELF_TEST_SUCCESS) {
         puts("PS2 controller self test failed\n");
         return false;
     }
