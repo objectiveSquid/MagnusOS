@@ -361,7 +361,7 @@ void PS2Set2Handler(Registers *registers) {
         return;
     case PS2_KEY_DETECTION_ERROR:
     case PS2_KEY_DETECTION_ERROR_2:
-        puts("Spillover PS2 key detection error or internal buffer overrun.\n");
+        puts("Spillover PS2 key detection error or internal buffer overrun response.\n");
         return;
     case PS2_ECHO_RESPONSE:
         puts("Spillover PS2 echo response\n");
@@ -413,6 +413,7 @@ void PS2Set2Handler(Registers *registers) {
 }
 
 bool PS2_Initialize() {
+    // controller initialization
     disablePS2ControllerPorts(true, true); // true, true = port 1 disabled, port 2 disabled
     clearPS2Buffer();
     setPS2ControllerConfiguration(false, false); // false, false = disable irq1, disable irq2
@@ -429,6 +430,8 @@ bool PS2_Initialize() {
     setPS2ControllerConfiguration(usingPort1, usingPort2);
     resetPS2Keyboard(usingPort1, usingPort2); // error probably not critical, so not handling it
 
+    // keyboard initialization
+    setPS2LEDState(0); // error not critical, so not handling it
     setPS2ScancodeSet(2);
     if (usingPort1) {
         i686_IRQ_RegisterHandler(PS2_PORT_1_IRQ, PS2Set2Handler);
@@ -438,8 +441,6 @@ bool PS2_Initialize() {
         i686_IRQ_RegisterHandler(PS2_PORT_2_IRQ, PS2Set2Handler);
         i686_IRQ_GetDriver()->unmask(PS2_PORT_2_IRQ);
     }
-
-    setPS2LEDState(0); // error not critical, so not handling it
 
     return true;
 }
