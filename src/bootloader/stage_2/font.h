@@ -3,7 +3,7 @@
 #include "vbe.h"
 #include <stdint.h>
 
-#define EMPTY_CHARACTER {.typed.character = ' ', .typed.r = 255, .typed.g = 255, .typed.b = 255}
+#define EMPTY_CHARACTER {.typed.character = 0, .typed.r = 255, .typed.g = 255, .typed.b = 255}
 
 typedef union {
     uint32_t data;
