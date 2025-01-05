@@ -16,13 +16,13 @@ void memset(void *pointer, char value, uint16_t amount) {
         charPointer[i] = value;
 }
 
-bool memcmp(const void *pointer1, const void *pointer2, uint16_t amount) {
+int memcmp(const void *pointer1, const void *pointer2, uint16_t amount) {
     const char *charPointer1 = (const char *)pointer1;
     const char *charPointer2 = (const char *)pointer2;
 
     for (uint16_t i = 0; i < amount; ++i)
         if (charPointer1[i] != charPointer2[i])
-            return false;
+            return 1;
 
-    return true;
+    return 0;
 }

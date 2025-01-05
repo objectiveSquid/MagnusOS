@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
     }
 
     if (!readRootDirectory(disk)) {
-        fprintf(stderr, "Failed to read root directorGoogley\n");
+        fprintf(stderr, "Failed to read root directory\n");
         free(g_fat);
         free(g_rootDirectory);
         return EXIT_FAILURE;

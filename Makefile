@@ -5,6 +5,7 @@ include build-scripts/config.mk
 all: floppy_image
 
 include build-scripts/toolchain.mk
+include build-scripts/fonts.mk
 
 export PATH := $(PATH):$(TOOLCHAIN_PREFIX)/bin
 
@@ -12,14 +13,15 @@ export PATH := $(PATH):$(TOOLCHAIN_PREFIX)/bin
 # Floppy image
 #
 floppy_image: $(BUILD_DIR)/main_floppy.img
-$(BUILD_DIR)/main_floppy.img: bootloader kernel
+$(BUILD_DIR)/main_floppy.img: bootloader kernel generate_fonts
 	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
 	mkfs.fat -F 12 -n "MagnusOS" $(BUILD_DIR)/main_floppy.img
 	dd if=$(BUILD_DIR)/bootloader_stage_1.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
 	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/bootloader_stage_2.bin "::stage2.bin"
 	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
-	mmd -i $(BUILD_DIR)/main_floppy.img "::info"
-	mcopy -i $(BUILD_DIR)/main_floppy.img README.md "::info/readme.md"
+	mkdir -p "$(BUILD_DIR)/files/info"
+	cp README.md "$(BUILD_DIR)/files/info/readme.md"
+	mcopy -s -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/files/* "::"
 
 #
 # Bootloader
@@ -33,7 +35,7 @@ $(BUILD_DIR)/bootloader_stage_1.bin: always
 
 # Stage 2
 bootloader_stage_2: $(BUILD_DIR)/bootloader_stage_2.bin
-$(BUILD_DIR)/bootloader_stage_2.bin: always
+$(BUILD_DIR)/bootloader_stage_2.bin: always generate_fonts
 	$(MAKE) -C src/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #

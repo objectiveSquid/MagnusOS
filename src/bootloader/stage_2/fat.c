@@ -2,9 +2,9 @@
 #include "disk.h"
 #include "memdefs.h"
 #include "memory.h"
-#include "stdio.h"
 #include "string.h"
 #include "utility.h"
+#include "visual/stdio.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -252,7 +252,7 @@ bool FAT_FindFile(DISK *disk, FAT_File *file, const char *name, FAT_DirectoryEnt
             fatName[i + 8] = toUpper(extension[i + 1]);
 
     while (FAT_ReadEntry(disk, file, &entry)) {
-        if (memcmp(fatName, entry.name, 11)) {
+        if (memcmp(fatName, entry.name, 11) == 0) {
             *entryOutput = entry;
             return true;
         }
@@ -275,12 +275,12 @@ FAT_File *FAT_Open(DISK *disk, const char *path) {
         const char *splitted = strchr(path, '/');
         if (splitted != NULL) {
             memcpy(name, path, splitted - path);
-            name[splitted - path + 1] = '\0';
+            name[splitted - path] = '\0';
             path = splitted + 1;
         } else {
             size_t length = strlen(path);
             memcpy(name, path, length);
-            name[length + 1] = '\0';
+            name[length] = '\0';
             path += length;
             isLast = true;
         }

@@ -30,6 +30,14 @@ void VGA_SetCursurPosition(uint16_t x, uint16_t y) {
     x86_OutByte(0x3D5, (uint8_t)((relativePosition >> 8) & 0xFF)); // upper position byte
 }
 
+void VGA_PutCharacter(uint16_t x, uint16_t y, char character) {
+    g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x)] = character;
+}
+
+void VGA_PutColor(uint16_t x, uint16_t y, uint8_t color) {
+    g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x) + 1] = color;
+}
+
 void VGA_ScrollBack(uint16_t lineCount) {
     for (uint16_t y = lineCount; y < SCREEN_HEIGHT; ++y)
         for (uint16_t x = 0; x < SCREEN_WIDTH; ++x) {
@@ -44,14 +52,6 @@ void VGA_ScrollBack(uint16_t lineCount) {
         }
 
     g_ScreenY -= lineCount;
-}
-
-void VGA_PutCharacter(uint16_t x, uint16_t y, char character) {
-    g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x)] = character;
-}
-
-void VGA_PutColor(uint16_t x, uint16_t y, uint8_t color) {
-    g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x) + 1] = color;
 }
 
 void VGA_ClearScreen() {

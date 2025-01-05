@@ -1,5 +1,5 @@
 #pragma once
-#include "vbe.h"
+#include "visual/vbe.h"
 #include <stdbool.h>
 #include <stdint.h>
 

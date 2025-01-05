@@ -13,7 +13,8 @@ bx_enh_dbg.ini
 # Build toolchain
 .toolchain
 
-# Generated ISR files
+# Generated files
 src/kernel/arch/i686/isr_gen.c
 src/kernel/arch/i686/isr_gen.h
 src/kernel/arch/i686/isr_gen.inc
+src/bootloader/stage_2/visual/rasterfont_sizes.h

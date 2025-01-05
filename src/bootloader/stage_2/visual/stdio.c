@@ -16,6 +16,11 @@
 static VbeModeInfo *g_VbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
 static uint16_t g_CursorPosition[2] = {0, 0};
 
+void setCursorPosition(uint16_t x, uint16_t y) {
+    g_CursorPosition[0] = x;
+    g_CursorPosition[1] = y;
+}
+
 void putc(char character) {
     bool graphics = VBE_IsInitialized();
     FONT_Character fontCharacter = EMPTY_CHARACTER;
