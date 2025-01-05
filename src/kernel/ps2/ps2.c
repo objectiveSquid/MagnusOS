@@ -192,34 +192,25 @@ bool addPS2LEDState(SetLEDNumber scrollLock, SetLEDNumber numLock, SetLEDNumber 
     uint8_t oldLEDState = g_LEDState;
 
     if (scrollLock == LED_SET_ON)
-        FLAG_SET(g_LEDState, 0b1);
+        BIT_SET(g_LEDState, 0);
     if (scrollLock == LED_SET_OFF)
-        FLAG_UNSET(g_LEDState, 0b1);
+        BIT_UNSET(g_LEDState, 0);
     if (scrollLock == LED_SET_TOGGLE)
-        if (g_LEDState & 0b1)
-            FLAG_UNSET(g_LEDState, 0b1);
-        else
-            FLAG_SET(g_LEDState, 0b1);
+        BIT_TOGGLE(g_LEDState, 0);
 
     if (numLock == LED_SET_ON)
-        FLAG_SET(g_LEDState, 0b10);
+        BIT_SET(g_LEDState, 1);
     if (numLock == LED_SET_OFF)
-        FLAG_UNSET(g_LEDState, 0b10);
+        BIT_UNSET(g_LEDState, 1);
     if (numLock == LED_SET_TOGGLE)
-        if (g_LEDState & 0b10)
-            FLAG_UNSET(g_LEDState, 0b10);
-        else
-            FLAG_SET(g_LEDState, 0b10);
+        BIT_TOGGLE(g_LEDState, 1);
 
     if (capsLock == LED_SET_ON)
-        FLAG_SET(g_LEDState, 0b100);
+        BIT_SET(g_LEDState, 2);
     if (capsLock == LED_SET_OFF)
-        FLAG_UNSET(g_LEDState, 0b100);
+        BIT_UNSET(g_LEDState, 2);
     if (capsLock == LED_SET_TOGGLE)
-        if (g_LEDState & 0b100)
-            FLAG_UNSET(g_LEDState, 0b100);
-        else
-            FLAG_SET(g_LEDState, 0b100);
+        BIT_TOGGLE(g_LEDState, 2);
 
     if (!setPS2LEDState(g_LEDState)) {
         g_LEDState = oldLEDState; // revert on error
@@ -311,14 +302,14 @@ bool checkPS2ControllerDualChannel() {
     i686_OutByte(PS2_CMD_PORT, PS2_CMD_READ_CONFIG);
 
     uint8_t config = i686_InByte(PS2_DATA_PORT);
-    if (config & 0b100000)
+    if (BIT_IS_SET(config, 5))
         return false; // not a dual channel
 
     waitForPS2Controller();
     i686_OutByte(PS2_CMD_PORT, PS2_CMD_DISABLE_SECOND_PORT);
 
-    FLAG_UNSET(config, 0b10);     // disable irq for port 2
-    FLAG_UNSET(config, 0b100000); // enable clock for port 2
+    BIT_UNSET(config, 1); // disable irq for port 2
+    BIT_UNSET(config, 5); // enable clock for port 2
 
     return true;
 }
@@ -330,9 +321,9 @@ uint8_t runPS2InterfaceTests(bool isDualChannel) {
     i686_OutByte(PS2_CMD_PORT, PS2_CMD_INTERFACE_TEST_PORT_1);
 
     if (!i686_InByte(PS2_DATA_PORT) == 0x00)
-        FLAG_UNSET(output, 0b1);
+        BIT_UNSET(output, 0);
     else
-        FLAG_SET(output, 0b1);
+        BIT_SET(output, 0);
 
     if (!isDualChannel) {
         if (!output)
@@ -344,9 +335,9 @@ uint8_t runPS2InterfaceTests(bool isDualChannel) {
     i686_OutByte(PS2_CMD_PORT, PS2_CMD_INTERFACE_TEST_PORT_2);
 
     if (!i686_InByte(PS2_DATA_PORT) == 0x00)
-        FLAG_UNSET(output, 0b10);
+        BIT_UNSET(output, 1);
     else
-        FLAG_SET(output, 0b10);
+        BIT_SET(output, 1);
 
     if (!output)
         puts("PS2 interface test failed (0 / 2)\n");
@@ -438,8 +429,8 @@ bool PS2_Initialize() {
     uint8_t interfaceTestResult = runPS2InterfaceTests(isDualChannel);
     if (!interfaceTestResult)
         return false;
-    bool usingPort1 = interfaceTestResult & 0b1;
-    bool usingPort2 = interfaceTestResult & 0b10;
+    bool usingPort1 = BIT_IS_SET(interfaceTestResult, 0);
+    bool usingPort2 = BIT_IS_SET(interfaceTestResult, 1);
     enablePS2ControllerPorts(usingPort1, usingPort2); // enable working ports
     setPS2ControllerConfiguration(usingPort1, usingPort2);
     resetPS2Keyboard(usingPort1, usingPort2); // error probably not critical, so not handling it
