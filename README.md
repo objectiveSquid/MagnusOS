@@ -25,7 +25,7 @@ For building the OS you will need to set up a crosscompiler, this is done in `bu
   - pip3 (python packages for scripts)
 ```sh
 sudo apt-get update
-sudo apt-get install make nasm mtools python3
+sudo apt-get install make nasm wget mtools python3 python3-pip
 make build_toolchain
 ```
 ```sh
