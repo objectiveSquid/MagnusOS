@@ -1,6 +1,5 @@
 #pragma once
 
-#include "irq.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -17,7 +16,7 @@ typedef struct {
     const char *name;
 
     // send end of interrupt
-    void (*sendEndOfInterrupt)(irq_t irq);
+    void (*sendEndOfInterrupt)(int irq);
 
     // check if device exists
     bool (*probe)();
@@ -29,7 +28,7 @@ typedef struct {
     void (*initialize)(uint8_t offsetPic1, uint8_t offsetPic2, bool autoEndOfInterrupt);
 
     // unmask interrupt
-    void (*unmask)(irq_t irq);
+    void (*unmask)(int irq);
     // mask interrupt
-    void (*mask)(irq_t irq);
+    void (*mask)(int irq);
 } PICDriver;

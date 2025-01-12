@@ -89,17 +89,17 @@ void i8259_Configure(uint8_t offsetPic_1, uint8_t offsetPic_2, bool autoEndOfInt
     i8259_Disable();
 }
 
-void i8259_SendEndOfInterrupt(irq_t irq) {
+void i8259_SendEndOfInterrupt(int irq) {
     if (irq >= 8)
         i686_OutByte(PIC_2_COMMAND_PORT, PIC_CMD_END_OF_INTERRUPT);
     i686_OutByte(PIC_1_COMMAND_PORT, PIC_CMD_END_OF_INTERRUPT);
 }
 
-void i8259_Mask(irq_t irq) {
+void i8259_Mask(int irq) {
     i8259_SetMask(g_PicMask | (1 << irq));
 }
 
-void i8259_Unmask(irq_t irq) {
+void i8259_Unmask(int irq) {
     i8259_SetMask(g_PicMask & ~(1 << irq));
 }
 
