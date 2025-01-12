@@ -3,6 +3,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define PS2_SCANCODE_SET_2_EXTENDED 0xE0
+#define PS2_SCANCODE_SET_2_KEY_RELEASE 0xF0
+#define PS2_SCANCODE_SET_2_SHORT_PRINT_SCREEN 0xE012
+#define PS2_SCANCODE_SET_2_SHORT_PAUSE 0xE114
+
 typedef enum {
     SET_2_F9 = 0x01,
     SET_2_F5 = 0x03,
@@ -132,7 +137,7 @@ typedef enum {
     SET_2_PAUSE = 0xE11477E1F014F077,
 } ScanCodeSet2;
 
-const uint64_t SCANCODE_SET_2_INDEXES[] = {
+static const uint16_t SCANCODE_SET_2_INDEXES[] = {
     SET_2_F9,
     SET_2_F5,
     SET_2_F3,
@@ -256,7 +261,6 @@ const uint64_t SCANCODE_SET_2_INDEXES[] = {
     SET_2_CURSOR_UP,
     SET_2_PAGE_DOWN,
     SET_2_PAGE_UP,
-    SET_2_PRINT_SCREEN_PRESSED,
-    SET_2_PRINT_SCREEN_RELEASED,
-    SET_2_PAUSE,
+    PS2_SCANCODE_SET_2_SHORT_PRINT_SCREEN,
+    PS2_SCANCODE_SET_2_SHORT_PAUSE,
 };
