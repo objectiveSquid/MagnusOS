@@ -1,19 +1,25 @@
 include build-scripts/config.mk
 
-.PHONY: all floppy_image kernel bootloader clean always tools
+.PHONY: all floppy_image kernel bootloader generate_all_files clean always tools
 
 all: floppy_image
 
 include build-scripts/toolchain.mk
 include build-scripts/fonts.mk
+include build-scripts/shared.mk
 
 export PATH := $(PATH):$(TOOLCHAIN_PREFIX)/bin
+
+#
+# Generate all files (unused, just for convenience)
+#
+generate_all_files: generate_fonts copy_shared_files
 
 #
 # Floppy image
 #
 floppy_image: $(BUILD_DIR)/main_floppy.img
-$(BUILD_DIR)/main_floppy.img: bootloader kernel generate_fonts
+$(BUILD_DIR)/main_floppy.img: bootloader kernel
 	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
 	mkfs.fat -F 12 -n "MagnusOS" $(BUILD_DIR)/main_floppy.img
 	dd if=$(BUILD_DIR)/bootloader_stage_1.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
@@ -35,14 +41,14 @@ $(BUILD_DIR)/bootloader_stage_1.bin: always
 
 # Stage 2
 bootloader_stage_2: $(BUILD_DIR)/bootloader_stage_2.bin
-$(BUILD_DIR)/bootloader_stage_2.bin: always generate_fonts
+$(BUILD_DIR)/bootloader_stage_2.bin: always copy_shared_files
 	$(MAKE) -C src/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Kernel
 #
 kernel: $(BUILD_DIR)/kernel.bin
-$(BUILD_DIR)/kernel.bin: always
+$(BUILD_DIR)/kernel.bin: always generate_fonts copy_shared_files
 	$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #

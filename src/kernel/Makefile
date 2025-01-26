@@ -37,7 +37,10 @@ always:
 	mkdir -p $(BUILD_DIR)/kernel/c/arch/i686
 	mkdir -p $(BUILD_DIR)/kernel/c/ps2
 	mkdir -p $(BUILD_DIR)/kernel/c/util
+	mkdir -p $(BUILD_DIR)/kernel/c/visual
+	mkdir -p $(BUILD_DIR)/kernel/c/disk
 	mkdir -p $(BUILD_DIR)/kernel/asm
+	mkdir -p $(BUILD_DIR)/kernel/asm/util
 	mkdir -p $(BUILD_DIR)/kernel/asm/arch/i686
 
 clean:

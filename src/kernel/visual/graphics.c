@@ -1,6 +1,6 @@
 #include "graphics.h"
 #include "memdefs.h"
-#include "memory.h"
+#include "util/memory.h"
 #include "vbe.h"
 
 static VbeModeInfo *g_VbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;

@@ -1,9 +1,9 @@
 #include "isr.h"
 #include "idt.h"
 #include "isr_gen.h"
-#include "misc.h"
-#include "stdio.h"
 #include "util/misc.h"
+#include "util/x86.h"
+#include "visual/stdio.h"
 #include <stddef.h>
 
 ISRHandler g_ISRHandlers[256];
@@ -68,7 +68,7 @@ void ASMCALL i686_ISR_Handler(Registers *registers) {
                registers->ss);
         printf("  interrupt=%x  errorcode=%x\n", registers->interrupt, registers->error);
         printf("!!! KERNEL PANIC !!!\n");
-        i686_Halt();
+        x86_Halt();
     }
 }
 

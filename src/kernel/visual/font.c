@@ -1,12 +1,12 @@
 #include "font.h"
-#include "fat.h"
+#include "disk/fat.h"
 #include "graphics.h"
 #include "memdefs.h"
-#include "memory.h"
 #include "rasterfont_sizes.h"
 #include "stdio.h"
-#include "string.h"
-#include "utility.h"
+#include "util/memory.h"
+#include "util/other.h"
+#include "util/string.h"
 #include "vbe.h"
 #include <stdbool.h>
 #include <stdint.h>

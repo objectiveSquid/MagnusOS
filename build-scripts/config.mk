@@ -19,6 +19,7 @@ export TARGET_LIBS =
 export ROOT_DIR = $(abspath .)
 export BUILD_DIR = $(abspath build)
 export TOOLS_DIR = $(abspath tools)
+export BUILD_SCRIPTS_DIR = $(abspath build-scripts)
 
 export TOOLCHAIN_DIRECTORY = .toolchain
 export TOOLCHAIN_PREFIX = $(abspath $(TOOLCHAIN_DIRECTORY)/$(TARGET))

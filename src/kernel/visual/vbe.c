@@ -1,8 +1,8 @@
 #include "vbe.h"
 #include "memdefs.h"
-#include "memory.h"
 #include "stdio.h"
-#include "x86.h"
+#include "util/memory.h"
+#include "util/x86.h"
 
 #define DESIRED_WIDTH 1920
 #define DESIRED_HEIGHT 1080

@@ -2,8 +2,8 @@
 #include "i8259.h"
 #include "io.h"
 #include "pic.h"
-#include "stdio.h"
 #include "util/arrays.h"
+#include "visual/stdio.h"
 #include <stddef.h>
 
 #define PIC_REMAP_OFFSET 0x20

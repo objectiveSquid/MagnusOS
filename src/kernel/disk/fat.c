@@ -1,9 +1,9 @@
-#include "fat.h"
-#include "disk.h"
+#include "disk/fat.h"
+#include "disk/disk.h"
 #include "memdefs.h"
-#include "memory.h"
-#include "string.h"
-#include "utility.h"
+#include "util/memory.h"
+#include "util/other.h"
+#include "util/string.h"
 #include "visual/stdio.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -118,7 +118,7 @@ bool FAT_Initialize(DISK *disk) {
     g_DataSectionLba = rootDirectoryLba + rootDirectorySectors;
 
     // reset open files
-    for (ssize_t i = 0; i < MAX_FILE_HANDLES; ++i) {
+    for (uint32_t i = 0; i < MAX_FILE_HANDLES; ++i) {
         g_Data->openFiles[i].open = false;
     }
 
@@ -130,7 +130,7 @@ uint32_t FAT_ClusterToLba(uint32_t cluster) {
 }
 
 FAT_File *FAT_OpenEntry(DISK *disk, FAT_DirectoryEntry *entry) {
-    ssize_t handle = UNUSED_HANDLE;
+    uint32_t handle = UNUSED_HANDLE;
     for (size_t i = 0; i < MAX_FILE_HANDLES && handle < 0; ++i) {
         if (!g_Data->openFiles[i].open)
             handle = i;

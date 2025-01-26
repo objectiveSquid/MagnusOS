@@ -1,106 +1,62 @@
 #include "stdio.h"
-#include "arch/i686/io.h"
+#include "font.h"
+#include "memdefs.h"
+#include "util/x86.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-#define SCREEN_WIDTH 80
-#define SCREEN_HEIGHT 25
-#define DEFAULT_COLOR 0x07
-
 #define TAB_SIZE 4
 
-char *g_ScreenBuffer = (char *)0xB8000;
-uint16_t g_ScreenX = 0, g_ScreenY = 0;
+static VbeModeInfo *g_VbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
+static uint16_t g_CursorPosition[2] = {0, 0};
 
-char getCharacter(uint16_t x, uint16_t y) {
-    return g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x)];
+void setCursorPosition(uint16_t x, uint16_t y) {
+    g_CursorPosition[0] = x;
+    g_CursorPosition[1] = y;
 }
 
-uint8_t getColor(uint16_t x, uint16_t y) {
-    return g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x) + 1];
-}
+void putc(char character) {
+    FONT_Character fontCharacter = EMPTY_CHARACTER;
+    uint16_t screenWidth, screenHeight;
 
-void setCursurPosition(uint16_t x, uint16_t y) {
-    uint16_t relativePosition = (y * SCREEN_WIDTH) + x;
+    fontCharacter.typed.character = character;
+    screenWidth = FONT_ScreenCharacterWidth();
+    screenHeight = FONT_ScreenCharacterHeight();
 
-    i686_OutByte(0x3D4, 0x0F);
-    i686_OutByte(0x3D5, (uint8_t)(relativePosition & 0xFF)); // lower position byte
-    i686_OutByte(0x3D4, 0x0E);
-    i686_OutByte(0x3D5, (uint8_t)((relativePosition >> 8) & 0xFF)); // upper position byte
-}
-
-void scrollBack(uint16_t lineCount) {
-    for (uint16_t y = lineCount; y < SCREEN_HEIGHT; ++y)
-        for (uint16_t x = 0; x < SCREEN_WIDTH; ++x) {
-            putCharacter(x, y - lineCount, getCharacter(x, y));
-            putColor(x, y - lineCount, getColor(x, y));
-        }
-
-    for (uint16_t y = SCREEN_HEIGHT - lineCount; y < SCREEN_HEIGHT; ++y)
-        for (uint16_t x = 0; x < SCREEN_WIDTH; ++x) {
-            putCharacter(x, y, '\0');
-            putColor(x, y, DEFAULT_COLOR);
-        }
-
-    g_ScreenY -= lineCount;
-}
-
-void putCharacter(uint16_t x, uint16_t y, char c) {
-    g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x)] = c;
-}
-
-void putColor(uint16_t x, uint16_t y, uint8_t color) {
-    g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x) + 1] = color;
-}
-
-void clearScreen() {
-    for (uint8_t x = 0; x < SCREEN_WIDTH; ++x)
-        for (uint8_t y = 0; y < SCREEN_HEIGHT; ++y) {
-            putCharacter(x, y, '\0');
-            putColor(x, y, DEFAULT_COLOR);
-        }
-
-    g_ScreenX = g_ScreenY = 0;
-    setCursurPosition(0, 0);
-}
-
-void putc(char c) {
-    switch (c) {
+    switch (character) {
     case '\n':
-        g_ScreenX = 0; // '\r'
-        ++g_ScreenY;   // '\n'
+        g_CursorPosition[0] = 0; // '\r'
+        ++g_CursorPosition[1];   // '\n'
         break;
     case '\r':
-        g_ScreenX = 0; // '\r'
+        g_CursorPosition[0] = 0; // '\r'
         break;
     case '\t':
-        for (uint8_t i = 0; i < TAB_SIZE - (g_ScreenX % TAB_SIZE); ++i)
+        for (uint8_t i = 0; i < TAB_SIZE - (g_CursorPosition[0] % TAB_SIZE); ++i)
             putc(' ');
         break;
     case '\b':
-        if (g_ScreenX == 0) {
-            g_ScreenX = SCREEN_WIDTH - 1;
-            --g_ScreenY;
+        if (g_CursorPosition[0] == 0) {
+            g_CursorPosition[0] = screenWidth - 1;
+            --g_CursorPosition[1];
             break;
         }
-        --g_ScreenX;
+        --g_CursorPosition[0];
         break;
     default:
-        putCharacter(g_ScreenX, g_ScreenY, c);
-        ++g_ScreenX;
+        FONT_PutCharacter(g_CursorPosition[0], g_CursorPosition[1], fontCharacter);
+        ++g_CursorPosition[0];
         break;
     }
 
-    if (g_ScreenX >= SCREEN_WIDTH) {
-        g_ScreenX = 0;
-        ++g_ScreenY;
+    if (g_CursorPosition[0] >= screenWidth) {
+        g_CursorPosition[0] = 0;
+        ++g_CursorPosition[1];
     }
-    if (g_ScreenY >= SCREEN_HEIGHT) {
-        scrollBack(1);
+    if (g_CursorPosition[1] >= screenHeight) {
+        FONT_ScrollBack(1);
     }
-
-    setCursurPosition(g_ScreenX, g_ScreenY);
 }
 
 void puts(const char *buf) {
@@ -110,7 +66,16 @@ void puts(const char *buf) {
     }
 }
 
-const char g_HexChars[] = "0123456789abcdef";
+void clearScreen() {
+    for (uint8_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
+        for (uint8_t y = 0; y < FONT_ScreenCharacterHeight(); ++y)
+            putc('\0');
+
+    g_CursorPosition[0] = 0;
+    g_CursorPosition[1] = 0;
+}
+
+static const char g_HexChars[] = "0123456789abcdef";
 
 void printf_number_unsigned(uint64_t number, uint8_t radix) {
     char outputBuffer[22]; // 20-22 characters number, and 1 for the null terminator

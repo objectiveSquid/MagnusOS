@@ -1,8 +1,7 @@
 #include "stdio.h"
-#include "font.h"
 #include "memdefs.h"
+#include "util/x86.h"
 #include "vga.h"
-#include "x86.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,7 +12,6 @@
 #define VGA_TEXT_SCREEN_HEIGHT 25
 #define VGA_DEFAULT_COLOR 0x07
 
-static VbeModeInfo *g_VbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
 static uint16_t g_CursorPosition[2] = {0, 0};
 
 void setCursorPosition(uint16_t x, uint16_t y) {
@@ -22,19 +20,6 @@ void setCursorPosition(uint16_t x, uint16_t y) {
 }
 
 void putc(char character) {
-    bool graphics = VBE_IsInitialized();
-    FONT_Character fontCharacter = EMPTY_CHARACTER;
-    uint16_t screenWidth, screenHeight;
-
-    if (graphics) {
-        fontCharacter.typed.character = character;
-        screenWidth = FONT_ScreenCharacterWidth();
-        screenHeight = FONT_ScreenCharacterHeight();
-    } else {
-        screenWidth = VGA_TEXT_SCREEN_WIDTH;
-        screenHeight = VGA_TEXT_SCREEN_HEIGHT;
-    }
-
     switch (character) {
     case '\n':
         g_CursorPosition[0] = 0; // '\r'
@@ -49,36 +34,29 @@ void putc(char character) {
         break;
     case '\b':
         if (g_CursorPosition[0] == 0) {
-            g_CursorPosition[0] = screenWidth - 1;
+            g_CursorPosition[0] = VGA_TEXT_SCREEN_WIDTH - 1;
             --g_CursorPosition[1];
             break;
         }
         --g_CursorPosition[0];
         break;
     default:
-        if (graphics)
-            FONT_PutCharacter(g_CursorPosition[0], g_CursorPosition[1], fontCharacter);
-        else {
-            VGA_PutCharacter(g_CursorPosition[0], g_CursorPosition[1], character);
-            VGA_PutColor(g_CursorPosition[0], g_CursorPosition[1], VGA_DEFAULT_COLOR);
-        }
+        VGA_PutCharacter(g_CursorPosition[0], g_CursorPosition[1], character);
+        VGA_PutColor(g_CursorPosition[0], g_CursorPosition[1], VGA_DEFAULT_COLOR);
         ++g_CursorPosition[0];
         break;
     }
 
-    if (g_CursorPosition[0] >= screenWidth) {
+    if (g_CursorPosition[0] >= VGA_TEXT_SCREEN_WIDTH) {
         g_CursorPosition[0] = 0;
         ++g_CursorPosition[1];
     }
-    if (g_CursorPosition[1] >= screenHeight) {
-        if (graphics)
-            FONT_ScrollBack(1);
-        else
-            VGA_ScrollBack(1);
+    if (g_CursorPosition[1] >= VGA_TEXT_SCREEN_HEIGHT) {
+        VGA_ScrollBack(1);
+        g_CursorPosition[1] -= 1;
     }
 
-    if (!graphics)
-        VGA_SetCursurPosition(g_CursorPosition[0], g_CursorPosition[1]);
+    VGA_SetCursurPosition(g_CursorPosition[0], g_CursorPosition[1]);
 }
 
 void puts(const char *buf) {
@@ -86,6 +64,16 @@ void puts(const char *buf) {
         putc(*buf);
         ++buf;
     }
+}
+
+void clearScreen() {
+    for (uint8_t x = 0; x < VGA_TEXT_SCREEN_WIDTH; ++x)
+        for (uint8_t y = 0; y < VGA_TEXT_SCREEN_HEIGHT; ++y)
+            putc('\0');
+
+    g_CursorPosition[0] = 0;
+    g_CursorPosition[1] = 0;
+    VGA_SetCursurPosition(0, 0);
 }
 
 static const char g_HexChars[] = "0123456789abcdef";

@@ -3,11 +3,11 @@
 #include "ps2.h"
 #include "arch/i686/io.h"
 #include "arch/i686/irq.h"
-#include "memory.h"
 #include "scancode.h"
-#include "stdio.h"
 #include "util/arrays.h"
 #include "util/binary.h"
+#include "util/memory.h"
+#include "visual/stdio.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

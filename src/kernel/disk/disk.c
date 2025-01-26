@@ -1,5 +1,5 @@
 #include "disk.h"
-#include "x86.h"
+#include "util/x86.h"
 #include <stdbool.h>
 #include <stdint.h>
 
