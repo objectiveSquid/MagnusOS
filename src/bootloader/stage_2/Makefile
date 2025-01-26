@@ -30,6 +30,7 @@ always:
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/visual
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/util
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/disk
+	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/prep
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/asm/util
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/asm
 

@@ -1,6 +1,7 @@
 #include "disk/disk.h"
 #include "disk/fat.h"
 #include "memdefs.h"
+#include "prep/vbe.h"
 #include "util/memory.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
@@ -34,6 +35,8 @@ void ASMCALL cstart(uint16_t bootDrive) {
     while (readCount = FAT_Read(disk, kernelFd, MEMORY_LOAD_KERNEL_CHUNK_SIZE, kernelBuffer))
         kernelBuffer += readCount;
     FAT_Close(kernelFd);
+
+    VBE_Initialize();
 
 run_kernel:
     KernelStart kernelStart = (KernelStart)kernel;

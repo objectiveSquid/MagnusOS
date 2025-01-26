@@ -62,9 +62,6 @@ void FONT_SetFont(const FONT_FontInfo *fontInfo, bool reDraw) {
     if (!reDraw)
         return;
 
-    if (!VBE_VerifyInitialized())
-        return;
-
     GRAPHICS_ClearScreen();
     for (uint16_t y = 0; y < FONT_ScreenCharacterHeight(); ++y)
         for (uint16_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
@@ -88,17 +85,10 @@ uint8_t FONT_GetPixelScale() {
 FONT_Character FONT_GetCharacter(uint16_t x, uint16_t y) {
     FONT_Character output = EMPTY_CHARACTER;
 
-    if (!VBE_VerifyInitialized()) {
-        return output;
-    }
-
     return g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x];
 }
 
 void FONT_ScrollBack(uint16_t lineCount) {
-    if (!VBE_VerifyInitialized())
-        return;
-
     // copy lines
     for (uint16_t y = lineCount; y < FONT_ScreenCharacterHeight(); ++y)
         for (uint16_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
@@ -113,8 +103,6 @@ void FONT_ScrollBack(uint16_t lineCount) {
 }
 
 void FONT_PutCharacter(uint16_t x, uint16_t y, FONT_Character character) {
-    if (!VBE_VerifyInitialized())
-        return;
     ensureFontInfoSet();
 
     uint32_t characterBitIndex = character.typed.character * g_FontInfo->width * g_FontInfo->height;
@@ -134,16 +122,12 @@ void FONT_PutCharacter(uint16_t x, uint16_t y, FONT_Character character) {
 }
 
 uint16_t FONT_ScreenCharacterWidth() {
-    if (!VBE_VerifyInitialized())
-        return 0;
     ensureFontInfoSet();
 
     return (g_VbeModeInfo->width / g_FontInfo->width) / g_FontPixelScale;
 }
 
 uint16_t FONT_ScreenCharacterHeight() {
-    if (!VBE_VerifyInitialized())
-        return 0;
     ensureFontInfoSet();
 
     return (g_VbeModeInfo->height / g_FontInfo->height) / g_FontPixelScale;

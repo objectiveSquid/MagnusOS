@@ -4,7 +4,6 @@
 #include "util/memory.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
-#include "visual/vbe.h"
 #include <stdint.h>
 
 extern char __bss_start;
@@ -14,7 +13,6 @@ void __attribute__((section(".entry"))) start() {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
 
     clearScreen();
-    VBE_Initialize();
     HAL_Initialize();
     PS2_Initialize();
 

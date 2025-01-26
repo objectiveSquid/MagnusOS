@@ -2,6 +2,7 @@
 #include "font.h"
 #include "memdefs.h"
 #include "util/x86.h"
+#include "vbe.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>

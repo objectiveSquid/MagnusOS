@@ -1,6 +1,18 @@
 #pragma once
 
+#include "memdefs.h"
+#include <stdbool.h>
 #include <stdint.h>
+
+typedef struct {
+    char vbeSignature[4];     // == "VESA"
+    uint16_t vbeVersion;      // == 0x0300 for VBE 3.0
+    uint16_t oemStringPtr[2]; // isa vbeFarPtr
+    uint8_t capabilities[4];
+    uint32_t videoModePtr; // isa vbeFarPtr
+    uint16_t totalMemory;  // as # of 64KB blocks
+    uint8_t _Reserved[236 + 256];
+} __attribute__((packed)) VbeInfoBlock;
 
 typedef struct {
     uint16_t attributes;  // deprecated, only bit 7 should be of interest to you, and it indicates the mode supports a linear frame buffer.
@@ -39,3 +51,10 @@ typedef struct {
     uint16_t offScreenMemorySize; // size of memory in the framebuffer but not being displayed on the screen
     uint8_t __reserved[206];
 } __attribute__((packed)) VbeModeInfo;
+
+bool VBE_GetControllerInfo(VbeInfoBlock *infoOutput);
+bool VBE_GetModeInfo(uint16_t mode, VbeModeInfo *infoOutput);
+bool VBE_SetVideoMode(uint16_t mode);
+bool VBE_Initialize();
+bool VBE_VerifyInitialized();
+bool VBE_IsInitialized();
