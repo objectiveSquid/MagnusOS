@@ -31,6 +31,24 @@ make build_toolchain
 ```sh
 make
 ```
+### Running with Qemu
+  - qemu-system-x86
+```sh
+sudo apt-get update
+sudo apt-get install qemu
+```
+```sh
+./scripts/run_gui.sh
+```
+### Debugging with GDB
+  - gdb
+```sh
+sudo apt-get update
+sudo apt-get install gdb
+```
+```sh
+./scripts/gdb.sh
+```
 ### Debugging with Bochs (Not currently working!)
   - bochs
   - bochs-x
@@ -42,15 +60,6 @@ sudo apt-get install bochs bochs-sdl bochsbios vgabios
 ```
 ```sh
 ./scripts/debug.sh
-```
-### Running with Qemu
-  - qemu-system-x86
-```sh
-sudo apt-get update
-sudo apt-get install qemu
-```
-```sh
-./scripts/run_gui.sh
 ```
 ### Building the tools
   - gcc
