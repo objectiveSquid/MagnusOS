@@ -1,12 +1,13 @@
 /* NOTE: who actually cares about error handling lmao */
 
 #include "ps2.h"
-#include "arch/i686/io.h"
 #include "arch/i686/irq.h"
 #include "scancode.h"
 #include "util/arrays.h"
 #include "util/binary.h"
+#include "util/io.h"
 #include "util/memory.h"
+#include "util/x86.h"
 #include "visual/stdio.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -64,30 +65,30 @@ static const PICDriver *g_PicDriver = NULL;
 uint8_t g_ScancodesHeld[((ARRAY_SIZE(SCANCODE_SET_2_INDEXES) + 8) / 8)]; // add 8 then divide by 8 to round up
 
 void clearPS2Buffer() {
-    while (i686_InByte(PS2_CMD_PORT) & 1)
-        i686_InByte(PS2_DATA_PORT);
+    while (x86_InByte(PS2_CMD_PORT) & 1)
+        x86_InByte(PS2_DATA_PORT);
 }
 
 void waitForPS2Controller() {
-    while (i686_InByte(PS2_CMD_PORT) & 0x02)
+    while (x86_InByte(PS2_CMD_PORT) & 0x02)
         ;
 }
 
 bool getPS2Success() {
-    return i686_InByte(PS2_DATA_PORT) == PS2_ACK;
+    return x86_InByte(PS2_DATA_PORT) == PS2_ACK;
 }
 
 void writePS2Port1(uint8_t byte) {
     waitForPS2Controller();
-    i686_OutByte(PS2_DATA_PORT, byte);
+    x86_OutByte(PS2_DATA_PORT, byte);
 }
 
 void writePS2Port2(uint8_t byte) {
     waitForPS2Controller();
-    i686_OutByte(PS2_DATA_PORT, PS2_CMD_WRITE_TO_PORT_2);
+    x86_OutByte(PS2_DATA_PORT, PS2_CMD_WRITE_TO_PORT_2);
 
     waitForPS2Controller();
-    i686_OutByte(PS2_DATA_PORT, byte);
+    x86_OutByte(PS2_DATA_PORT, byte);
 }
 
 uint8_t resetPS2Keyboard(bool port_1, bool port_2) {
@@ -99,7 +100,7 @@ uint8_t resetPS2Keyboard(bool port_1, bool port_2) {
     if (!getPS2Success()) {
         puts("Could not send command to reset PS2 keyboard on port 1\n");
         BIT_UNSET(output, 0);
-    } else if (i686_InByte(PS2_DATA_PORT) != PS2_RESET_SUCCESS) {
+    } else if (x86_InByte(PS2_DATA_PORT) != PS2_RESET_SUCCESS) {
         puts("Could not reset PS2 keyboard on port 1\n");
         BIT_UNSET(output, 0);
     }
@@ -110,7 +111,7 @@ uint8_t resetPS2Keyboard(bool port_1, bool port_2) {
     if (!getPS2Success()) {
         puts("Could not send command to reset PS2 keyboard on port 2\n");
         BIT_UNSET(output, 1);
-    } else if (i686_InByte(PS2_DATA_PORT) != PS2_RESET_SUCCESS) {
+    } else if (x86_InByte(PS2_DATA_PORT) != PS2_RESET_SUCCESS) {
         puts("Could not reset PS2 keyboard on port 2\n");
         BIT_UNSET(output, 1);
     }
@@ -120,32 +121,32 @@ uint8_t resetPS2Keyboard(bool port_1, bool port_2) {
 void disablePS2ControllerPorts(bool port_1, bool port_2) {
     if (port_1) {
         waitForPS2Controller();
-        i686_OutByte(PS2_CMD_PORT, PS2_CMD_DISABLE_PORT_1);
+        x86_OutByte(PS2_CMD_PORT, PS2_CMD_DISABLE_PORT_1);
     }
 
     if (port_2) {
         waitForPS2Controller();
-        i686_OutByte(PS2_CMD_PORT, PS2_CMD_DISABLE_PORT_2);
+        x86_OutByte(PS2_CMD_PORT, PS2_CMD_DISABLE_PORT_2);
     }
 }
 
 void enablePS2ControllerPorts(bool port_1, bool port_2) {
     if (port_1) {
         waitForPS2Controller();
-        i686_OutByte(PS2_CMD_PORT, PS2_CMD_ENABLE_PORT_1);
+        x86_OutByte(PS2_CMD_PORT, PS2_CMD_ENABLE_PORT_1);
     }
 
     if (port_2) {
         waitForPS2Controller();
-        i686_OutByte(PS2_CMD_PORT, PS2_CMD_ENABLE_PORT_2);
+        x86_OutByte(PS2_CMD_PORT, PS2_CMD_ENABLE_PORT_2);
     }
 }
 
 void setPS2ControllerConfiguration(bool setIRQ1, bool setIRQ2) {
     waitForPS2Controller();
-    i686_OutByte(PS2_CMD_PORT, PS2_CMD_READ_CONFIG); // read config
+    x86_OutByte(PS2_CMD_PORT, PS2_CMD_READ_CONFIG); // read config
 
-    uint8_t config = i686_InByte(PS2_DATA_PORT);
+    uint8_t config = x86_InByte(PS2_DATA_PORT);
     if (setIRQ1)
         FLAG_SET(config, 0b1);
     else
@@ -161,15 +162,15 @@ void setPS2ControllerConfiguration(bool setIRQ1, bool setIRQ2) {
     FLAG_SET(config, 0b10000);     // enable clock signal
 
     waitForPS2Controller();
-    i686_OutByte(PS2_CMD_PORT, PS2_CMD_WRITE_CONFIG); // write config
+    x86_OutByte(PS2_CMD_PORT, PS2_CMD_WRITE_CONFIG); // write config
 
     waitForPS2Controller();
-    i686_OutByte(PS2_DATA_PORT, config);
+    x86_OutByte(PS2_DATA_PORT, config);
 }
 
 bool setPS2LEDState(uint8_t ledState) {
     waitForPS2Controller();
-    i686_OutByte(PS2_DATA_PORT, PS2_CMD_SET_LEDS);
+    x86_OutByte(PS2_DATA_PORT, PS2_CMD_SET_LEDS);
 
     if (!getPS2Success()) {
         puts("Could not send command to write LED state to PS2 keyboard\n");
@@ -177,7 +178,7 @@ bool setPS2LEDState(uint8_t ledState) {
     }
 
     waitForPS2Controller();
-    i686_OutByte(PS2_DATA_PORT, ledState);
+    x86_OutByte(PS2_DATA_PORT, ledState);
 
     if (!getPS2Success()) {
         puts("Could not write LED state to PS2 keyboard\n");
@@ -240,7 +241,7 @@ bool set2CheckPS2LEDState(uint8_t scancode, bool press) {
 
 bool setPS2ScancodeSet(uint8_t scancodeSet) {
     waitForPS2Controller();
-    i686_OutByte(PS2_DATA_PORT, PS2_CMD_SET_SCANCODE_SET);
+    x86_OutByte(PS2_DATA_PORT, PS2_CMD_SET_SCANCODE_SET);
 
     if (!getPS2Success()) {
         puts("Could not send command to write scancode set to PS2 keyboard\n");
@@ -248,7 +249,7 @@ bool setPS2ScancodeSet(uint8_t scancodeSet) {
     }
 
     waitForPS2Controller();
-    i686_OutByte(PS2_DATA_PORT, scancodeSet);
+    x86_OutByte(PS2_DATA_PORT, scancodeSet);
 
     if (!getPS2Success()) {
         puts("Could not write scancode set to PS2 keyboard\n");
@@ -290,9 +291,9 @@ void setScancodeHeld(uint16_t scancode, bool held) {
 
 bool runPS2ControllerSelfTest() {
     waitForPS2Controller();
-    i686_OutByte(PS2_CMD_PORT, PS2_CMD_CONTROLLER_SELF_TEST);
+    x86_OutByte(PS2_CMD_PORT, PS2_CMD_CONTROLLER_SELF_TEST);
 
-    if (i686_InByte(PS2_DATA_PORT) != PS2_SELF_TEST_SUCCESS) {
+    if (x86_InByte(PS2_DATA_PORT) != PS2_SELF_TEST_SUCCESS) {
         puts("PS2 controller self test failed\n");
         return false;
     }
@@ -302,17 +303,17 @@ bool runPS2ControllerSelfTest() {
 
 bool checkPS2ControllerDualChannel() {
     waitForPS2Controller();
-    i686_OutByte(PS2_CMD_PORT, PS2_CMD_ENABLE_SECOND_PORT);
+    x86_OutByte(PS2_CMD_PORT, PS2_CMD_ENABLE_SECOND_PORT);
 
     waitForPS2Controller();
-    i686_OutByte(PS2_CMD_PORT, PS2_CMD_READ_CONFIG);
+    x86_OutByte(PS2_CMD_PORT, PS2_CMD_READ_CONFIG);
 
-    uint8_t config = i686_InByte(PS2_DATA_PORT);
+    uint8_t config = x86_InByte(PS2_DATA_PORT);
     if (BIT_IS_SET(config, 5))
         return false; // not a dual channel
 
     waitForPS2Controller();
-    i686_OutByte(PS2_CMD_PORT, PS2_CMD_DISABLE_SECOND_PORT);
+    x86_OutByte(PS2_CMD_PORT, PS2_CMD_DISABLE_SECOND_PORT);
 
     BIT_UNSET(config, 1); // disable irq for port 2
     BIT_UNSET(config, 5); // enable clock for port 2
@@ -324,9 +325,9 @@ uint8_t runPS2InterfaceTests(bool isDualChannel) {
     uint8_t output = 0;
 
     waitForPS2Controller();
-    i686_OutByte(PS2_CMD_PORT, PS2_CMD_INTERFACE_TEST_PORT_1);
+    x86_OutByte(PS2_CMD_PORT, PS2_CMD_INTERFACE_TEST_PORT_1);
 
-    if (!i686_InByte(PS2_DATA_PORT) == 0x00)
+    if (!x86_InByte(PS2_DATA_PORT) == 0x00)
         BIT_UNSET(output, 0);
     else
         BIT_SET(output, 0);
@@ -338,9 +339,9 @@ uint8_t runPS2InterfaceTests(bool isDualChannel) {
     }
 
     waitForPS2Controller();
-    i686_OutByte(PS2_CMD_PORT, PS2_CMD_INTERFACE_TEST_PORT_2);
+    x86_OutByte(PS2_CMD_PORT, PS2_CMD_INTERFACE_TEST_PORT_2);
 
-    if (!i686_InByte(PS2_DATA_PORT) == 0x00)
+    if (!x86_InByte(PS2_DATA_PORT) == 0x00)
         BIT_UNSET(output, 1);
     else
         BIT_SET(output, 1);
@@ -353,12 +354,12 @@ uint8_t runPS2InterfaceTests(bool isDualChannel) {
 // port can be 1 or 2
 void PS2Set2Handler(uint8_t port) {
     if (g_SkipPS2Interrupts) {
-        i686_InByte(PS2_DATA_PORT); // ignore
+        x86_InByte(PS2_DATA_PORT); // ignore
         --g_SkipPS2Interrupts;
         return;
     }
 
-    uint16_t scancode = (uint16_t)i686_InByte(PS2_DATA_PORT);
+    uint16_t scancode = (uint16_t)x86_InByte(PS2_DATA_PORT);
 
     switch (scancode) {
     case PS2_NEW_KEYBOARD:
@@ -388,13 +389,13 @@ void PS2Set2Handler(uint8_t port) {
         setScancodeHeld(PS2_SCANCODE_SET_2_SHORT_PAUSE, true); // there is no "pause released" scancode, the os will deal with it
         g_SkipPS2Interrupts = 7;                               // skip next 7 interrupts
         return;
-    case PS2_SCANCODE_SET_2_EXTENDED:                            // extended scancode
-        scancode = (scancode << 8) | i686_InByte(PS2_DATA_PORT); // read next byte
+    case PS2_SCANCODE_SET_2_EXTENDED:                           // extended scancode
+        scancode = (scancode << 8) | x86_InByte(PS2_DATA_PORT); // read next byte
         g_SkipPS2Interrupts = 1;
 
         if ((uint8_t)scancode == PS2_SCANCODE_SET_2_KEY_RELEASE) { // extended scancode release
             scancode &= ~PS2_SCANCODE_SET_2_KEY_RELEASE;
-            scancode |= i686_InByte(PS2_DATA_PORT);
+            scancode |= x86_InByte(PS2_DATA_PORT);
             if ((uint8_t)scancode == 0x7C) { // always "print screen released"
                 g_SkipPS2Interrupts = 3;
                 setScancodeHeld(PS2_SCANCODE_SET_2_SHORT_PRINT_SCREEN, false);
@@ -411,7 +412,7 @@ void PS2Set2Handler(uint8_t port) {
         }
         return;
     case PS2_SCANCODE_SET_2_KEY_RELEASE: // single byte scancode release
-        scancode = i686_InByte(PS2_DATA_PORT);
+        scancode = x86_InByte(PS2_DATA_PORT);
         set2CheckPS2LEDState(scancode, false);
         setScancodeHeld(scancode, false);
         g_SkipPS2Interrupts = 1;

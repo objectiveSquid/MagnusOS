@@ -26,5 +26,13 @@
     "string.c": [
         "bootloader/stage_2/util/string.c",
         "kernel/util/string.c"
+    ],
+    "fat.h": [
+        "bootloader/stage_2/disk/fat.h",
+        "kernel/disk/fat.h"
+    ],
+    "fat.c": [
+        "bootloader/stage_2/disk/fat.c",
+        "kernel/disk/fat.c"
     ]
 }

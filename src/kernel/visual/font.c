@@ -1,5 +1,6 @@
 #include "font.h"
 #include "disk/fat.h"
+#include "fallback_font.h"
 #include "graphics.h"
 #include "memdefs.h"
 #include "rasterfont_sizes.h"
@@ -37,7 +38,7 @@ void readFont() {
     strcpy(fontPath + strlen("fonts/"), g_FontInfo->filename);
     fontPath[strlen("fonts/") + strlen(g_FontInfo->filename)] = '\0';
 
-    DISK *disk = (DISK *)MEMORY_FAT12_DISK_BUFFER;
+    DISK *disk = (DISK *)MEMORY_DISK_INFO_BUFFER;
     FAT_File *fontFd = FAT_Open(disk, fontPath);
     if (fontFd == NULL) {
         printf("Failed to open font file: %s\n", fontPath);
@@ -69,8 +70,11 @@ void FONT_SetFont(const FONT_FontInfo *fontInfo, bool reDraw) {
 }
 
 void ensureFontInfoSet() {
-    if (g_FontInfo == NULL)
-        FONT_SetFont(FONT_FindFontInfo(NULL, 8, 8), false);
+    if (g_FontInfo != NULL)
+        return;
+
+    g_FontInfo = &FALLBACK_FONT_INFO;
+    g_FontBits = FALLBACK_FONT_8x8;
 }
 
 // next 2 functions are because i dont really understand variable sharing across files in c

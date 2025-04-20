@@ -260,7 +260,7 @@ void printBuffer(const void *buffer, uint32_t count) {
     const char *charBuffer = (const char *)buffer;
 
     for (uint32_t i = 0; i < count; i++) {
-        putc(g_HexChars[charBuffer[i] >> 4]);
-        putc(g_HexChars[charBuffer[i] & 0xF]);
+        printf("%hhx", (uint8_t)(charBuffer[i] >> 4));
+        printf("%hhx", (uint8_t)(charBuffer[i] & 0xF));
     }
 }

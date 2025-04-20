@@ -1,0 +1,25 @@
+#pragma once
+
+#include "disk.h"
+#include <stdbool.h>
+#include <stdint.h>
+
+typedef enum {
+    FDC_READ_SECTOR_SUCCESS,
+    FDC_READ_SECTOR_WRITE_PROTECTED,
+    FDC_READ_SECTOR_NOT_ENOUGH_SECTORS,
+    FDC_READ_SECTOR_SEND_DATA_TIMEOUT,
+    FDC_READ_SECTOR_EXECUTION_IRQ6_TIMEOUT,
+    FDC_READ_SECTOR_RESULT_IRQ6_TIMEOUT,
+    FDC_READ_SECTOR_ERROR,
+} FDC_READ_SECTOR_RESULT;
+
+typedef enum {
+    ISSUE_COMMAND_TIMEOUT,
+    ISSUE_COMMAND_EXECUTION_IRQ6_TIMEOUT,
+    ISSUE_COMMAND_RESULT_IRQ6_TIMEOUT,
+    ISSUE_COMMAND_SUCCESS,
+} FDC_ISSUE_COMMAND_RESULT;
+
+bool FDC_ReadSectors(DISK *disk, uint32_t lba, uint16_t sectorCount, void *dataOutput);
+bool FDC_Initialize(uint8_t diskId);

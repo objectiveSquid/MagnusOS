@@ -17,7 +17,7 @@ static uint8_t *kernel = (uint8_t *)MEMORY_KERNEL_ADDRESS;
 void ASMCALL cstart(uint16_t bootDrive) {
     clearScreen();
 
-    DISK *disk = (DISK *)MEMORY_FAT12_DISK_BUFFER;
+    DISK *disk = (DISK *)MEMORY_DISK_INFO_BUFFER;
     memset(disk, 0, sizeof(DISK));
     if (!DISK_Initialize(disk, bootDrive)) {
         puts("Failed to initialize disk.\r\n");

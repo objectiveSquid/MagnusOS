@@ -39,6 +39,7 @@ always:
 	mkdir -p $(BUILD_DIR)/kernel/c/util
 	mkdir -p $(BUILD_DIR)/kernel/c/visual
 	mkdir -p $(BUILD_DIR)/kernel/c/disk
+	mkdir -p $(BUILD_DIR)/kernel/c/pit
 	mkdir -p $(BUILD_DIR)/kernel/asm
 	mkdir -p $(BUILD_DIR)/kernel/asm/util
 	mkdir -p $(BUILD_DIR)/kernel/asm/arch/i686
