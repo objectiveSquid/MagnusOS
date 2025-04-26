@@ -1,3 +1,5 @@
+MAKE_DISK_SIZE = 16777216  # 16 mb
+
 export ASM = nasm
 export TARGET_ASMFLAGS =
 export CLFAGS = -std=c99 -g

@@ -5,10 +5,13 @@
 
 typedef struct {
     uint8_t id;
-    uint16_t cylinders;
-    uint16_t sectors;
-    uint16_t heads;
+    uint32_t cylinders;
+    uint32_t sectors;
+    uint32_t heads;
+    uint32_t totalSectors;
+    uint16_t infoFlags;
+    uint16_t bytesPerSector;
 } DISK;
 
 bool DISK_Initialize(DISK *disk, uint8_t driveNumber);
-bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t count, void *dataOutput);
+bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint16_t count, void *dataOutput);

@@ -13,6 +13,8 @@
 #define MAX_PATH_SIZE 256
 #define MAX_FILE_HANDLES 10
 
+#define STAGE_1_LBA 2048
+
 #define ROOT_DIRECTORY_HANDLE -1
 #define UNUSED_HANDLE -2
 
@@ -65,7 +67,7 @@ static char *g_Fat = NULL;
 static uint32_t g_DataSectionLba;
 
 bool FAT_ReadBootSector(DISK *disk) {
-    return DISK_ReadSectors(disk, 0, 1, g_Data->BS.bootSectorBytes);
+    return DISK_ReadSectors(disk, STAGE_1_LBA, 1, g_Data->BS.bootSectorBytes);
 }
 
 bool FAT_ReadFat(DISK *disk) {
@@ -85,7 +87,7 @@ bool FAT_Initialize(DISK *disk) {
     g_Fat = (char *)g_Data + sizeof(FAT_Data);
     uint32_t fatSize = g_Data->BS.bootSector.bytesPerSector * g_Data->BS.bootSector.sectorsPerFat;
     if (sizeof(FAT_Data) + fatSize >= MEMORY_FAT_SIZE) {
-        printf("FAT: No enough memory to read FAT. (required: %lu, only have: %lu)\r\n", (uint32_t)(sizeof(FAT_Data) + fatSize), (uint32_t)MEMORY_FAT_SIZE);
+        printf("FAT: Not enough memory to read FAT. (required: %lu, only have: %lu)\r\n", (uint32_t)(sizeof(FAT_Data) + fatSize), (uint32_t)MEMORY_FAT_SIZE);
         return false;
     }
 

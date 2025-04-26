@@ -4,6 +4,7 @@
 
 .16_bit_protected_mode:
     [bits 16]
+
     ;; disable protected mode bit
     mov eax, cr0
     and al, ~1  ; ~1 = 11111110
@@ -48,7 +49,7 @@
 ;   - 1 ---> linear address
 ;   - 2 ---> target segment (out)
 ;   - 3 ---> target 32 bit register to use
-;   - 4 ---> target lower 16 bit half of #3
+;   - 4 ---> target lower 16 bit half of #3 (offset output)
 ;
 %macro ConvertLinearAddress 4
     mov %3, %1
@@ -74,7 +75,7 @@ x86_InByte:
 
 
 ;
-; bool ASMCALL x86_Disk_GetDriveParams(uint8_t drive, uint8_t *driveTypeOutput, uint16_t *cylindersOutput, uint16_t *headsOutput, uint16_t *sectorsOutput);
+; uint8_t ASMCALL x86_Disk_GetDriveParams(uint8_t drive, uint16_t *infoFlagsOutput, uint32_t *cylindersOutput, uint32_t *headsOutput, uint32_t *sectorsPerTrackOutput, uint32_t *totalSectorsOutput, uint16_t* bytesPerSectorOutput);
 ;
 global x86_Disk_GetDriveParams
 x86_Disk_GetDriveParams:
@@ -86,68 +87,83 @@ x86_Disk_GetDriveParams:
     x86_EnterRealMode
 
     push es
-    push bx
-    push esi
-    push di
+    push ds
+    push si
+    push ebx
 
-    mov dl, [bp + 8]
-    mov di, 0
-    mov es, di
+    ; setup output buffer address at ds:si = 0x0000:getdriveparams_buffer
+    mov ax, 0x0000
+    mov ds, ax
+    mov si, getdriveparams_buffer
 
-    mov ah, 0x8
-    stc
+    ; set buffer size (should already be set to 0x001A, but just to be safe ig)
+    mov word [getdriveparams_buffer.size], 0x001A  ; 30 bytes
+
+    ; setup remaining registers
+    xor eax, eax
+    mov ah, 0x48
+    mov dl, [bp + 8]  ; Drive number
     int 0x13
+    jc .done ; error code already in ah
 
-    mov eax, 1
-    sbb eax, 0
+    ; output info flags
+    ConvertLinearAddress [bp + 12], es, ebx, bx
+    mov ax, [getdriveparams_buffer.info_flags]
+    mov [es:bx], ax
 
-    ; output values
+    ; output cylinders
+    ConvertLinearAddress [bp + 16], es, ebx, bx
+    mov eax, [getdriveparams_buffer.cylinders]
+    mov [es:bx], eax
 
-    ; drive type
-    ConvertLinearAddress [bp + 12], es, esi, si
-    mov es:[si], bl
+    ; output heads
+    ConvertLinearAddress [bp + 20], es, ebx, bx
+    mov eax, [getdriveparams_buffer.heads]
+    mov [es:bx], eax
 
-    ; cylinders
-    mov bl, ch          ;; cylinders - lower bits in ch
-    mov bh, cl          ;; cylinders - higher bits in cl
-    shr bh, 6
-    inc bx
+    ; output sector per track
+    ConvertLinearAddress [bp + 24], es, ebx, bx
+    mov eax, [getdriveparams_buffer.sectors_per_track]
+    mov [es:bx], eax
 
-    ConvertLinearAddress [bp + 16], es, esi, si
-    mov es:[si], bx
+    ; output total sectors
+    ConvertLinearAddress [bp + 28], es, ebx, bx
+    mov eax, [getdriveparams_buffer.total_sectors]
+    mov [es:bx], eax
 
-    ; sectors
-    xor ch, ch          ;; sectors
-    and cl, 0x3F        ;; remove upper 2 bits
+    ; output bytes per sector
+    ConvertLinearAddress [bp + 32], es, ebx, bx
+    mov ax, [getdriveparams_buffer.bytes_per_sector]
+    mov [es:bx], ax
 
-    ConvertLinearAddress [bp + 24], es, esi, si
-    mov es:[si], cx
+    xor eax, eax ;; if we are here, no error
 
-    ; heads
-    mov cl, dh
-    inc cl
-
-    ConvertLinearAddress [bp + 20], es, esi, si
-    mov es:[si], cx
-
-    pop di
-    pop esi
-    pop bx
+.done:
+    pop ebx
+    pop si
+    pop ds
     pop es
 
-    ; returns the error
-    mov eax, 1
-    sbb eax, 0
     push eax
 
     x86_EnterProtectedMode
 
-    ; return bool
     pop eax
 
     mov esp, ebp
     pop ebp
     ret
+
+; move buffer into function?
+getdriveparams_buffer:
+    .size               dw 0x001A
+
+    .info_flags         dw 0
+    .cylinders          dd 0
+    .heads              dd 0
+    .sectors_per_track  dd 0
+    .total_sectors      dq 0
+    .bytes_per_sector   dw 0
 
 
 ;
@@ -163,7 +179,7 @@ x86_Disk_Reset:
     x86_EnterRealMode
 
     mov ah, 0x00
-    mov dl, [bp + 8]    ;; [bp + 4] = drive number
+    mov dl, [bp + 8]    ;; [bp + 8] = drive number
     stc
     int 0x13
 
@@ -171,17 +187,16 @@ x86_Disk_Reset:
     mov ax, 1
     sbb ax, 0
     push eax
-
     x86_EnterProtectedMode
-
     pop eax
 
     mov esp, ebp
     pop ebp
     ret
 
+
 ;
-; bool ASMCALL x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t head, uint16_t sector, uint8_t count, void __far *dataOutput);
+; uint8_t ASMCALL x86_Disk_Read(uint8_t drive, uint32_t lba, uint16_t count, uint8_t* readCountOutput, void *dataOutput);
 ;
 global x86_Disk_Read
 x86_Disk_Read:
@@ -189,44 +204,74 @@ x86_Disk_Read:
     mov ebp, esp
 
     x86_EnterRealMode
-
-    push ebx
+    
+    push ds
+    push si
     push es
+    push ebx
 
     mov dl, [bp + 8]    ;; [bp + 8] = drive number
 
-    mov ch, [bp + 12]    ;; [bp + 12] = cylinder
-    mov cl, [bp + 13]
-    shl cl, 6
+    ; move read count
+    mov ax, [bp + 16]   ;; [bp + 16] = count
+    mov [extensions_dap.block_count], ax
 
-    mov dh, [bp + 16]    ;; [bp + 16] = head
+    ; move output address
+    ConvertLinearAddress [bp + 24], es, ebx, bx
+    mov [extensions_dap.segment], es
+    mov [extensions_dap.offset], bx
 
-    mov al, [bp + 20]   ;; cl = sector to bits 0-5
-    and al, 0x3F
-    or cl, al
+    ; move lba
+    mov eax, [bp + 12]
+    mov [extensions_dap.lba_lower], eax
+    xor eax, eax
+    mov [extensions_dap.lba_upper], eax
 
-    mov al, [bp + 24]   ;; [bp + 24] = count
+    ; prepare DAP location
+    mov ax, 0
+    mov ds, ax
+    mov ax, extensions_dap
+    mov si, ax
 
-    ConvertLinearAddress [bp + 28], es, ebx, bx
-
-    mov ah, 0x02
+    ; actual interrupt
+    xor eax, eax
+    mov ah, 0x42
     stc
     int 0x13
+    mov al, ah
+    xor ah, ah
+    jc .done
 
-    mov ax, 1
-    sbb ax, 0
-    push eax
+    ; move read count (interrupt updates this to be the actual number of sectors read)
+    ConvertLinearAddress [bp + 20], es, ebx, bx
+    mov ax, [extensions_dap.block_count]
+    mov [es:bx], ax
+    
+    xor eax, eax ;; if we are here, no error
 
-    x86_EnterProtectedMode
-
-    pop eax
-
-    pop es
+.done:
     pop ebx
+    pop es
+    pop si
+    pop ds
+
+    push eax
+    x86_EnterProtectedMode
+    pop eax
 
     mov esp, ebp
     pop ebp
     ret
+
+; dap = disk address packet
+extensions_dap:
+    .size               db 0x10
+                        db 0
+    .block_count        dw 0 ; aka sector_count
+    .offset             dw 0
+    .segment            dw 0
+    .lba_lower          dd 0
+    .lba_upper          dd 0
 
 ;
 ; uint8_t x86_VBE_GetControllerInfo(void *controllerInfoOutput);

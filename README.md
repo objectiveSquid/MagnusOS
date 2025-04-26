@@ -38,7 +38,7 @@ sudo apt-get update
 sudo apt-get install qemu
 ```
 ```sh
-./scripts/run_gui.sh
+./scripts/run.sh
 ```
 ### Debugging with GDB
   - gdb
@@ -59,7 +59,7 @@ sudo apt-get update
 sudo apt-get install bochs bochs-sdl bochsbios vgabios
 ```
 ```sh
-./scripts/debug.sh
+./scripts/bochs.sh
 ```
 ### Building the tools
   - gcc

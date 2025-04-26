@@ -1,4 +1,5 @@
 #include "disk.h"
+#include "visual/stdio.h"
 #include "x86.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -6,38 +7,30 @@
 #define DISK_READ_RETRY_COUNT 3
 
 bool DISK_Initialize(DISK *disk, uint8_t driveNumber) {
-    uint8_t driveType;
-    uint16_t cylinders, heads, sectors;
+    uint16_t infoFlags, bytesPerSector;
+    uint32_t cylinders, heads, sectors, totalSectors;
 
-    if (!x86_Disk_GetDriveParams(disk->id, &driveType, &cylinders, &heads, &sectors))
+    uint8_t errorCode = x86_Disk_GetDriveParams(driveNumber, &infoFlags, &cylinders, &heads, &sectors, &totalSectors, &bytesPerSector);
+
+    if (errorCode != 0)
         return false;
 
     disk->id = driveNumber;
     disk->cylinders = cylinders;
     disk->heads = heads;
     disk->sectors = sectors;
+    disk->totalSectors = totalSectors;
+    disk->infoFlags = infoFlags;
+    disk->bytesPerSector = bytesPerSector;
 
     return true;
 }
 
-void DISK_LbaToChs(DISK *disk, uint32_t lba, uint16_t *cylinderOutput, uint16_t *headOutput, uint16_t *sectorOutput) {
-    // cylinder = (lba / sectors per track) / heads
-    *cylinderOutput = (lba / disk->sectors) / disk->heads;
-
-    // head = (lba / sectors per track) % heads
-    *headOutput = (lba / disk->sectors) % disk->heads;
-
-    // sector = (lba % sectors per track) + 1
-    *sectorOutput = lba % disk->sectors + 1;
-}
-
-bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t count, void *dataOutput) {
-    uint16_t cylinder, head, sector;
-
-    DISK_LbaToChs(disk, lba, &cylinder, &head, &sector);
+bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint16_t count, void *dataOutput) {
+    uint8_t readCount, errorCode;
 
     for (uint8_t i = 0; i < DISK_READ_RETRY_COUNT; ++i) {
-        if (x86_Disk_Read(disk->id, cylinder, head, sector, count, dataOutput))
+        if (x86_Disk_Read(disk->id, lba, count, &readCount, dataOutput) == 0)
             return true;
 
         x86_Disk_Reset(disk->id);
