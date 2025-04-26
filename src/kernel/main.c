@@ -13,6 +13,7 @@ void __attribute__((section(".entry"))) start() {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
 
     HAL_Initialize();
+    PIT_Initialize();
     clearScreen();
 
     printf("Hello from kernel!\n");
