@@ -1,6 +1,6 @@
 #include "disk.h"
+#include "util/x86.h"
 #include "visual/stdio.h"
-#include "x86.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -30,7 +30,7 @@ bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint16_t count, void *dataOutput
     uint8_t readCount, errorCode;
 
     for (uint8_t i = 0; i < DISK_READ_RETRY_COUNT; ++i) {
-        if (x86_Disk_Read(disk->id, lba, count, &readCount, dataOutput) == 0)
+        if ((errorCode = x86_Disk_Read(disk->id, lba, count, &readCount, dataOutput)) == 0)
             return true;
 
         x86_Disk_Reset(disk->id);

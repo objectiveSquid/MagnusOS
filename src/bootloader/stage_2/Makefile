@@ -28,7 +28,10 @@ $(BUILD_DIR)/bootloader_stage_2/asm/%.obj: %.asm $(HEADERS_ASM) always
 always:
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/visual
-	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/visual/rasterfonts
+	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/util
+	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/disk
+	mkdir -p $(BUILD_DIR)/bootloader_stage_2/c/prep
+	mkdir -p $(BUILD_DIR)/bootloader_stage_2/asm/util
 	mkdir -p $(BUILD_DIR)/bootloader_stage_2/asm
 
 clean:

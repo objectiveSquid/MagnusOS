@@ -1,9 +1,10 @@
 #include "irq.h"
 #include "i8259.h"
-#include "io.h"
 #include "pic.h"
-#include "stdio.h"
 #include "util/arrays.h"
+#include "util/io.h"
+#include "util/x86.h"
+#include "visual/stdio.h"
 #include <stddef.h>
 
 #define PIC_REMAP_OFFSET 0x20
@@ -42,7 +43,7 @@ void i686_IRQ_Initialize() {
     for (uint8_t i = 0; i < 16; ++i)
         i686_ISR_RegisterHandler(PIC_REMAP_OFFSET + i, i686_IRQ_Handler);
 
-    i686_EnableInterrupts();
+    x86_EnableInterrupts();
 }
 
 const PICDriver *i686_IRQ_GetDriver() {

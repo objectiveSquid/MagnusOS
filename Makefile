@@ -1,11 +1,12 @@
 include build-scripts/config.mk
 
-.PHONY: all disk_image kernel bootloader clean always tools
+.PHONY: all disk_image kernel bootloader generate_all_files clean always tools
 
 all: disk_image
 
 include build-scripts/toolchain.mk
 include build-scripts/fonts.mk
+include build-scripts/shared.mk
 
 export PATH := $(PATH):$(TOOLCHAIN_PREFIX)/bin
 
@@ -28,14 +29,14 @@ $(BUILD_DIR)/bootloader_stage_1.bin: always
 
 # Stage 2
 bootloader_stage_2: $(BUILD_DIR)/bootloader_stage_2.bin
-$(BUILD_DIR)/bootloader_stage_2.bin: always generate_fonts
+$(BUILD_DIR)/bootloader_stage_2.bin: always copy_shared_files
 	$(MAKE) -C src/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Kernel
 #
 kernel: $(BUILD_DIR)/kernel.bin
-$(BUILD_DIR)/kernel.bin: always
+$(BUILD_DIR)/kernel.bin: always generate_fonts copy_shared_files
 	$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #

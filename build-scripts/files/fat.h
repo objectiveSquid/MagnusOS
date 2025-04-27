@@ -1,6 +1,6 @@
 #pragma once
+
 #include "disk.h"
-#include "other.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -21,7 +21,7 @@ typedef struct {
 } __attribute__((packed)) FAT_DirectoryEntry;
 
 typedef struct {
-    ssize_t handle;
+    uint32_t handle;
     bool isDirectory;
     uint32_t position;
     uint32_t size;

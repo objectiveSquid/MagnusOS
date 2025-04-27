@@ -1,0 +1,38 @@
+{
+    "memdefs.h": [
+        "bootloader/stage_2/memdefs.h",
+        "kernel/memdefs.h"
+    ],
+    "memory.c": [
+        "bootloader/stage_2/util/memory.c",
+        "kernel/util/memory.c"
+    ],
+    "memory.h": [
+        "bootloader/stage_2/util/memory.h",
+        "kernel/util/memory.h"
+    ],
+    "other.h": [
+        "bootloader/stage_2/util/other.h",
+        "kernel/util/other.h"
+    ],
+    "other.c": [
+        "bootloader/stage_2/util/other.c",
+        "kernel/util/other.c"
+    ],
+    "string.h": [
+        "bootloader/stage_2/util/string.h",
+        "kernel/util/string.h"
+    ],
+    "string.c": [
+        "bootloader/stage_2/util/string.c",
+        "kernel/util/string.c"
+    ],
+    "fat.h": [
+        "bootloader/stage_2/disk/fat.h",
+        "kernel/disk/fat.h"
+    ],
+    "fat.c": [
+        "bootloader/stage_2/disk/fat.c",
+        "kernel/disk/fat.c"
+    ]
+}

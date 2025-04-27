@@ -3,10 +3,11 @@
 // 0x00000000 - 0x000003FF - interrupt vector table
 // 0x00000400 - 0x000004FF - BIOS data area
 
-#define MEMORY_MIN 0x00000500
-#define MEMORY_MAX 0x00080000
+// 0x00000500 - 0x0000FFFF - bootloader stage 2
 
-#define MEMORY_FAT_ADDRESS ((void *)0x00020000)
+#define MEMORY_DMA_BUFFER ((void *)0x00000500) // this is 0x200 bytes in hex, also needs to be aligned to 16 bytes, and should be under 1mb (maybe 16mb) in addressing
+
+#define MEMORY_FAT_ADDRESS ((void *)0x00010000)
 #define MEMORY_FAT_SIZE 0x10000 // 64 kilobytes
 
 // 0x00000500 - 0x0000FFFF - bootloader stage 2

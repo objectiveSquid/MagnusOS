@@ -1,26 +1,14 @@
 #include "vbe.h"
 #include "memdefs.h"
-#include "memory.h"
-#include "stdio.h"
-#include "x86.h"
+#include "util/memory.h"
+#include "util/x86.h"
+#include "visual/stdio.h"
 
 #define DESIRED_WIDTH 1920
 #define DESIRED_HEIGHT 1080
 #define DESIRED_BITS_PER_PIXEL 24
 
-static bool vbeInitialized = false;
 static VbeModeInfo *vbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
-
-// this function only exists because i dont know how to use this files global variables in other files
-bool VBE_IsInitialized() {
-    return vbeInitialized;
-}
-
-bool VBE_VerifyInitialized() {
-    if (VBE_IsInitialized())
-        return true;
-    return VBE_Initialize();
-}
 
 bool VBE_GetControllerInfo(VbeInfoBlock *infoOutput) {
     if (x86_VBE_GetControllerInfo(infoOutput) == 0x00) {
@@ -73,6 +61,5 @@ bool VBE_Initialize() {
         return false;
     }
 
-    vbeInitialized = true;
     return true;
 }

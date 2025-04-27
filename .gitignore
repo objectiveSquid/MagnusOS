@@ -4,9 +4,6 @@ build
 # VSCode configuration
 .vscode
 
-# Open Watcom v2 error files
-*.err
-
 # Bochs debug files
 bx_enh_dbg.ini
 
@@ -17,4 +14,29 @@ bx_enh_dbg.ini
 src/kernel/arch/i686/isr_gen.c
 src/kernel/arch/i686/isr_gen.h
 src/kernel/arch/i686/isr_gen.inc
-src/bootloader/stage_2/visual/rasterfont_sizes.h
+
+src/kernel/visual/rasterfont_sizes.h
+
+# Copied files
+src/bootloader/stage_2/memdefs.h
+src/kernel/memdefs.h
+
+src/bootloader/stage_2/util/memory.c
+src/kernel/util/memory.c
+src/bootloader/stage_2/util/memory.h
+src/kernel/util/memory.h
+
+src/bootloader/stage_2/util/other.h
+src/kernel/util/other.h
+src/bootloader/stage_2/util/other.c
+src/kernel/util/other.c
+
+src/bootloader/stage_2/util/string.h
+src/kernel/util/string.h
+src/bootloader/stage_2/util/string.c
+src/kernel/util/string.c
+
+src/bootloader/stage_2/disk/fat.h
+src/kernel/disk/fat.h
+src/bootloader/stage_2/disk/fat.c
+src/kernel/disk/fat.c

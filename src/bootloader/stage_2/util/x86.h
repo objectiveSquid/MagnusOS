@@ -1,5 +1,5 @@
 #pragma once
-#include "visual/vbe.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -31,19 +31,4 @@ uint8_t ASMCALL x86_VBE_GetControllerInfo(void *infoOutput);
 uint8_t ASMCALL x86_VBE_GetModeInfo(uint16_t mode, void *infoOutput);
 uint8_t ASMCALL x86_VBE_SetVideoMode(uint16_t mode);
 
-typedef struct {
-    uint64_t base;
-    uint64_t length;
-    uint32_t type;
-    uint32_t acpi;
-} E820MemoryBlock;
-
-enum E820MemoryBlockType {
-    E820_USABLE = 1,
-    E820_RESERVED = 2,
-    E820_ACPI_RECLAIMABLE = 3,
-    E820_ACPI_NVS = 4,
-    E820_BAD_MEMORY = 5,
-};
-
-int ASMCALL x86_E820GetNextBlock(E820MemoryBlock *block, uint32_t *continuationId);
+void ASMCALL x86_Halt();
