@@ -13,6 +13,8 @@ env: Environment = TARGET_ENVIRONMENT  # type: ignore
 
 
 def link_shared_files(env: Environment) -> None:
+    print("Linking shared files...")
+
     list_file = Path(env["BUILD_SCRIPTS_DIRECTORY"]) / "shared_files" / "shared.json"
     input_directory = Path(env["BUILD_SCRIPTS_DIRECTORY"]) / "shared_files" / "files"
     output_directory = env["SRC_DIRECTORY"]

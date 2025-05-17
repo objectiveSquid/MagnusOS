@@ -19,4 +19,5 @@ run: image
 	qemu-system-i386 -fda $(BUILD_DIR)/protected_mode_floppy.img -nographic
 
 always:
+	echo "THIS SCRIPT IS DEPRECATED AND WILL BE REPLACED BY A SCONSCRIPT"
 	mkdir -p $(BUILD_DIR)

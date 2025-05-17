@@ -163,13 +163,19 @@ variant_dir_bootloader_stage_1 = (
 variant_dir_bootloader_stage_2 = f"{variant_dir}/bootloader_stage_2"
 variant_dir_kernel = f"{variant_dir}/kernel"
 
+# needs to run before including SConscripts because it "creates" source files
 SConscript(
     "build_scripts/shared_files/SConscript",
     duplicate=0,
 )
-# needs to run before including SConscripts because it "creates" source files
+SConscript(
+    "build_scripts/generate_isr/SConscript",
+    duplicate=0,
+)
 Import("link_shared_files")
 link_shared_files(TARGET_ENVIRONMENT)
+Import("generate_isr")
+generate_isr(f"{TARGET_ENVIRONMENT['SRC_DIRECTORY']}/kernel/arch/i686")
 
 SConscript(
     "build_scripts/fonts/SConscript",
