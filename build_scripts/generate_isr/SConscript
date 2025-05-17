@@ -14,9 +14,10 @@ def generate_c_file(output_file: str) -> None:
     with open(output_file, "w") as fd:
         # header stuff
         fd.write(
-            f"""/* !!! {GENERATED_WARNING} */
+            f"""/* {GENERATED_WARNING} */
 
 #include "isr_gen.h"
+
 """
         )
 
@@ -33,11 +34,12 @@ def generate_header_file(output_file: str) -> None:
     with open(output_file, "w") as fd:
         # header stuff
         fd.write(
-            f"""/* !!! {GENERATED_WARNING} */
+            f"""/* {GENERATED_WARNING} */
 
 #pragma once
 #include "idt.h"
 #include "gdt.h"
+
 """
         )
 
@@ -51,6 +53,9 @@ def generate_header_file(output_file: str) -> None:
 
 def generate_assembly_include_file(output_file: str) -> None:
     with open(output_file, "w") as fd:
+        # header stuff
+        fd.write(f"; {GENERATED_WARNING}\n\n")
+
         # definitions
         for index in range(256):
             if index in ISRS_WITH_ERRORCODES:
