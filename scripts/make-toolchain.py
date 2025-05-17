@@ -19,12 +19,16 @@ def get_system_triplet() -> str:
     try:
         return sh.Command("gcc")("-dumpmachine").strip()  # type: ignore
     except Exception as error:
-        return f"Failed to get system triplet from GCC: {error}"
+        print(f"Failed to get system triplet from GCC: {error}")
+        return ""
 
 
 def build_binutils(
     platform_prefix: str, toolchain_prefix: str, url: str, version: str
 ) -> None:
+    print(f"Starting build of binutils {version} for {platform_prefix}...")
+
+    print(f"Downloading binutils tarball from {url}...")
     response = requests.get(url)
     response.raise_for_status()
 
@@ -35,6 +39,7 @@ def build_binutils(
     with open(tar_file, "wb") as binutils_tar_fd:
         binutils_tar_fd.write(response.content)
 
+    print("Extracting binutils tarball...")
     with tarfile.open(tar_file, "r:xz") as binutils_tar_fd:
         binutils_tar_fd.extractall(path=".")
 
@@ -42,6 +47,7 @@ def build_binutils(
 
     os.makedirs(build_directory, exist_ok=True)
     os.chdir(build_directory)
+    print("Configuring binutils...")
     sh.Command(f"{tar_output_directory}/configure")(
         "--host",
         get_system_triplet(),
@@ -57,6 +63,7 @@ def build_binutils(
     )
     os.chdir("..")
 
+    print("Building binutils...")
     make = sh.Command("make")
     make("-C", build_directory, "-j", str(os.cpu_count()))
     make("-C", build_directory, "install")
@@ -65,6 +72,9 @@ def build_binutils(
 def build_gcc(
     platform_prefix: str, toolchain_prefix: str, url: str, version: str
 ) -> None:
+    print(f"Starting build of GCC {version} for {platform_prefix}...")
+
+    print(f"Downloading GCC tarball from {url}...")
     response = requests.get(url)
     response.raise_for_status()
 
@@ -75,6 +85,7 @@ def build_gcc(
     with open(tar_file, "wb") as binutils_tar_fd:
         binutils_tar_fd.write(response.content)
 
+    print("Extracting GCC tarball...")
     with tarfile.open(tar_file, "r:xz") as binutils_tar_fd:
         binutils_tar_fd.extractall(path=".")
 
@@ -86,6 +97,7 @@ def build_gcc(
 
     os.makedirs(build_directory, exist_ok=True)
     os.chdir(build_directory)
+    print("Configuring GCC...")
     sh.Command(f"{tar_output_directory}/configure")(
         "--host",
         get_system_triplet(),
@@ -101,6 +113,7 @@ def build_gcc(
     )
     os.chdir("..")
 
+    print("Building GCC...")
     make = sh.Command("make")
     make(
         "-C", build_directory, "all-gcc", "all-target-libgcc", "-j", str(os.cpu_count())
@@ -117,6 +130,9 @@ def main(
     gcc_url: str,
     gcc_version: str,
 ) -> None:
+    print(
+        f"Building toolchain for {platform_prefix} in {toolchain_directory} with prefix {toolchain_prefix}"
+    )
     os.makedirs(toolchain_directory, exist_ok=True)
 
     chdir_wrapper(build_binutils, toolchain_directory)(

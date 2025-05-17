@@ -6,7 +6,6 @@ from generate_fonts import (
     generate_header_file as generate_header_file_func,
 )
 
-from typing import Callable
 from pathlib import Path
 import os
 

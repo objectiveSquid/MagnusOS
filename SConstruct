@@ -177,6 +177,7 @@ link_shared_files(TARGET_ENVIRONMENT)
 Import("generate_isr")
 generate_isr(f"{TARGET_ENVIRONMENT['SRC_DIRECTORY']}/kernel/arch/i686")
 
+# for the os
 SConscript(
     "build_scripts/fonts/SConscript",
     duplicate=0,
