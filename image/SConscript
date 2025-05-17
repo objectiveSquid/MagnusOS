@@ -224,7 +224,7 @@ def make_disk(
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-# `target` maybe wrong
+# `target` may be wrong
 def make_image(
     target: list[SConsFile], source: list[SConsFile | SConsDir], env: Environment
 ) -> None:
