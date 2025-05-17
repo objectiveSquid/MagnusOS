@@ -1,0 +1,68 @@
+from SCons.Environment import Environment
+from SCons.Action import Action
+
+from generate_fonts import (
+    generate_font_files as generate_font_files_func,
+    generate_header_file as generate_header_file_func,
+)
+
+from typing import Callable
+from pathlib import Path
+import os
+
+
+TARGET_ENVIRONMENT: Environment
+Import("TARGET_ENVIRONMENT")
+env: Environment = TARGET_ENVIRONMENT  # type: ignore
+
+
+def chdir_wrapper(dir: str):
+    def wrapper(func, *args):
+        def inner():
+            old_dir = os.getcwd()
+            os.chdir(dir)
+            func(*args)
+            os.chdir(old_dir)
+
+        return inner
+
+    return wrapper
+
+
+@chdir_wrapper(str(Path(env["BUILD_SCRIPTS_DIRECTORY"]) / "fonts"))
+def generate_font_files_internal() -> None:
+    generate_font_files_func(str(Path(env["IMAGE_GENERATED_ROOT_DIRECTORY"]) / "fonts"))
+
+
+@chdir_wrapper(str(Path(env["BUILD_SCRIPTS_DIRECTORY"]) / "fonts"))
+def generate_font_header_internal() -> None:
+    generate_header_file_func(
+        str(Path(env["IMAGE_GENERATED_ROOT_DIRECTORY"]) / "fonts"),
+        str(Path(env["SRC_DIRECTORY"]) / "kernel" / "visual" / "rasterfont_sizes.h"),
+    )
+
+
+def generate_font_files_action(target: list, source: list, env: Environment) -> None:
+    generate_font_files_internal()
+
+
+def generate_font_header_action(target: list, source: list, env: Environment) -> None:
+    generate_font_header_internal()
+
+
+generate_font_files = env.Command(
+    "generate_font_files",
+    [],
+    Action(generate_font_files_action, "Generating font files."),
+)
+
+generate_font_header = env.Command(
+    "generate_font_header",
+    [],
+    Action(generate_font_header_action, "Generating font header."),
+)
+
+env.AlwaysBuild(generate_font_files, generate_font_header)
+
+Export("generate_font_files")
+Export("generate_font_header")

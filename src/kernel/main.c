@@ -12,11 +12,14 @@
 #include "visual/stdio.h"
 #include <stdint.h>
 
+extern void _init();
+
 extern char __bss_start;
 extern char __end;
 
 void __attribute__((section(".entry"))) start() {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
+    _init(); // call global constructors
 
     GRAPHICS_ClearScreen();
     FONT_SetPixelScale(2);

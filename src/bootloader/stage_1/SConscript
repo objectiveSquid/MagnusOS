@@ -1,0 +1,23 @@
+from SCons.Environment import Environment
+
+from build_scripts.utility import glob_recursive
+
+TARGET_ENVIRONMENT: Environment = (
+    Environment()
+)  # will be cleared by Import() below, value only here to make type checker happy
+Import("TARGET_ENVIRONMENT")
+
+env = TARGET_ENVIRONMENT.Clone()
+env.Append(
+    ASFLAGS=[f"-DFILESYSTEM={TARGET_ENVIRONMENT['image_filesystem']}"],
+    LINKFLAGS=[
+        "-Wl,-T",
+        env.File("linker.ld").srcnode().path,  # type: ignore
+        "-Wl,-Map=" + env.File("bootloader_stage_1.map").path,  # type: ignore
+    ],
+)
+
+inputs = glob_recursive(env, "*.asm")
+objects = env.Object(inputs)
+bootloader_stage_1 = env.Program("bootloader_stage_1.bin", objects)
+Export("bootloader_stage_1")

@@ -10,12 +10,20 @@ bx_enh_dbg.ini
 # Build toolchain
 .toolchain
 
+# Python cache files
+__pycache__
+
+# SCons files
+.sconsign.dblite
+
 # Generated files
 src/kernel/arch/i686/isr_gen.c
 src/kernel/arch/i686/isr_gen.h
 src/kernel/arch/i686/isr_gen.inc
 
 src/kernel/visual/rasterfont_sizes.h
+
+image/generated_root
 
 # Copied files
 src/bootloader/stage_2/memdefs.h
@@ -40,3 +48,8 @@ src/bootloader/stage_2/disk/fat.h
 src/kernel/disk/fat.h
 src/bootloader/stage_2/disk/fat.c
 src/kernel/disk/fat.c
+
+src/bootloader/stage_2/crti.asm
+src/kernel/crti.asm
+src/bootloader/stage_2/crtn.asm
+src/kernel/crtn.asm

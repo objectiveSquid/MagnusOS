@@ -77,27 +77,34 @@ void clearScreen() {
 }
 
 static const char g_HexChars[] = "0123456789abcdef";
+static const char g_CapitalHexChars[] = "0123456789ABCDEF";
 
-void printf_number_unsigned(uint64_t number, uint8_t radix) {
+void printf_number_unsigned(uint64_t number, uint8_t radix, bool capital) {
     char outputBuffer[22]; // 20-22 characters number, and 1 for the null terminator
     int8_t bufferPosition = 0;
+    const char *selectedHexChars;
+
+    if (capital)
+        selectedHexChars = g_CapitalHexChars;
+    else
+        selectedHexChars = g_HexChars;
 
     do {
         uint64_t remainder = number % radix;
         number /= radix;
-        outputBuffer[bufferPosition++] = g_HexChars[remainder];
+        outputBuffer[bufferPosition++] = selectedHexChars[remainder];
     } while (number > 0);
 
     while (--bufferPosition >= 0)
         putc(outputBuffer[bufferPosition]);
 }
 
-void printf_number_signed(int64_t number, uint8_t radix) {
+void printf_number_signed(int64_t number, uint8_t radix, bool capital) {
     if (number < 0) {
         putc('-');
-        printf_number_unsigned(-number, radix);
+        printf_number_unsigned(-number, radix, capital);
     } else {
-        printf_number_unsigned(number, radix);
+        printf_number_unsigned(number, radix, capital);
     }
 }
 
@@ -115,6 +122,7 @@ void printf_number_signed(int64_t number, uint8_t radix) {
 
 #define PRINTF_RADIX_DEFAULT 10
 #define PRINTF_SIGN_DEFAULT false
+#define PRINTF_CAPITAL_DEFAULT false
 
 void ASMCALL printf(const char *format, ...) {
     va_list args;
@@ -124,6 +132,7 @@ void ASMCALL printf(const char *format, ...) {
     uint8_t length = PRINTF_LENGTH_DEFAULT;
     uint8_t radix = PRINTF_RADIX_DEFAULT;
     bool sign = PRINTF_SIGN_DEFAULT;
+    bool capital = PRINTF_CAPITAL_DEFAULT;
     bool number = false;
 
     while (*format) {
@@ -192,6 +201,7 @@ void ASMCALL printf(const char *format, ...) {
                 number = true;
                 break;
             case 'X':
+                capital = true;
             case 'x':
             case 'p':
                 radix = 16;
@@ -214,15 +224,15 @@ void ASMCALL printf(const char *format, ...) {
                     case PRINTF_LENGTH_SHORT_SHORT:
                     case PRINTF_LENGTH_SHORT:
                     case PRINTF_LENGTH_DEFAULT:
-                        printf_number_signed(va_arg(args, int), radix);
+                        printf_number_signed(va_arg(args, int), radix, capital);
                         break;
 
                     case PRINTF_LENGTH_LONG:
-                        printf_number_signed(va_arg(args, long), radix);
+                        printf_number_signed(va_arg(args, long), radix, capital);
                         break;
 
                     case PRINTF_LENGTH_LONG_LONG:
-                        printf_number_signed(va_arg(args, long long), radix);
+                        printf_number_signed(va_arg(args, long long), radix, capital);
                         break;
                     }
                 else
@@ -230,15 +240,15 @@ void ASMCALL printf(const char *format, ...) {
                     case PRINTF_LENGTH_SHORT_SHORT:
                     case PRINTF_LENGTH_SHORT:
                     case PRINTF_LENGTH_DEFAULT:
-                        printf_number_unsigned(va_arg(args, unsigned), radix);
+                        printf_number_unsigned(va_arg(args, unsigned), radix, capital);
                         break;
 
                     case PRINTF_LENGTH_LONG:
-                        printf_number_unsigned(va_arg(args, unsigned long), radix);
+                        printf_number_unsigned(va_arg(args, unsigned long), radix, capital);
                         break;
 
                     case PRINTF_LENGTH_LONG_LONG:
-                        printf_number_unsigned(va_arg(args, unsigned long long), radix);
+                        printf_number_unsigned(va_arg(args, unsigned long long), radix, capital);
                         break;
                     }
 
@@ -246,6 +256,7 @@ void ASMCALL printf(const char *format, ...) {
             length = PRINTF_LENGTH_DEFAULT;
             radix = PRINTF_RADIX_DEFAULT;
             sign = PRINTF_SIGN_DEFAULT;
+            capital = PRINTF_CAPITAL_DEFAULT;
             number = false;
             break;
         }

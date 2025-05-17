@@ -2,7 +2,7 @@ ASM=nasm
 SRC_DIR=src
 BUILD_DIR=build
 
-.PHONY: image run run_gui debug
+.PHONY: image run run_gui
 image: $(BUILD_DIR)/protected_mode_floppy.img
 
 $(BUILD_DIR)/protected_mode_floppy.img: always $(BUILD_DIR)/protected_mode_bootloader.bin
@@ -20,6 +20,3 @@ run: image
 
 always:
 	mkdir -p $(BUILD_DIR)
-
-debug: image
-	bash -c "unset GTK_PATH; unset GIO_MODULE_DIR; bochs -f bochs_config"

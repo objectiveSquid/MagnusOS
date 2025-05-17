@@ -1,8 +1,0 @@
-megs: 128
-romimage: file=/usr/share/bochs/BIOS-bochs-legacy
-vgaromimage: file=/usr/share/bochs/VGABIOS-lgpl-latest
-mouse: enabled=0
-display_library: x, options="gui_debug"
-ata0-master: type=disk, path="build/main_disk.raw"
-
-boot: disk

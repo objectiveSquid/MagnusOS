@@ -1,0 +1,44 @@
+from SCons.Environment import Environment
+from build_scripts.utility import glob_recursive, is_file_name, find_index
+import os
+
+TARGET_ENVIRONMENT: Environment = (
+    Environment()
+)  # will be cleared by Import() below, value only here to make type checker happy
+Import("TARGET_ENVIRONMENT")
+
+env = TARGET_ENVIRONMENT.Clone()
+env.Append(
+    LINKFLAGS=[
+        "-Wl,-T",
+        env.File("linker.ld").srcnode().path,  # type: ignore
+        "-Wl,-Map=" + env.File("bootloader_stage_2.map").path,  # type: ignore
+    ],
+    CPATH=[env.Dir(".").srcnode()],  # type: ignore
+    CPPPATH=[env.Dir(".").srcnode()],  # type: ignore
+    ASFLAGS=["-I", env.Dir(".").srcnode()],  # type: ignore
+)
+
+sources = (
+    glob_recursive(env, "*.c")
+    + glob_recursive(env, "*.cpp")
+    + glob_recursive(env, "*.asm")
+)
+objects = env.Object(sources)
+
+# remove global contructor stuff
+obj_crti = objects.pop(find_index(objects, lambda obj: is_file_name(obj, "crti.o")))
+obj_crtn = objects.pop(find_index(objects, lambda obj: is_file_name(obj, "crtn.o")))
+
+# reorder objects
+objects = [
+    obj_crti,
+    env.File(os.path.join(env["TOOLCHAIN_LIBGCC"], "crtbegin.o")),
+    *objects,
+    env.File(os.path.join(env["TOOLCHAIN_LIBGCC"], "crtend.o")),
+    obj_crtn,
+]
+
+bootloader_stage_2 = env.Program("bootloader_stage_2.bin", objects)
+
+Export("bootloader_stage_2")

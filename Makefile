@@ -1,12 +1,12 @@
-include build-scripts/config.mk
+include build_scripts/config.mk
 
 .PHONY: all disk_image kernel bootloader generate_all_files clean always tools
 
 all: disk_image
 
-include build-scripts/toolchain.mk
-include build-scripts/fonts.mk
-include build-scripts/shared.mk
+include build_scripts/toolchain.mk
+include build_scripts/fonts.mk
+include build_scripts/shared.mk
 
 export PATH := $(PATH):$(TOOLCHAIN_PREFIX)/bin
 
@@ -15,7 +15,7 @@ export PATH := $(PATH):$(TOOLCHAIN_PREFIX)/bin
 #
 disk_image: $(BUILD_DIR)/main_disk.raw
 $(BUILD_DIR)/main_disk.raw: bootloader kernel generate_fonts
-	./build-scripts/make_disk_image.sh $@ $(MAKE_DISK_SIZE)
+	./build_scripts/make_disk_image.sh $@ $(MAKE_DISK_SIZE)
 
 #
 # Bootloader
@@ -62,5 +62,5 @@ clean:
 	$(MAKE) -C src/bootloader/stage_2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C tools/fat BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C build-scripts clean
+	$(MAKE) -C build_scripts clean
 	rm -rf $(BUILD_DIR)

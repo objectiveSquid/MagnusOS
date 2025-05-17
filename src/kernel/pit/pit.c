@@ -52,7 +52,7 @@ void setFrequency(uint16_t hz) {
 void PIT_Delay(uint32_t milliseconds) {
     uint32_t targetTicks = pitTicks + milliseconds;
     while (pitTicks < targetTicks)
-        asm volatile("hlt"); // let the cpu chill until the next interrupt
+        __asm__ volatile("hlt"); // let the cpu chill until the next interrupt
 }
 
 void irq0Handler() {

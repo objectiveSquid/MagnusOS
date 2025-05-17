@@ -4,9 +4,11 @@ section .entry
 
 extern __bss_start
 extern __end
+extern _init
 
 extern cstart
 global entry
+
 entry:
     cli
 
@@ -47,6 +49,9 @@ entry:
     mov al, 0
     cld
     rep stosb
+
+    ; call global contructors
+    call _init
 
     ; stage 1 put the boot drive in dl
     xor edx, edx

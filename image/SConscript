@@ -1,0 +1,286 @@
+from typing import Literal, Final
+import tempfile
+import os
+import re
+import time
+from io import SEEK_CUR, SEEK_SET
+from pathlib import Path
+import shutil
+import parted
+import sh
+
+from SCons.Action import Action
+from SCons.Environment import Environment
+from SCons.Node.FS import File as SConsFile, Dir as SConsDir
+
+
+SECTOR_SIZE: Final[int] = 512
+UNMOUNT_TIMEOUT_SECONDS: Final[int] = 3
+
+
+def create_empty_file(file: str, sectors: int) -> None:
+    with open(file, "wb+") as fd:
+        fd.seek((sectors * SECTOR_SIZE) - 1)
+        fd.write(b"\0")
+
+
+def create_filesystem(
+    target_file: str,
+    filesystem: Literal["fat12", "fat16", "fat32"],
+    reserved_sectors: int = 0,
+    offset: int = 0,
+) -> None:
+    reserved_sectors += 1
+    if filesystem == "fat32":  # fat32 needs 2 reserved sectors
+        reserved_sectors += 1
+
+    mkfs_fat_command = sh.Command("mkfs.fat")
+    mkfs_fat_command(
+        target_file,
+        F=filesystem[3:],  # [3:] does "fat12" -> "12" etc.
+        n="MagnusOS",
+        R=reserved_sectors,
+        offset=offset,
+    )
+
+
+def install_bootloader_stage_1(
+    target_file: str,
+    stage_1_file: str,
+    stage_2_offset: int,
+    stage_2_size: int,
+    offset: int = 0,
+) -> None:
+    # find stage 1 map file
+    map_file = Path(stage_1_file).with_suffix(".map")
+    if not map_file.exists():
+        raise Exception(f"Could not find stage 1 map file: {map_file}")
+
+    # try to find entry point in map file
+    entry_point_offset = find_symbol_in_map_file(
+        str(map_file), "__entry_start", with_equal_dot=True
+    )
+    entry_point_offset -= 0x7C00
+
+    # stage 2 location
+    stage_2_location = find_symbol_in_map_file(str(map_file), "stage_2_location")
+    stage_2_location -= 0x7C00
+
+    with (
+        open(stage_1_file, "rb") as stage_1_fd,
+        os.fdopen(os.open(target_file, os.O_WRONLY | os.O_CREAT), "wb+") as target_fd,
+    ):
+        target_fd.seek(offset * SECTOR_SIZE, SEEK_SET)
+
+        # write jump instruction
+        target_fd.write(stage_1_fd.read(3))
+
+        # write stage 1 starting at entry_point_offset
+        target_fd.seek(entry_point_offset - 3, SEEK_CUR)
+        stage_1_fd.seek(entry_point_offset, SEEK_SET)
+        target_fd.write(stage_1_fd.read())
+
+        # write stage 2 offset
+        target_fd.seek(offset * SECTOR_SIZE + stage_2_location, SEEK_SET)
+        target_fd.write(stage_2_offset.to_bytes(4, byteorder="little"))
+        target_fd.write(stage_2_size.to_bytes(1, byteorder="little"))
+
+
+def install_bootloader_stage_2(
+    target_file: str, stage_2_file: str, offset: int = 0, limit: int | None = None
+) -> None:
+    with (
+        open(stage_2_file, "rb") as stage_2_fd,
+        os.fdopen(os.open(target_file, os.O_WRONLY | os.O_CREAT), "wb+") as target_fd,
+    ):
+        target_fd.seek(offset * SECTOR_SIZE, SEEK_SET)
+        target_fd.write(stage_2_fd.read())
+
+
+def find_symbol_in_map_file(
+    file: str, symbol: str, with_equal_dot: bool = False
+) -> int:
+    if with_equal_dot:
+        regex_string = rf"\s+0x([0-9a-fA-F]+)\s+{symbol} = \."
+    else:
+        regex_string = rf"\s+0x([0-9a-fA-F]+)\s+{symbol}"
+
+    with open(file, "r") as fd:
+        match = re.search(regex_string, fd.read())
+        if match == None:
+            fd.seek(0)
+            print(fd.read())
+            raise Exception(f"Could not find symbol {symbol} in map file {file}")
+
+        return int(match.group(1), 16)
+
+
+def create_partition_table(target_file: str, align_start: int) -> None:
+    device = parted.getDevice(target_file)
+    disk = parted.freshDisk(device, "msdos")  # msdos = mbr
+    free_space = disk.getFreeSpaceRegions()
+    partition_geometry = parted.Geometry(device, align_start, end=free_space[-1].end)
+    partition = parted.Partition(
+        disk, type=parted.PARTITION_NORMAL, geometry=partition_geometry
+    )
+    partition.setFlag(parted.PARTITION_BOOT)
+    disk.addPartition(partition, constraint=device.optimalAlignedConstraint)
+    disk.commit()  # write changes
+
+
+def mount_filesystem(image: str, mount_dir: str, fs_offset: int) -> None:
+    sh.Command("mount")("-o", f"loop,offset={fs_offset}", image, mount_dir)
+
+
+def unmount_filesystem(mount_dir: str) -> None:
+    timeout_time = time.time() + UNMOUNT_TIMEOUT_SECONDS
+    while time.time() < timeout_time:
+        try:
+            sh.Command("umount")(mount_dir)
+            return
+        except sh.ErrorReturnCode:
+            time.sleep(0.1)
+
+    raise Exception(
+        f"Failed to unmount {mount_dir} after {UNMOUNT_TIMEOUT_SECONDS} seconds"
+    )
+
+
+def make_disk(
+    target_file: str,
+    bootloader_stage_1: str,
+    bootloader_stage_2: str,
+    kernel: str,
+    root_directory: SConsDir,
+    generated_root_directory: SConsDir,
+) -> None:
+    disk_image_size_sectors = (env["image_size"] + SECTOR_SIZE - 1) // SECTOR_SIZE
+    filesystem = env["image_filesystem"]
+    partition_offset = 2048  # sectors
+
+    bootloader_stage_1_size = os.stat(bootloader_stage_1).st_size
+    bootloader_stage_2_size = os.stat(bootloader_stage_2).st_size
+    bootloader_stage_2_size_sectors = (
+        bootloader_stage_2_size + SECTOR_SIZE - 1
+    ) // SECTOR_SIZE
+
+    create_empty_file(target_file, disk_image_size_sectors)
+
+    create_partition_table(target_file, partition_offset)
+
+    create_filesystem(target_file, filesystem, offset=partition_offset)
+
+    install_bootloader_stage_1(
+        target_file,
+        bootloader_stage_1,
+        offset=partition_offset,
+        stage_2_offset=1,
+        stage_2_size=bootloader_stage_2_size_sectors,
+    )
+
+    install_bootloader_stage_2(
+        target_file, bootloader_stage_2, offset=1, limit=partition_offset
+    )
+
+    temp_dir = tempfile.mkdtemp(
+        prefix=f"magnusos_disk_root_contents_{int(time.time())}_"
+    )
+    try:
+
+        def extended_copy2(src: str, dst: str, **kwargs) -> str:
+            if os.path.exists(dst):
+                raise Exception(
+                    "Duplicate file in image/root and image/generated_root: " + dst
+                )
+            return shutil.copy2(src, dst, **kwargs)
+
+        mount_filesystem(target_file, temp_dir, partition_offset * SECTOR_SIZE)
+
+        # copy kernel
+        boot_directory = os.path.join(temp_dir, "boot")
+        os.mkdir(boot_directory)
+        shutil.copy2(kernel, boot_directory)
+
+        print("Copying root directory...")
+        shutil.copytree(
+            root_directory.srcnode().path,
+            temp_dir,
+            copy_function=extended_copy2,
+            dirs_exist_ok=True,
+        )
+
+        print("Copying generated root directory...")
+        shutil.copytree(
+            generated_root_directory.srcnode().path,
+            temp_dir,
+            copy_function=extended_copy2,
+            dirs_exist_ok=True,
+        )
+    finally:
+        try:
+            unmount_filesystem(temp_dir)
+        except Exception:
+            pass
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+# `target` maybe wrong
+def make_image(
+    target: list[SConsFile], source: list[SConsFile | SConsDir], env: Environment
+) -> None:
+    bootloader_stage_1 = str(source[0])
+    bootloader_stage_2 = str(source[1])
+    kernel = str(source[2])
+    root_directory = source[3]
+    generated_root_directory = source[4]
+
+    image = str(target[0])
+    match env["image_type"]:
+        case "hdd":
+            make_disk(
+                image,
+                bootloader_stage_1,
+                bootloader_stage_2,
+                kernel,
+                root_directory,
+                generated_root_directory,
+            )
+        case "_":
+            raise ValueError(f"Unknown image type: {env['image_type']}")
+
+
+Import("bootloader_stage_1")
+Import("bootloader_stage_2")
+Import("kernel")
+
+TARGET_ENVIRONMENT: Environment
+Import("TARGET_ENVIRONMENT")
+env: Environment = TARGET_ENVIRONMENT  # type: ignore
+
+root_directory = env.Dir(env["IMAGE_ROOT_DIRECTORY"])
+generated_root_directory = env.Dir(env["IMAGE_GENERATED_ROOT_DIRECTORY"])
+make_image_inputs = [
+    bootloader_stage_1,
+    bootloader_stage_2,
+    kernel,
+    root_directory,
+    generated_root_directory,
+]
+
+match env["image_type"]:
+    case "hdd":
+        output_format = "img"
+    case _:
+        raise ValueError(f"Unknown image type: {env['image_type']}")
+
+output_file = f"image.{output_format}"
+
+disk_image = env.Command(
+    output_file,
+    make_image_inputs,
+    action=Action(make_image, "Making disk image"),
+)
+
+Import("generate_font_files")
+env.Requires(disk_image, generate_font_files)
+Export("disk_image")

@@ -16,58 +16,20 @@ git submodule update --init --recursive
 ## Requirements
 ### WARNING: These instructions are only for debian-based linux distributions, for anything else, you are on your own!
 ### Building the OS
-For building the OS you will need to set up a crosscompiler, this is done in `build-scripts/toolchain.mk`
-  - make
-  - nasm
-  - wget (for downloading files)
-  - mtools
-  - python3 (for some scripts)
-  - pip3 (python packages for scripts)
+For building the OS you will need to set up a crosscompiler, this is done in `build_scripts/toolchain.py`.
+To build anything, you will need to install the dependencies as such:
 ```sh
-sudo apt-get update
-sudo apt-get install make nasm wget mtools python3 python3-pip
-make build_toolchain
+sudo ./scripts/install-dependencies.sh
+scons toolchain
 ```
 ```sh
-make
+scons
 ```
 ### Running with Qemu
-  - qemu-system-x86
 ```sh
-sudo apt-get update
-sudo apt-get install qemu
-```
-```sh
-./scripts/run.sh
+scons run
 ```
 ### Debugging with GDB
-  - gdb
 ```sh
-sudo apt-get update
-sudo apt-get install gdb
-```
-```sh
-./scripts/gdb.sh
-```
-### Debugging with Bochs (Not currently working!)
-  - bochs
-  - bochs-x
-  - bochsbios
-  - vgabios
-```sh
-sudo apt-get update
-sudo apt-get install bochs bochs-sdl bochsbios vgabios
-```
-```sh
-./scripts/bochs.sh
-```
-### Building the tools
-  - gcc
-  - make
-```sh
-sudo apt-get update
-sudo apt-get install gcc make
-```
-```sh
-make tools
+scons gdb
 ```
