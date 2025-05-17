@@ -31,7 +31,7 @@ void ASMCALL cstart(uint16_t bootDrive) {
     }
     puts("Initialized FAT!\n");
 
-    FAT_File *kernelFd = FAT_Open(disk, "kernel.bin");
+    FAT_File *kernelFd = FAT_Open(disk, "boot/kernel.bin");
     if (kernelFd == NULL) {
         puts("Failed to open kernel file.\n");
         return;
