@@ -1,4 +1,4 @@
-# /usr/bin/python3
+#!/usr/bin/python3
 
 import sys
 import sh
@@ -11,6 +11,12 @@ def main(image_type: str, image_path: str, memory_size: str) -> None:
         memory_size,
         "-hda",
         image_path,
+        "-debugcon",  # for the e9 port hack
+        "stdio",  #
+        "-serial",  # disable com1 serial port (also for e9 port hack)
+        "null",  #
+        _out=sys.stdout,
+        _err=sys.stderr,
     )
 
 

@@ -67,6 +67,11 @@ void puts(const char *buf) {
 }
 
 void clearScreen() {
+    // this first thing here is to prevent writing out of bounds
+    g_CursorPosition[0] = 0;
+    g_CursorPosition[1] = 0;
+    VGA_SetCursurPosition(0, 0);
+
     for (uint8_t x = 0; x < VGA_TEXT_SCREEN_WIDTH; ++x)
         for (uint8_t y = 0; y < VGA_TEXT_SCREEN_HEIGHT; ++y)
             putc('\0');

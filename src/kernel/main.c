@@ -25,14 +25,14 @@ void __attribute__((section(".entry"))) start() {
     FONT_SetPixelScale(2);
     HAL_Initialize();
     PIT_Initialize();
-    clearScreen();
+    // PS2_Initialize(); a little bit too buggy for now
 
     DISK *disk = (DISK *)MEMORY_FAT12_DISK_BUFFER;
     if (!DISK_Initialize(disk->id)) {
         printf("Failed to initialize disk!\n");
         return;
     }
-    printf("Initialized disk!\n");
+    puts("Initialized disk!\n");
 
     if (!FAT_Initialize(disk)) {
         printf("Failed to initialize FAT!\n");
@@ -40,10 +40,13 @@ void __attribute__((section(".entry"))) start() {
     }
     printf("Initialized FAT!\n");
 
-    printf("Hello from kernel!\n");
+    FONT_SetFont(FONT_FindFontInfo(NULL, 8, 8), false);
+    FONT_SetPixelScale(1);
 
-    for (;;)
-        ;
+    // everything is now initialized
+    clearScreen();
+
+    printf("Hello from kernel!\n");
 
     x86_Halt();
 }

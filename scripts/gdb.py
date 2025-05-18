@@ -4,7 +4,6 @@ import tempfile
 import shutil
 import sys
 import os
-import sh
 
 
 def make_gdbscript(image_type: str, image_path: str, memory_size: str) -> str:
@@ -25,8 +24,8 @@ def main(image_type: str, image_path: str, memory_size: str) -> None:
     # make script
     gdbscript_path = make_gdbscript(image_type, image_path, memory_size)
 
-    # run gdb
-    sh.Command("gdb")("-x", gdbscript_path)
+    # run gdb (use this because i need stdio directly)
+    os.system(" ".join(["gdb", "-x", gdbscript_path]))
 
     # cleanup
     shutil.rmtree(os.path.dirname(gdbscript_path))

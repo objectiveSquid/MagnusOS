@@ -32,17 +32,18 @@ const FONT_FontInfo *FONT_FindFontInfo(const char *filename, int16_t width, int1
     return NULL;
 }
 
-void readFont() {
+bool readFont() {
     char fontPath[6 + 10 + 1] = {0}; // 6 for "fonts/", 10 for filename, 1 for null terminator = 17
     strcpy(fontPath, "fonts/");
     strcpy(fontPath + strlen("fonts/"), g_FontInfo->filename);
     fontPath[strlen("fonts/") + strlen(g_FontInfo->filename)] = '\0';
+    printf("Reading font file: %s\n", fontPath);
 
     DISK *disk = (DISK *)MEMORY_FAT12_DISK_BUFFER;
     FAT_File *fontFd = FAT_Open(disk, fontPath);
     if (fontFd == NULL) {
         printf("Failed to open font file: %s\n", fontPath);
-        return;
+        return false;
     }
 
     uint8_t *fontBuffer = g_FontBits;
@@ -51,14 +52,24 @@ void readFont() {
         fontBuffer += readCount;
 
     FAT_Close(fontFd);
+
+    return true;
 }
 
 void FONT_SetFont(const FONT_FontInfo *fontInfo, bool reDraw) {
-    if (fontInfo == g_FontInfo)
+    if (fontInfo == g_FontInfo || fontInfo == NULL)
         return;
 
+    // backup old fontinfo
+    const FONT_FontInfo *oldFontInfo = g_FontInfo;
+
     g_FontInfo = fontInfo;
-    readFont();
+
+    // possibly restore old fontinfo
+    if (!readFont()) {
+        g_FontInfo = oldFontInfo;
+        return;
+    }
 
     if (!reDraw)
         return;
@@ -73,6 +84,7 @@ void ensureFontInfoSet() {
     if (g_FontInfo != NULL)
         return;
 
+    // no font loaded
     g_FontInfo = &FALLBACK_FONT_INFO;
     g_FontBits = FALLBACK_FONT_8x8;
 }

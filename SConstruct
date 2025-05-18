@@ -86,8 +86,10 @@ HOST_ENVIRONMENT = Environment(
 )
 
 if HOST_ENVIRONMENT["config"] == "debug":
+    HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 1, "RELEASE_BUILD": 0})
     HOST_ENVIRONMENT.Append(CFLAGS=["-O0", "-g"])
 else:
+    HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 0, "RELEASE_BUILD": 1})
     HOST_ENVIRONMENT.Append(CFLAGS=["-O2"])
 
 if not HOST_ENVIRONMENT["display_commands"]:

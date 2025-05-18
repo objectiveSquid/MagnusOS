@@ -10,11 +10,19 @@
 
 #define MEMORY_LOAD_KERNEL_CHUNK_SIZE 0x00010000
 
+extern void _init();
+
+extern char __bss_start;
+extern char __end;
+
 typedef void (*KernelStart)();
 
 static uint8_t *kernel = (uint8_t *)MEMORY_KERNEL_ADDRESS;
 
 void ASMCALL cstart(uint16_t bootDrive) {
+    memset(&__bss_start, '\0', (&__end) - (&__bss_start));
+    _init(); // call global constructors
+
     clearScreen();
 
     DISK *disk = (DISK *)MEMORY_FAT12_DISK_BUFFER;
