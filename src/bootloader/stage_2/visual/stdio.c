@@ -265,7 +265,7 @@ void printBuffer(const void *buffer, uint32_t count) {
     const char *charBuffer = (const char *)buffer;
 
     for (uint32_t i = 0; i < count; i++) {
-        putc(g_HexChars[charBuffer[i] >> 4]);
+        putc(g_HexChars[(charBuffer[i] >> 4) & 0xF]);
         putc(g_HexChars[charBuffer[i] & 0xF]);
     }
 }

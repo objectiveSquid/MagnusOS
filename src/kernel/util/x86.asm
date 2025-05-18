@@ -14,6 +14,20 @@ x86_InByte:
     in al, dx
     ret
 
+global x86_OutWord
+x86_OutWord:
+    mov dx, [esp + 4]
+    mov ax, [esp + 8]
+    out dx, ax
+    ret
+
+global x86_InWord
+x86_InWord:
+    mov dx, [esp + 4]
+    xor eax, eax
+    in ax, dx
+    ret
+
 global x86_Halt
 x86_Halt:
     cli

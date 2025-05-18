@@ -1,4 +1,5 @@
 #include "arch/i686/irq.h"
+#include "disk/ata.h"
 #include "disk/disk.h"
 #include "disk/fat.h"
 #include "hal/hal.h"
@@ -40,8 +41,7 @@ void __attribute__((section(".entry"))) start() {
     }
     printf("Initialized FAT!\n");
 
-    FONT_SetFont(FONT_FindFontInfo(NULL, 8, 8), false);
-    FONT_SetPixelScale(1);
+    // TODO: check if other fonts can be loaded
 
     // everything is now initialized
     clearScreen();

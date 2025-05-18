@@ -3,9 +3,9 @@
 // 0x00000000 - 0x000003FF - interrupt vector table
 // 0x00000400 - 0x000004FF - BIOS data area
 
-// 0x00000500 - 0x0000FFFF - bootloader stage 2
-
-#define MEMORY_DMA_BUFFER ((void *)0x00000500) // this is 0x200 bytes in hex, also needs to be aligned to 16 bytes, and should be under 1mb (maybe 16mb) in addressing
+// i know this data will overwrite bootloader stage 2, but it doesnt matter since it will only be done once we are in the kernel
+#define MEMORY_DMA_BUFFER ((void *)0x00000500)           // this is 0x200 bytes in hex, also needs to be aligned to 16 bytes, should be under 1mb (maybe 16mb) in addressing and must not cross a 64k boundary
+#define MEMORY_ATA_PRD_TABLE_BUFFER ((void *)0x00000700) // need to be aligned to aligned to 4 bytes, must not cross a 64k boundary and must be addressable with 32 bits
 
 // 0x00000500 - 0x0000FFFF - bootloader stage 2
 
