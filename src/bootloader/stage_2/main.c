@@ -47,8 +47,8 @@ void ASMCALL cstart(uint16_t bootDrive) {
         puts("Failed to initialize VBE.\n");
         return;
     }
+    puts("Initialized VBE!\n");
 
-run_kernel:
     KernelStart kernelStart = (KernelStart)kernel;
     kernelStart();
 }

@@ -13,7 +13,7 @@
 #define MAX_PATH_SIZE 256
 #define MAX_FILE_HANDLES 32
 
-#define STAGE_1_LBA 2048
+#define FIRST_PARTITION_LBA 2048
 
 #define ROOT_DIRECTORY_HANDLE -1
 #define UNUSED_HANDLE -2
@@ -67,11 +67,11 @@ static char *g_Fat = NULL;
 static uint32_t g_DataSectionLba;
 
 bool FAT_ReadBootSector(DISK *disk) {
-    return DISK_ReadSectors(disk, STAGE_1_LBA, 1, g_Data->BS.bootSectorBytes);
+    return DISK_ReadSectors(disk, FIRST_PARTITION_LBA, 1, g_Data->BS.bootSectorBytes);
 }
 
 bool FAT_ReadFat(DISK *disk) {
-    return DISK_ReadSectors(disk, g_Data->BS.bootSector.reservedSectors, g_Data->BS.bootSector.sectorsPerFat, g_Fat);
+    return DISK_ReadSectors(disk, FIRST_PARTITION_LBA + g_Data->BS.bootSector.reservedSectors, g_Data->BS.bootSector.sectorsPerFat, g_Fat);
 }
 
 bool FAT_Initialize(DISK *disk) {
@@ -98,7 +98,7 @@ bool FAT_Initialize(DISK *disk) {
     }
 
     // read root directory
-    uint32_t rootDirectoryLba = g_Data->BS.bootSector.reservedSectors + (g_Data->BS.bootSector.sectorsPerFat * g_Data->BS.bootSector.fatCount);
+    uint32_t rootDirectoryLba = FIRST_PARTITION_LBA + g_Data->BS.bootSector.reservedSectors + (g_Data->BS.bootSector.sectorsPerFat * g_Data->BS.bootSector.fatCount);
     uint32_t rootDirectorySize = sizeof(FAT_DirectoryEntry) * g_Data->BS.bootSector.dirEntryCount;
 
     // open root directory file
