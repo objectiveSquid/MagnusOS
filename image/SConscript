@@ -202,12 +202,18 @@ def make_disk(
         shutil.copy2(kernel, boot_directory)
 
         print("Copying root directory...")
-        shutil.copytree(
-            root_directory.srcnode().path,
-            temp_dir,
-            copy_function=extended_copy2,
-            dirs_exist_ok=True,
-        )
+        try:
+            shutil.copytree(
+                root_directory.srcnode().path,
+                temp_dir,
+                copy_function=extended_copy2,
+                dirs_exist_ok=True,
+            )
+        except Exception:
+            print(
+                "Root directory not found, assuming it is empty and git didn't copy it."
+            )
+            os.mkdir(root_directory.srcnode().path)
 
         print("Copying generated root directory...")
         shutil.copytree(
