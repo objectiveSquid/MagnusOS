@@ -1,5 +1,6 @@
 #pragma once
 
+#include "disk/disk.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,7 +24,7 @@ typedef struct {
 } FONT_FontInfo;
 
 const FONT_FontInfo *FONT_FindFontInfo(const char *filename, int16_t width, int16_t height);
-void FONT_SetFont(const FONT_FontInfo *fontInfo, bool reDraw);
+void FONT_SetFont(DISK *fontsDisk, const FONT_FontInfo *fontInfo, bool reDraw);
 void FONT_PutCharacter(uint16_t x, uint16_t y, FONT_Character character);
 void FONT_ScrollBack(uint16_t lineCount);
 uint16_t FONT_ScreenCharacterWidth();

@@ -4,8 +4,9 @@
 // 0x00000400 - 0x000004FF - BIOS data area
 
 // i know this data will overwrite bootloader stage 2, but it doesnt matter since it will only be done once we are in the kernel
-#define MEMORY_DMA_BUFFER ((void *)0x00000500)           // this is 0x200 bytes in hex, also needs to be aligned to 16 bytes, should be under 1mb (maybe 16mb) in addressing and must not cross a 64k boundary
-#define MEMORY_ATA_PRD_TABLE_BUFFER ((void *)0x00000700) // need to be aligned to aligned to 4 bytes, must not cross a 64k boundary and must be addressable with 32 bits
+#define MEMORY_DMA_BUFFER ((void *)0x00000500)                 // this is 0x200 bytes in hex, needs to be aligned to 16 bytes, should be under 1mb (maybe 16mb) in addressing and must not cross a 64k boundary
+#define MEMORY_ATA_MASTER_IDENTIFY_BUFFER ((void *)0x00000700) // this is 0x200 bytes in hex, needs to be aligned to aligned to 4 bytes, must not cross a 64k boundary and must be addressable with 32 bits
+#define MEMORY_ATA_SLAVE_IDENTIFY_BUFFER ((void *)0x00000900)  // this is 0x200 bytes in hex, needs to be aligned to aligned to 4 bytes, must not cross a 64k boundary and must be addressable with 32 bits
 
 // 0x00000500 - 0x0000FFFF - bootloader stage 2
 
@@ -30,4 +31,3 @@
 #define MEMORY_SCREEN_CHARACTER_BUFFER ((void *)0x00200000)     // this is up to 0x7E900 bytes in hex
 #define MEMORY_RASTERFONT_BITS_LOAD_BUFFER ((void *)0x0027E900) // this is 0x100 bytes in hex
 #define MEMORY_RASTERFONT_BITS ((void *)0x0027EA00)             // this is up to 0xB500 bytes in hex
-#define MEMORY_FAT12_DISK_BUFFER ((void *)0x00289F00)           // this is only 24 bytes, but i want a constant address for it

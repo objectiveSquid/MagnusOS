@@ -28,14 +28,19 @@ void __attribute__((section(".entry"))) start() {
     PIT_Initialize();
     // PS2_Initialize(); a little bit too buggy for now
 
-    DISK *disk = (DISK *)MEMORY_FAT12_DISK_BUFFER;
-    if (!DISK_Initialize(disk->id)) {
-        printf("Failed to initialize disk!\n");
+    DISK masterDisk;
+    DISK slaveDisk;
+    DISK_InitializeResult diskInitializeResult;
+    DISK_Initialize(&diskInitializeResult, &masterDisk, &slaveDisk);
+
+    if (!diskInitializeResult.initializedMasterDisk) {
+        puts("Failed to initialize master (main) disk!\n");
         return;
     }
-    puts("Initialized disk!\n");
 
-    if (!FAT_Initialize(disk)) {
+    puts("Initialized disks!\n");
+
+    if (!FAT_Initialize(&masterDisk)) {
         printf("Failed to initialize FAT!\n");
         return;
     }
