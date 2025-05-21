@@ -44,17 +44,6 @@ void __attribute__((section(".entry"))) start() {
     }
     puts("Initialized FAT!\n");
 
-    char aaa[512];
-    FAT_File *fd = FAT_Open(&masterDisk, "hello.txt");
-    if (fd == NULL) {
-        puts("Failed to open file!\n");
-        return;
-    }
-    FAT_Read(&masterDisk, fd, 100, aaa);
-    FAT_Close(fd);
-    puts(aaa);
-    goto halt;
-
     // TODO: check if other fonts can be loaded
 
     // everything is now initialized
