@@ -1,5 +1,4 @@
 #include "arch/i686/irq.h"
-#include "disk/ata.h"
 #include "disk/disk.h"
 #include "disk/fat.h"
 #include "hal/hal.h"
@@ -37,21 +36,32 @@ void __attribute__((section(".entry"))) start() {
         puts("Failed to initialize master (main) disk!\n");
         return;
     }
-
     puts("Initialized disks!\n");
 
     if (!FAT_Initialize(&masterDisk)) {
-        printf("Failed to initialize FAT!\n");
+        puts("Failed to initialize FAT!\n");
         return;
     }
-    printf("Initialized FAT!\n");
+    puts("Initialized FAT!\n");
+
+    char aaa[512];
+    FAT_File *fd = FAT_Open(&masterDisk, "hello.txt");
+    if (fd == NULL) {
+        puts("Failed to open file!\n");
+        return;
+    }
+    FAT_Read(&masterDisk, fd, 100, aaa);
+    FAT_Close(fd);
+    puts(aaa);
+    goto halt;
 
     // TODO: check if other fonts can be loaded
 
     // everything is now initialized
     clearScreen();
 
-    printf("Hello from kernel!\n");
+    puts("Hello from kernel!\n");
 
+halt:
     x86_Halt();
 }

@@ -16,10 +16,8 @@ void DISK_Initialize(DISK_InitializeResult *resultOutput, DISK *masterDisk, DISK
         masterDisk->cylinders = ataOutput.masterDriveData->NumberOfCurrentCylinders;
         masterDisk->sectors = ataOutput.masterDriveData->CurrentSectorsPerTrack;
         masterDisk->heads = ataOutput.masterDriveData->NumberOfCurrentHeads;
-        masterDisk->ataData = ataOutput.masterDriveData;
-        printf("master drive cylinders: %d\n", masterDisk->cylinders);
-        printf("master drive sectors: %d\n", masterDisk->sectors);
-        printf("master drive heads: %d\n", masterDisk->heads);
+        masterDisk->supports48BitLba = ataOutput.masterDriveData->CommandSetActive.BigLba;
+        masterDisk->ataData = (struct ATA_IdentifyData *)ataOutput.masterDriveData;
     }
 
     if (ataOutput.slaveDriveExists) {
@@ -27,10 +25,11 @@ void DISK_Initialize(DISK_InitializeResult *resultOutput, DISK *masterDisk, DISK
         slaveDisk->cylinders = ataOutput.slaveDriveData->NumberOfCurrentCylinders;
         slaveDisk->sectors = ataOutput.slaveDriveData->CurrentSectorsPerTrack;
         slaveDisk->heads = ataOutput.slaveDriveData->NumberOfCurrentHeads;
-        slaveDisk->ataData = ataOutput.slaveDriveData;
+        masterDisk->supports48BitLba = ataOutput.masterDriveData->CommandSetActive.BigLba;
+        slaveDisk->ataData = (struct ATA_IdentifyData *)ataOutput.slaveDriveData;
     }
 }
 
 bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t count, void *dataOutput) {
-    return ATA_ReadSectors(lba, dataOutput, count, disk->isMaster);
+    return ATA_ReadSectors(lba, dataOutput, count, disk);
 }

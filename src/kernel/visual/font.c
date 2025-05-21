@@ -55,9 +55,9 @@ bool readFont(DISK *fontsDisk) {
     return true;
 }
 
-void FONT_SetFont(DISK *fontsDisk, const FONT_FontInfo *fontInfo, bool reDraw) {
+bool FONT_SetFont(DISK *fontsDisk, const FONT_FontInfo *fontInfo, bool reDraw) {
     if (fontInfo == g_FontInfo || fontInfo == NULL)
-        return;
+        return true;
 
     // backup old fontinfo
     const FONT_FontInfo *oldFontInfo = g_FontInfo;
@@ -67,16 +67,18 @@ void FONT_SetFont(DISK *fontsDisk, const FONT_FontInfo *fontInfo, bool reDraw) {
     // possibly restore old fontinfo
     if (!readFont(fontsDisk)) {
         g_FontInfo = oldFontInfo;
-        return;
+        return false;
     }
 
     if (!reDraw)
-        return;
+        return true;
 
     GRAPHICS_ClearScreen();
     for (uint16_t y = 0; y < FONT_ScreenCharacterHeight(); ++y)
         for (uint16_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
             FONT_PutCharacter(x, y, g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x]);
+
+    return true;
 }
 
 void ensureFontInfoSet() {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "disk.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -498,4 +499,4 @@ typedef struct {
 } ATA_InitializeOutput;
 
 void ATA_Initialize(ATA_InitializeOutput *output);
-bool ATA_ReadSectors(uint32_t lba, void *buffer, uint8_t count, bool master);
+uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk); // returns the number of sectors read

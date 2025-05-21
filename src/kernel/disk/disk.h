@@ -1,15 +1,18 @@
 #pragma once
 
-#include "ata.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+// forward declaration because of fucky wucky circular dependancy
+struct ATA_IdentifyData;
 
 typedef struct {
     bool isMaster; // if false its the slave drive
     uint16_t cylinders;
     uint16_t sectors;
     uint16_t heads;
-    ATA_IdentifyData *ataData;
+    bool supports48BitLba;
+    struct ATA_IdentifyData *ataData;
 } DISK;
 
 typedef struct {
