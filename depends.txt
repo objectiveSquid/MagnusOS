@@ -1,9 +1,0 @@
---- new apts ---
-python3.10
-
---- pips ---
-scons
-parted
-sh
-pillow
-bitarray
