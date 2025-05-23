@@ -9,8 +9,10 @@ def main(image_type: str, image_path: str, memory_size: str) -> None:
     sh.Command("qemu-system-i386")(
         "-m",
         memory_size,
-        "-hda",
-        image_path,
+        # "-hda",
+        # image_path,
+        "-drive",
+        f"file={image_path},format=raw,if=ide",
         "-debugcon",  # for the e9 port hack
         "stdio",  #
         "-serial",  # disable com1 serial port (also for e9 port hack)

@@ -74,7 +74,7 @@ typedef struct {
     uint8_t OverwriteExtCommandSupported : 1;
     uint8_t BlockEraseExtCommandSupported : 1;
 
-    uint32_t UserAddressableSectors; // word 60-61, for 28-bit commands
+    uint32_t Max28BitLBA; // word 60-61, for 28-bit commands
 
     uint16_t ObsoleteWord62;
 
@@ -335,7 +335,7 @@ typedef struct {
     uint16_t StreamingAccessLatencyDMAPIO; // word 97
     uint32_t StreamingPerfGranularity;     // word 98, 99
 
-    uint32_t Max48BitLBA[2]; // word 100-103
+    uint64_t Max48BitLBA; // word 100-103
 
     uint16_t StreamingTransferTime; // word 104. Streaming Transfer Time - PIO
 

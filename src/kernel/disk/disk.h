@@ -21,4 +21,4 @@ typedef struct {
 } DISK_InitializeResult;
 
 void DISK_Initialize(DISK_InitializeResult *resultOutput, DISK *masterDisk, DISK *slaveDisk);
-bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint8_t count, void *dataOutput);
+bool DISK_ReadSectors(DISK *disk, uint64_t lba, uint16_t count, void *dataOutput);

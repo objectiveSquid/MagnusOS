@@ -2,5 +2,5 @@
 
 #include <stdint.h>
 
-void waitFewHundredNs(uint8_t count);
+void waitNsRough(uint32_t ns);
 void IOWait();

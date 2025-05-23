@@ -1,4 +1,5 @@
 #include "arch/i686/irq.h"
+#include "disk/ata.h"
 #include "disk/disk.h"
 #include "disk/fat.h"
 #include "hal/hal.h"
@@ -31,9 +32,8 @@ void __attribute__((section(".entry"))) start() {
     DISK slaveDisk;
     DISK_InitializeResult diskInitializeResult;
     DISK_Initialize(&diskInitializeResult, &masterDisk, &slaveDisk);
-
     if (!diskInitializeResult.initializedMasterDisk) {
-        puts("Failed to initialize master (main) disk!\n");
+        puts("Failed to initialize master disk!\n");
         return;
     }
     puts("Initialized disks!\n");

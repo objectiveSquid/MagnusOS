@@ -1,7 +1,9 @@
 #include "ata.h"
 #include "disk.h"
 #include "memdefs.h"
+#include "pit/pit.h"
 #include "util/io.h"
+#include "util/other.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
 #include <stdbool.h>
@@ -19,29 +21,55 @@
 #define ATA_PORT_DRIVE_SELECT 0x1F6
 #define ATA_PORT_STATUS_COMMAND 0x1F7
 
+#define ATA_PORT_ALTERNATE_STATUS 0x3F6
+#define ATA_PORT_CONTROL 0x3F6
+
 #define ATA_CMD_READ_SECTORS 0x20
 #define ATA_CMD_READ_SECTORS_EXTENDED 0x24 // for 48 bit lba
 #define ATA_CMD_IDENTIFY 0xEC
+#define ATA_CMD_CACHE_FLUSH 0xE7
 
 // these are the values if doing stuff with the master drive, for most commands the value to use for the slave drive is simply 1 higher than these values
 #define ATA_SELECT_IDENTIFY 0xA0
 #define ATA_SELECT_READ 0xE0
 #define ATA_SELECT_READ_EXTENDED 0x40
 
+// control register stuff
+#define ATA_CONTROL_NIEN 0x02 // dont send interrupts
+#define ATA_CONTROL_SRST 0x04 // software reset
+
+// the status register stuff
 #define ATA_STATUS_REGISTER_BSY 0x80
+#define ATA_STATUS_REGISTER_DF 0x20
 #define ATA_STATUS_REGISTER_ERR 0x01
 #define ATA_STATUS_REGISTER_DRQ 0x08
+#define ATA_STATUS_REGISTER_SRV 0x10
 
-bool g_MasterDriveExists = false;
-bool g_SlaveDriveExists = false;
+const char *ataErrorMessages[] = {
+    "Address mark not found",
+    "Track zero not found",
+    "Command aborted",
+    "Media change request",
+    "ID not found",
+    "Media changed",
+    "Uncorrectable data error",
+    "Bad block detected",
+};
+
+static uint8_t g_ControlPortByte = 0x00;
 
 void waitForBSYClear() {
-    while (x86_InByte(ATA_PORT_STATUS_COMMAND) & ATA_STATUS_REGISTER_BSY)
+    while (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_BSY)
         ;
 }
 
 void waitForDRQOrERRSet() {
-    while (!(x86_InByte(ATA_PORT_STATUS_COMMAND) & (ATA_STATUS_REGISTER_DRQ | ATA_STATUS_REGISTER_ERR)))
+    while (!(x86_InByte(ATA_PORT_ALTERNATE_STATUS) & (ATA_STATUS_REGISTER_DRQ | ATA_STATUS_REGISTER_ERR)))
+        ;
+}
+
+void waitForDRQAndBSYClear() {
+    while (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & (ATA_STATUS_REGISTER_BSY | ATA_STATUS_REGISTER_DRQ))
         ;
 }
 
@@ -50,11 +78,11 @@ void poll() {
     uint8_t status;
 
     while (true) {
-        status = x86_InByte(ATA_PORT_STATUS_COMMAND);
+        status = x86_InByte(ATA_PORT_ALTERNATE_STATUS);
 
         if (status & ATA_STATUS_REGISTER_BSY)
             continue;
-        if (!(status & ATA_STATUS_REGISTER_DRQ))
+        if (!(status & ATA_STATUS_REGISTER_DRQ || status & ATA_STATUS_REGISTER_ERR || status & ATA_STATUS_REGISTER_DF))
             continue;
 
         break;
@@ -79,7 +107,7 @@ bool identify(bool master) {
     x86_OutByte(ATA_PORT_LBA_HIGH, 0);
     x86_OutByte(ATA_PORT_STATUS_COMMAND, ATA_CMD_IDENTIFY);
 
-    uint8_t identifyReturn = x86_InByte(ATA_PORT_STATUS_COMMAND);
+    uint8_t identifyReturn = x86_InByte(ATA_PORT_ALTERNATE_STATUS);
 
     // drive does not exist
     if (identifyReturn == 0)
@@ -98,7 +126,7 @@ bool identify(bool master) {
     waitForDRQOrERRSet();
 
     // error check
-    if (x86_InByte(ATA_PORT_STATUS_COMMAND) & ATA_STATUS_REGISTER_ERR) {
+    if (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_ERR) {
         printf("ATA error: %X\n", x86_InByte(ATA_PORT_ERROR));
         return false;
     }
@@ -109,18 +137,15 @@ bool identify(bool master) {
     return true;
 }
 
-void ATA_Initialize(ATA_InitializeOutput *output) {
-    g_MasterDriveExists = identify(true);
-    g_SlaveDriveExists = identify(false);
-
-    output->masterDriveExists = g_MasterDriveExists;
-    output->slaveDriveExists = g_SlaveDriveExists;
-    output->masterDriveData = (ATA_IdentifyData *)MEMORY_ATA_MASTER_IDENTIFY_BUFFER;
-    output->slaveDriveData = (ATA_IdentifyData *)MEMORY_ATA_SLAVE_IDENTIFY_BUFFER;
+void softwareReset() {
+    g_ControlPortByte |= ATA_CONTROL_SRST;
+    x86_OutByte(ATA_PORT_CONTROL, g_ControlPortByte);
+    g_ControlPortByte &= ~ATA_CONTROL_SRST;
 }
 
 void readSectors28BitLba(uint32_t lba, uint8_t count, uint8_t slaveBit) {
     x86_OutByte(ATA_PORT_DRIVE_SELECT, (ATA_SELECT_READ + slaveBit) | ((lba >> 24) & 0x0F));
+    waitNsRough(400);
     x86_OutByte(ATA_PORT_ERROR, 0); // optional, i think
     x86_OutByte(ATA_PORT_SECTOR_COUNT, count);
     x86_OutByte(ATA_PORT_LBA_LOW, lba & 0xFF);
@@ -131,6 +156,7 @@ void readSectors28BitLba(uint32_t lba, uint8_t count, uint8_t slaveBit) {
 
 void readSectors48BitLba(uint64_t lba, uint16_t count, uint8_t slaveBit) {
     x86_OutByte(ATA_PORT_DRIVE_SELECT, ATA_SELECT_READ_EXTENDED + slaveBit);
+    waitNsRough(400);
     x86_OutByte(ATA_PORT_SECTOR_COUNT, (count >> 8) & 0xFF); // high sector count byte
     x86_OutByte(ATA_PORT_LBA_LOW, (lba >> 24) & 0xFF);
     x86_OutByte(ATA_PORT_LBA_MID, (lba >> 32) & 0xFF);
@@ -150,14 +176,17 @@ uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk)
     else
         slaveBit = 0x10;
 
-    if (disk->supports48BitLba) {
-        if (lba > MAX_48_BIT_UNSIGNED_INTEGER) {
+    if (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_SRV)
+        softwareReset();
+    waitForBSYClear();
+    if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
+        if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER) {
             puts("LBA too large, must fit into 48 bits\n");
             return 0;
         }
         readSectors48BitLba(lba, count, slaveBit);
     } else {
-        if (lba > MAX_28_BIT_UNSIGNED_INTEGER) {
+        if (lba > ((ATA_IdentifyData *)disk->ataData)->Max28BitLBA || lba > MAX_28_BIT_UNSIGNED_INTEGER) {
             puts("LBA too large, must fit into 28 bits\n");
             return 0;
         }
@@ -165,21 +194,38 @@ uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk)
     }
     poll();
 
-    if (x86_InByte(ATA_PORT_STATUS_COMMAND) & ATA_STATUS_REGISTER_ERR) {
-        printf("ATA error: %hhX\n", x86_InByte(ATA_PORT_ERROR));
+    uint8_t status = x86_InByte(ATA_PORT_ALTERNATE_STATUS);
+    uint8_t errorCode = x86_InByte(ATA_PORT_ERROR);
+    if (status & ATA_STATUS_REGISTER_DF) {
+        printf("ATA error: Drive fault\n");
+        return 0;
+    }
+
+    if (status & ATA_STATUS_REGISTER_ERR || errorCode != 0) {
+        printf("ATA error: 0x%hhX %s\n", errorCode, ataErrorMessages[findLowestSetBit(errorCode)]);
         return 0;
     }
 
     for (uint16_t sectorIndex = 0; sectorIndex < count; ++sectorIndex) {
-        for (uint16_t dataWordIndex = 0; dataWordIndex < 256; ++dataWordIndex)
-            ((uint16_t *)(buffer))[dataWordIndex] = x86_InWord(ATA_PORT_DATA);
-        buffer += 512;
+        poll();
+        waitNsRough(400);
 
-        if (sectorIndex != count - 1) // not last loop
-            waitFewHundredNs(4);
+        for (uint16_t dataWordIndex = 0; dataWordIndex < 256; ++dataWordIndex)
+            ((uint16_t *)buffer)[dataWordIndex] = x86_InWord(ATA_PORT_DATA);
+        buffer += 512;
     }
 
     return count;
 }
 
 // TODO: implement writing
+
+void ATA_Initialize(ATA_InitializeOutput *output) {
+    x86_OutByte(ATA_PORT_CONTROL, 0x00); // clear all properties of the control port (recommandation from wiki.osdev.org)
+    g_ControlPortByte = 0x00;
+
+    output->masterDriveExists = identify(true);
+    output->slaveDriveExists = identify(false);
+    output->masterDriveData = (ATA_IdentifyData *)MEMORY_ATA_MASTER_IDENTIFY_BUFFER;
+    output->slaveDriveData = (ATA_IdentifyData *)MEMORY_ATA_SLAVE_IDENTIFY_BUFFER;
+}

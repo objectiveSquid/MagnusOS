@@ -14,7 +14,7 @@ def make_gdbscript(image_type: str, image_path: str, memory_size: str) -> str:
         fd.write("b *0x7C00\n")
         fd.write("layout asm\n")
         fd.write(
-            f"target remote | qemu-system-i386 -S -gdb stdio -m {memory_size} -hda {image_path}\n"
+            f"target remote | qemu-system-i386 -S -gdb stdio -m {memory_size} -drive file={image_path},format=raw,if=ide"
         )
 
     return path
