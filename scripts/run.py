@@ -17,6 +17,7 @@ def main(image_type: str, image_path: str, memory_size: str) -> None:
         "stdio",  #
         "-serial",  # disable com1 serial port (also for e9 port hack)
         "null",  #
+        "-no-reboot",  # do not reboot on triple fault
         _out=sys.stdout,
         _err=sys.stderr,
     )
