@@ -30,6 +30,10 @@ void DISK_Initialize(DISK_InitializeResult *resultOutput, DISK *masterDisk, DISK
     }
 }
 
-bool DISK_ReadSectors(DISK *disk, uint64_t lba, uint16_t count, void *dataOutput) {
+uint16_t DISK_ReadSectors(DISK *disk, uint64_t lba, uint16_t count, void *dataOutput) {
     return ATA_ReadSectors(lba, dataOutput, count, disk);
+}
+
+uint16_t DISK_WriteSectors(DISK *disk, uint64_t lba, uint16_t count, void *buffer) {
+    return ATA_WriteSectors(lba, buffer, count, disk);
 }

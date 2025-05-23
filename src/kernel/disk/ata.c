@@ -25,7 +25,9 @@
 #define ATA_PORT_CONTROL 0x3F6
 
 #define ATA_CMD_READ_SECTORS 0x20
-#define ATA_CMD_READ_SECTORS_EXTENDED 0x24 // for 48 bit lba
+#define ATA_CMD_WRITE_SECTORS 0x30
+#define ATA_CMD_READ_SECTORS_EXTENDED 0x24  // for 48 bit lba
+#define ATA_CMD_WRITE_SECTORS_EXTENDED 0x34 // for 48 bit lba
 #define ATA_CMD_IDENTIFY 0xEC
 #define ATA_CMD_CACHE_FLUSH 0xE7
 
@@ -168,6 +170,27 @@ void readSectors48BitLba(uint64_t lba, uint16_t count, uint8_t slaveBit) {
     x86_OutByte(ATA_PORT_STATUS_COMMAND, ATA_CMD_READ_SECTORS_EXTENDED);
 }
 
+void cacheFlush() {
+    x86_OutByte(ATA_PORT_STATUS_COMMAND, ATA_CMD_CACHE_FLUSH);
+}
+
+bool checkErrors() {
+    uint8_t status = x86_InByte(ATA_PORT_ALTERNATE_STATUS);
+    uint8_t errorCode = x86_InByte(ATA_PORT_ERROR);
+
+    if (status & ATA_STATUS_REGISTER_DF) {
+        printf("ATA error: Drive fault\n");
+        return false;
+    }
+
+    if (status & ATA_STATUS_REGISTER_ERR || errorCode != 0) {
+        printf("ATA error: 0x%hhX %s\n", errorCode, ataErrorMessages[findLowestSetBit(errorCode)]);
+        return false;
+    }
+
+    return true;
+}
+
 // TODO: implement dma instead of polling
 uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
     uint8_t slaveBit;
@@ -181,33 +204,24 @@ uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk)
     waitForBSYClear();
     if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER) {
-            puts("LBA too large, must fit into 48 bits\n");
+            puts("ATA: LBA too large, must fit into 48 bits\n");
             return 0;
         }
         readSectors48BitLba(lba, count, slaveBit);
     } else {
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max28BitLBA || lba > MAX_28_BIT_UNSIGNED_INTEGER) {
-            puts("LBA too large, must fit into 28 bits\n");
+            puts("ATA: LBA too large, must fit into 28 bits\n");
             return 0;
         }
         readSectors28BitLba(lba, count, slaveBit);
     }
     poll();
 
-    uint8_t status = x86_InByte(ATA_PORT_ALTERNATE_STATUS);
-    uint8_t errorCode = x86_InByte(ATA_PORT_ERROR);
-    if (status & ATA_STATUS_REGISTER_DF) {
-        printf("ATA error: Drive fault\n");
-        return 0;
-    }
-
-    if (status & ATA_STATUS_REGISTER_ERR || errorCode != 0) {
-        printf("ATA error: 0x%hhX %s\n", errorCode, ataErrorMessages[findLowestSetBit(errorCode)]);
-        return 0;
-    }
+    checkErrors();
 
     for (uint16_t sectorIndex = 0; sectorIndex < count; ++sectorIndex) {
         poll();
+        checkErrors();
         waitNsRough(400);
 
         for (uint16_t dataWordIndex = 0; dataWordIndex < 256; ++dataWordIndex)
@@ -218,7 +232,73 @@ uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk)
     return count;
 }
 
-// TODO: implement writing
+void writeSectors28BitLba(uint32_t lba, uint8_t count, uint8_t slaveBit) {
+    x86_OutByte(ATA_PORT_DRIVE_SELECT, (ATA_SELECT_READ + slaveBit) | ((lba >> 24) & 0x0F));
+    waitNsRough(400);
+    x86_OutByte(ATA_PORT_ERROR, 0); // optional, i think
+    x86_OutByte(ATA_PORT_SECTOR_COUNT, count);
+    x86_OutByte(ATA_PORT_LBA_LOW, lba & 0xFF);
+    x86_OutByte(ATA_PORT_LBA_MID, (lba >> 8) & 0xFF);
+    x86_OutByte(ATA_PORT_LBA_HIGH, (lba >> 16) & 0xFF);
+    x86_OutByte(ATA_PORT_STATUS_COMMAND, ATA_CMD_WRITE_SECTORS);
+}
+
+void writeSectors48BitLba(uint64_t lba, uint16_t count, uint8_t slaveBit) {
+    x86_OutByte(ATA_PORT_DRIVE_SELECT, ATA_SELECT_READ_EXTENDED + slaveBit);
+    waitNsRough(400);
+    x86_OutByte(ATA_PORT_SECTOR_COUNT, (count >> 8) & 0xFF); // high sector count byte
+    x86_OutByte(ATA_PORT_LBA_LOW, (lba >> 24) & 0xFF);
+    x86_OutByte(ATA_PORT_LBA_MID, (lba >> 32) & 0xFF);
+    x86_OutByte(ATA_PORT_LBA_HIGH, (lba >> 40) & 0xFF);
+    x86_OutByte(ATA_PORT_SECTOR_COUNT, count & 0xFF); // low sector count byte
+    x86_OutByte(ATA_PORT_LBA_LOW, lba & 0xFF);
+    x86_OutByte(ATA_PORT_LBA_MID, (lba >> 8) & 0xFF);
+    x86_OutByte(ATA_PORT_LBA_HIGH, (lba >> 16) & 0xFF);
+    x86_OutByte(ATA_PORT_STATUS_COMMAND, ATA_CMD_WRITE_SECTORS_EXTENDED);
+}
+
+uint16_t ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
+    uint8_t slaveBit;
+    if (disk->isMaster)
+        slaveBit = 0;
+    else
+        slaveBit = 0x10;
+
+    if (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_SRV)
+        softwareReset();
+    waitForBSYClear();
+    if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
+        if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER) {
+            puts("ATA: LBA too large, must fit into 48 bits\n");
+            return 0;
+        }
+        writeSectors48BitLba(lba, count, slaveBit);
+    } else {
+        if (lba > ((ATA_IdentifyData *)disk->ataData)->Max28BitLBA || lba > MAX_28_BIT_UNSIGNED_INTEGER) {
+            puts("ATA: LBA too large, must fit into 28 bits\n");
+            return 0;
+        }
+        writeSectors28BitLba(lba, count, slaveBit);
+    }
+    poll();
+
+    checkErrors();
+
+    for (uint16_t sectorIndex = 0; sectorIndex < count; ++sectorIndex) {
+        poll();
+        checkErrors();
+        waitNsRough(400);
+
+        // volatile makes the compiler not optimize out the loop, because we need to wait "a jmp $+2 size of delay" between each outword
+        for (volatile uint16_t dataWordIndex = 0; dataWordIndex < 256; ++dataWordIndex)
+            x86_OutWord(ATA_PORT_DATA, ((uint16_t *)buffer)[dataWordIndex]);
+        buffer += 512;
+    }
+
+    cacheFlush();
+
+    return count;
+}
 
 void ATA_Initialize(ATA_InitializeOutput *output) {
     x86_OutByte(ATA_PORT_CONTROL, 0x00); // clear all properties of the control port (recommandation from wiki.osdev.org)

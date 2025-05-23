@@ -500,3 +500,4 @@ typedef struct {
 
 void ATA_Initialize(ATA_InitializeOutput *output);
 uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk); // returns the number of sectors read
+uint16_t ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk);
