@@ -15,11 +15,11 @@ extern void _init();
 extern char __bss_start;
 extern char __end;
 
-typedef void (*KernelStart)();
+typedef void (*KernelStart)(uint8_t bootDrive);
 
 static uint8_t *kernel = (uint8_t *)MEMORY_KERNEL_ADDRESS;
 
-void ASMCALL cstart(uint16_t bootDrive) {
+void ASMCALL cstart(uint8_t bootDrive) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
     _init(); // call global constructors
 
@@ -58,5 +58,5 @@ void ASMCALL cstart(uint16_t bootDrive) {
     puts("Initialized VBE!\n");
 
     KernelStart kernelStart = (KernelStart)kernel;
-    kernelStart();
+    kernelStart(bootDrive);
 }

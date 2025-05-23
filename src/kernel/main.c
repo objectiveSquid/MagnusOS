@@ -18,7 +18,7 @@ extern void _init();
 extern char __bss_start;
 extern char __end;
 
-void __attribute__((section(".entry"))) start() {
+void __attribute__((section(".entry"))) start(uint8_t bootDrive) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
     _init(); // call global constructors
 
