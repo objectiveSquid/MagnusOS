@@ -37,7 +37,6 @@ bool readFont(DISK *fontsDisk) {
     strcpy(fontPath, "fonts/");
     strcpy(fontPath + strlen("fonts/"), g_FontInfo->filename);
     fontPath[strlen("fonts/") + strlen(g_FontInfo->filename)] = '\0';
-    printf("Reading font file: %s\n", fontPath);
 
     FAT_File *fontFd = FAT_Open(fontsDisk, fontPath);
     if (fontFd == NULL) {
