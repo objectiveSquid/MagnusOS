@@ -1,5 +1,6 @@
 #pragma once
 
+#include "prep/memdetect.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -30,5 +31,8 @@ Bit(s)  Description     (Table 00274)
 uint8_t ASMCALL x86_VBE_GetControllerInfo(void *infoOutput);
 uint8_t ASMCALL x86_VBE_GetModeInfo(uint16_t mode, void *infoOutput);
 uint8_t ASMCALL x86_VBE_SetVideoMode(uint16_t mode);
+
+// return error codes are described in MEMDETECT_GetMemoryRegionsErrorCode
+uint8_t ASMCALL x86_MEMDETECT_GetRegion(MEMDETECT_MemoryRegion *regionOutput, uint32_t *offset);
 
 void ASMCALL x86_Halt();

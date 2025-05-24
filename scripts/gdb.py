@@ -13,6 +13,7 @@ def make_gdbscript(image_type: str, image_path: str, memory_size: str) -> str:
         fd.write("set disassembly-flavor intel\n")
         fd.write("b *0x7C00\n")
         fd.write("layout asm\n")
+        fd.write("layout regs\n")
         # parameters for qemu are explained in the run.py file
         fd.write(
             f"target remote | qemu-system-i386 -S -gdb stdio \

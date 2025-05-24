@@ -42,5 +42,9 @@
     "crtn.asm": [
         "bootloader/stage_2/crtn.asm",
         "kernel/crtn.asm"
+    ],
+    "memdetect.h": [
+        "bootloader/stage_2/prep/memdetect.h",
+        "kernel/memory/memdetect.h"
     ]
 }

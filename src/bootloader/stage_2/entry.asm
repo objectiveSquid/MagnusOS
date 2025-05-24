@@ -12,6 +12,7 @@ global entry
 entry:
     cli
 
+    ; stage 1 put the boot drive in dl
     mov [g_boot_drive], dl
 
     ; set up segments
@@ -53,7 +54,6 @@ entry:
     ; call global contructors
     call _init
 
-    ; stage 1 put the boot drive in dl
     xor edx, edx
     mov dl, [g_boot_drive]
     push edx

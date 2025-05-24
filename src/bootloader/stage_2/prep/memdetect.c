@@ -1,0 +1,20 @@
+#include "memdetect.h"
+#include "util/x86.h"
+
+// maxRegions is assumed to be at least 1
+uint8_t MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint64_t maxRegions, uint64_t *regionCountOutput) {
+    uint64_t regionCount = 0;
+    uint32_t offset = 0;
+    uint8_t errorCode;
+
+    do {
+        errorCode = x86_MEMDETECT_GetRegion(regionsOutput + regionCount, &offset);
+        if (errorCode != 0) {
+            return errorCode;
+        }
+        regionCount++;
+    } while (offset != 0 && regionCount < maxRegions);
+
+    *regionCountOutput = regionCount;
+    return 0; // 0 means no error
+}

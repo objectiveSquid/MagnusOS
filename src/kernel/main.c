@@ -4,6 +4,7 @@
 #include "disk/fat.h"
 #include "hal/hal.h"
 #include "memdefs.h"
+#include "memory/memdetect.h"
 #include "pit/pit.h"
 #include "ps2/ps2.h"
 #include "util/memory.h"
@@ -18,7 +19,7 @@ extern void _init();
 extern char __bss_start;
 extern char __end;
 
-void __attribute__((section(".entry"))) start(uint8_t bootDrive) {
+void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_MemoryRegion *memoryRegions, uint64_t memoryRegionsCount) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
     _init(); // call global constructors
 
@@ -48,6 +49,13 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive) {
 
     // everything is now initialized
     clearScreen();
+
+    printf("Memory Regions Count: %llu\n", memoryRegionsCount);
+    for (uint64_t i = 0; i < memoryRegionsCount; i++) {
+        MEMDETECT_MemoryRegion *region = &memoryRegions[i];
+        printf("Region %llu: Base Address = 0x%llx, Size = 0x%llx, Type = 0x%lx\n",
+               i, region->baseAddress, region->size, region->type);
+    }
 
     puts("Hello from kernel!\n");
 

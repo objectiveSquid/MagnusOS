@@ -47,7 +47,7 @@
 ; Convert linear address to segment offset address
 ; - Input parameters:
 ;   - 1 ---> linear address
-;   - 2 ---> target segment (out)
+;   - 2 ---> target segment (out) (16 bits)
 ;   - 3 ---> target 32 bit register to use
 ;   - 4 ---> target lower 16 bit half of #3 (offset output)
 ;
@@ -363,6 +363,72 @@ x86_VBE_SetVideoMode:
     x86_EnterProtectedMode
     pop eax
     mov al, ah ;; error code
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+MEMDETECT_GetRegionSignature    equ 0x534D4150  ;; equals to "SMAP"
+;
+; uint8_t ASMCALL x86_MEMDETECT_GetRegion(MemoryRegion *regionOutput, uint32_t *offset);
+;
+global x86_MEMDETECT_GetRegion
+x86_MEMDETECT_GetRegion:
+    push ebp
+    mov ebp, esp
+
+    x86_EnterRealMode
+
+    push ebx
+    push esi
+    push edi
+    push es
+    push ds
+
+    ; actual interrupt stuff
+    ; output buffer
+    ConvertLinearAddress [bp + 8], es, edi, di
+    ; get target offset
+    ConvertLinearAddress [bp + 12], ds, esi, si
+    mov ebx, ds:[si]
+    ; simples
+    mov ecx, 24  ;; output buffer size
+    mov edx, MEMDETECT_GetRegionSignature
+    mov eax, 0xE820  ;; interrupt code
+
+    ; call interrupt
+    int 0x15
+
+    ; error check
+    cmp eax, MEMDETECT_GetRegionSignature
+    je .carrycheck
+    mov eax, 1 ;; unsupported error code
+    jmp .done
+.carrycheck:
+    jnc .errorcheck
+    mov eax, 2 ;; carry error code
+    jmp .done
+.errorcheck:
+    cmp ah, 0x86
+    jne .move_results
+    mov eax, 3 ;; other error code
+    jmp .done
+
+.move_results:
+    xor eax, eax ;; no error code here
+    ; results
+    mov ds:[si], ebx  ;; next offset address should still be here
+
+.done:
+    pop ds
+    pop es
+    pop edi
+    pop esi
+    pop ebx
+
+    push eax ;; error code is put in eax
+    x86_EnterProtectedMode
+    pop eax
 
     mov esp, ebp
     pop ebp
