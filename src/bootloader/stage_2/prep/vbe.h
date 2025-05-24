@@ -56,5 +56,3 @@ bool VBE_GetControllerInfo(VbeInfoBlock *infoOutput);
 bool VBE_GetModeInfo(uint16_t mode, VbeModeInfo *infoOutput);
 bool VBE_SetVideoMode(uint16_t mode);
 bool VBE_Initialize();
-bool VBE_VerifyInitialized();
-bool VBE_IsInitialized();
