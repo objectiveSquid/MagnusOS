@@ -12,8 +12,8 @@ VARS.AddVariables(
     EnumVariable(
         "config",
         help="Build configuration",
-        default="debug",
-        allowed_values=["debug", "release"],
+        default="test",
+        allowed_values=["debug", "test", "release"],
     ),
     EnumVariable(
         "arch",
@@ -85,12 +85,17 @@ HOST_ENVIRONMENT = Environment(
     IMAGE_GENERATED_ROOT_DIRECTORY=str(Path("image/generated_root").resolve()),
 )
 
-if HOST_ENVIRONMENT["config"] == "debug":
-    HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 1, "RELEASE_BUILD": 0})
-    HOST_ENVIRONMENT.Append(CFLAGS=["-O0", "-g"])
-else:
-    HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 0, "RELEASE_BUILD": 1})
-    HOST_ENVIRONMENT.Append(CFLAGS=["-O2"])
+match HOST_ENVIRONMENT["config"]:
+    case "debug":
+        HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 1, "RELEASE_BUILD": 0})
+        HOST_ENVIRONMENT.Append(CFLAGS=["-O0", "-g"])
+    case "test":
+        HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 0, "RELEASE_BUILD": 0})
+        HOST_ENVIRONMENT.Append(CFLAGS=["-O2"])
+    case "release":
+        HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 0, "RELEASE_BUILD": 1})
+        HOST_ENVIRONMENT.Append(CFLAGS=["-Ofast"])
+
 
 if not HOST_ENVIRONMENT["display_commands"]:
     HOST_ENVIRONMENT.Replace(
