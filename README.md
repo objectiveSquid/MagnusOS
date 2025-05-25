@@ -22,8 +22,9 @@ To build anything, you will need to install the dependencies as such:
 sudo ./scripts/install-dependencies.sh
 scons toolchain
 ```
+Then you can build the OS, *yes you will sadly need `sudo`, it's for mounting the filesystem to copy files to the image*:
 ```sh
-scons
+sudo scons
 ```
 ### Running with Qemu
 ```sh
