@@ -32,4 +32,4 @@ static const char *MEMDETECT_ErrorCodeStrings[] = {
 };
 
 // do not use in kernel, only defined in bootloader
-uint8_t MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint64_t maxRegions, uint64_t *regionCountOutput);
+uint8_t MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t maxRegions, uint32_t *regionCountOutput);
