@@ -434,6 +434,36 @@ x86_MEMDETECT_GetRegion:
     pop ebp
     ret
 
+;
+; uint32_t ASMCALL x86_MEMDETECT_GetContiguousKBAfter1MB();
+;
+global x86_MEMDETECT_GetContiguousKBAfter1MB
+x86_MEMDETECT_GetContiguousKBAfter1MB:
+    push ebp
+    mov ebp, esp
+
+    x86_EnterRealMode
+
+    ; do interrupt
+    xor eax, eax ;; clear return value
+    clc ;; some bioses dont clear carry on success
+    mov ah, 0x88
+    int 0x15
+
+    ; error checks
+    jnc .done ;; on success, skip setting error in eax
+    mov eax, 0
+    jmp .done ;; no error, result is in ax
+
+.done:
+    push eax
+    x86_EnterProtectedMode
+    pop eax
+
+    mov esp, ebp
+    pop ebp
+    ret
+
 global x86_Halt
 x86_Halt:
     cli

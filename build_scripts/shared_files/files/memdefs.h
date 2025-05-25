@@ -4,9 +4,12 @@
 // 0x00000400 - 0x000004FF - BIOS data area
 
 // i know this data will overwrite bootloader stage 2, but it doesnt matter since it will only be done once we are in the kernel
-#define MEMORY_DMA_BUFFER ((void *)0x00000500)                 // this is 0x200 bytes in hex, needs to be aligned to 16 bytes, should be under 1mb (maybe 16mb) in addressing and must not cross a 64k boundary
-#define MEMORY_ATA_MASTER_IDENTIFY_BUFFER ((void *)0x00000700) // this is 0x200 bytes in hex, needs to be aligned to aligned to 4 bytes, must not cross a 64k boundary and must be addressable with 32 bits
-#define MEMORY_ATA_SLAVE_IDENTIFY_BUFFER ((void *)0x00000900)  // this is 0x200 bytes in hex, needs to be aligned to aligned to 4 bytes, must not cross a 64k boundary and must be addressable with 32 bits
+#define MEMORY_DMA_BUFFER ((void *)0x00000500) // this is 0x200 bytes in hex, needs to be aligned to 16 bytes, should be under 1mb (maybe 16mb) in addressing and must not cross a 64k boundary
+
+#define MEMORY_ATA_MASTER_IDENTIFY_BUFFER ((void *)0x00000700) // this is 0x200 bytes in hex, needs to be aligned to 4 bytes, must not cross a 64k boundary and must be addressable with 32 bits
+#define MEMORY_ATA_SLAVE_IDENTIFY_BUFFER ((void *)0x00000900)  // this is 0x200 bytes in hex, needs to be aligned to 4 bytes, must not cross a 64k boundary and must be addressable with 32 bits
+
+// 0x00000700 - 0x00000AFF - ata stuff
 
 // 0x00000500 - 0x0000FFFF - bootloader stage 2
 
@@ -29,13 +32,23 @@
 // 0x00031800 - 0x0007FFFF - free
 
 // 0x00080000 - 0x0009FFFF - extended BIOS data area
-// 0x000A0000 - 0x000C7FFF - video
+// 0x000A0000 - 0x000C7FFF - vga video
 // 0x000C8000 - 0x000FFFFF - BIOS
 
 #define MEMORY_KERNEL_ADDRESS ((void *)0x00100000)
+#define MEMORY_MAX_KERNEL_SIZE 0x100000
 
 // 0x00100000 - 0x001FFFFF - kernel
 
 #define MEMORY_SCREEN_CHARACTER_BUFFER ((void *)0x00200000)     // this is up to 0x7E900 bytes in hex
 #define MEMORY_RASTERFONT_BITS_LOAD_BUFFER ((void *)0x0027E900) // this is 0x100 bytes in hex
 #define MEMORY_RASTERFONT_BITS ((void *)0x0027EA00)             // this is up to 0xB500 bytes in hex
+
+// 0x00200000 - 0x00289EFF - rasterfont stuff
+
+#define MEMORY_ALLOCATOR_CHUNK_SIZE 0x1000 // 4 kilobyte chunks
+#define MEMORY_ALLOCATOR_IN_USE_BITS ((void *)0x00289F00)
+
+// 0x00289F00 - (unknown, depends on the amount of ram and allocator chunk size) - allocator in use bits
+
+// from here on out its just ram

@@ -24,6 +24,7 @@ typedef enum {
     MEMDETECT_ERROR_OTHER = 3,
 } MEMDETECT_GetMemoryRegionsErrorCode;
 
+// also probably dont use in kernel
 static const char *MEMDETECT_ErrorCodeStrings[] = {
     "BIOS function not supported",
     "Carry flag set",

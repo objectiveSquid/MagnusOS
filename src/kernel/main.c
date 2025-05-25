@@ -4,6 +4,7 @@
 #include "disk/fat.h"
 #include "hal/hal.h"
 #include "memdefs.h"
+#include "memory/allocator.h"
 #include "memory/memdetect.h"
 #include "pit/pit.h"
 #include "ps2/ps2.h"
@@ -19,7 +20,7 @@ extern void _init();
 extern char __bss_start;
 extern char __end;
 
-void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_MemoryRegion *memoryRegions, uint64_t memoryRegionsCount) {
+void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
     _init(); // call global constructors
 
@@ -57,8 +58,7 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_Memor
                i, region->baseAddress, region->size, region->type);
     }
 
-    puts("Hello from kernel!\n");
+    ALLOCATOR_Initialize(memoryRegions, memoryRegionsCount);
 
-halt:
-    x86_Halt();
+    puts("Hello from kernel!\n");
 }
