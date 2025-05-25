@@ -27,9 +27,9 @@
 #define MEMORY_MEMDETECT_REGIONS_BUFFER ((void *)0x00030400) // this is (MEMORY_MEMDETECT_MAX_REGIONS * 24) (a region entry is 24 bytes) bytes in hex, maybe needs to be aligned to 4 bytes and must be under 1mb (because the bios has to be able to write to it)
 #define MEMORY_MEMDETECT_REGIONS_BUFFER_SIZE (MEMORY_MEMDETECT_MAX_REGIONS * 24)
 
-// 0x00030400 - 0x00031C00 - memdetect stuff
+// 0x00030400 - 0x00031BFF - memdetect stuff
 
-// 0x00031800 - 0x0007FFFF - free
+// 0x00031C00 - 0x0007FFFF - free
 
 // 0x00080000 - 0x0009FFFF - extended BIOS data area
 // 0x000A0000 - 0x000C7FFF - vga video
@@ -40,15 +40,14 @@
 
 // 0x00100000 - 0x001FFFFF - kernel
 
-#define MEMORY_SCREEN_CHARACTER_BUFFER ((void *)0x00200000)     // this is up to 0x7E900 bytes in hex
-#define MEMORY_RASTERFONT_BITS_LOAD_BUFFER ((void *)0x0027E900) // this is 0x100 bytes in hex
-#define MEMORY_RASTERFONT_BITS ((void *)0x0027EA00)             // this is up to 0xB500 bytes in hex
+#define MEMORY_SCREEN_CHARACTER_BUFFER ((void *)0x00200000) // this is up to 0x7E900 bytes in hex
+#define MEMORY_RASTERFONT_BITS ((void *)0x0027EA00)         // this is up to 0xB500 bytes in hex
 
 // 0x00200000 - 0x00289EFF - rasterfont stuff
 
-#define MEMORY_ALLOCATOR_CHUNK_SIZE 0x1000 // 4 kilobyte chunks
+#define MEMORY_ALLOCATOR_CHUNK_SIZE 512 // 4 kilobyte chunks
 #define MEMORY_ALLOCATOR_IN_USE_BITS ((void *)0x00289F00)
 
-// 0x00289F00 - (unknown, depends on the amount of ram and allocator chunk size) - allocator in use bits
+// 0x00289F00 - (unknown, calculated like this: address_space_size * allocator_chunk_size / 8) - allocator in use bits
 
 // from here on out its just ram

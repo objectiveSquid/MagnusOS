@@ -26,9 +26,19 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_Memor
 
     GRAPHICS_ClearScreen();
     FONT_SetPixelScale(2);
+
     HAL_Initialize();
+    puts("Initialized the HAL! (gdt, idt, isr, irq)\n");
+
     PIT_Initialize();
-    // PS2_Initialize(); a little bit too buggy for now
+    puts("Initialized the PIT driver!\n");
+
+    // a little bit too buggy for now
+    // PS2_Initialize();
+    // puts("Initialized the PS2 driver!\n");
+
+    ALLOCATOR_Initialize(memoryRegions, memoryRegionsCount);
+    puts("Initialized allocator!\n");
 
     DISK masterDisk;
     DISK slaveDisk;
@@ -50,15 +60,6 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_Memor
 
     // everything is now initialized
     clearScreen();
-
-    printf("Memory Regions Count: %llu\n", memoryRegionsCount);
-    for (uint64_t i = 0; i < memoryRegionsCount; i++) {
-        MEMDETECT_MemoryRegion *region = &memoryRegions[i];
-        printf("Region %llu: Base Address = 0x%llx, Size = 0x%llx, Type = 0x%lx\n",
-               i, region->baseAddress, region->size, region->type);
-    }
-
-    ALLOCATOR_Initialize(memoryRegions, memoryRegionsCount);
 
     puts("Hello from kernel!\n");
 }
