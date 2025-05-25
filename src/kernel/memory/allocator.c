@@ -57,10 +57,8 @@ void *malloc(size_t size) {
 
     bitIndex -= holeSize;
 
-    for (size_t i = 0; i < holeSize; ++i) {
-        printf("Setting bit %d\n", bitIndex + i);
+    for (size_t i = 0; i < holeSize; ++i)
         SET_BIT(g_InUseBits, bitIndex + i);
-    }
 
     void *holeSizePtr = (void *)(bitIndex * MEMORY_ALLOCATOR_CHUNK_SIZE);
     *((size_t *)holeSizePtr) = holeSize;
