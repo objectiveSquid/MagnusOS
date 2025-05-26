@@ -75,7 +75,7 @@ HOST_ENVIRONMENT = Environment(
     AS="nasm",
     CC="gcc",
     CXX="g++",
-    CFLAGS=["-std=c99"],  # only c
+    CFLAGS=["-std=c11"],  # only c
     CXXFLAGS=["-std=c++17"],  # only c++
     CCFLAGS=[],  # both for c and c++
     STRIP="strip",
