@@ -120,8 +120,6 @@ KeyboardConrollerEnableKeyboard         equ 0xAE
 KeyboardConrollerReadControlOutputPort  equ 0xD0
 KeyboardConrollerWriteControlOutputPort equ 0xD1
 
-ScreenBuffer                            equ 0xB8000
-
 g_gdt:
     dq 0
 
