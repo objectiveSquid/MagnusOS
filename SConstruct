@@ -59,7 +59,6 @@ VARS.Add(
     converter=parse_size_dry,
 )
 
-
 DEPENDANCIES = {
     "binutils": "2.44",
     "gcc": "11.4.0",
@@ -116,6 +115,11 @@ if not HOST_ENVIRONMENT["display_commands"]:
 #
 # Target environment
 #
+
+if HOST_ENVIRONMENT["image_filesystem"] != "fat12":
+    print("Only fat12 is supported for now")
+    Exit(1)
+    exit(1)
 
 platform_prefix = ""
 if HOST_ENVIRONMENT["arch"] == "i686":
