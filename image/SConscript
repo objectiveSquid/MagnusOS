@@ -57,20 +57,25 @@ def install_bootloader_stage_1(
         raise Exception(f"Could not find stage 1 map file: {map_file}")
 
     # try to find entry point in map file
-    entry_point_offset = find_symbol_in_map_file(
-        str(map_file), "__entry_start", with_equal_dot=True
+    entry_point_offset = (
+        find_symbol_in_map_file(str(map_file), "__entry_start", with_equal_dot=True)
+        - 0x7C00
     )
-    entry_point_offset -= 0x7C00
 
     # stage 2 location
-    stage_2_location = find_symbol_in_map_file(str(map_file), "stage_2_location")
-    stage_2_location -= 0x7C00
+    stage_2_lba_offset = (
+        find_symbol_in_map_file(str(map_file), "stage_2_info.lba") - 0x7C00
+    )
+    stage_2_size_offset = (
+        find_symbol_in_map_file(str(map_file), "stage_2_info.size") - 0x7C00
+    )
 
     with (
         open(stage_1_file, "rb") as stage_1_fd,
         os.fdopen(os.open(target_file, os.O_WRONLY | os.O_CREAT), "wb+") as target_fd,
     ):
-        target_fd.seek(offset * SECTOR_SIZE, SEEK_SET)
+        stage_1_offset_bytes = offset * SECTOR_SIZE
+        target_fd.seek(stage_1_offset_bytes, SEEK_SET)
 
         # write jump instruction
         target_fd.write(stage_1_fd.read(3))
@@ -81,8 +86,10 @@ def install_bootloader_stage_1(
         target_fd.write(stage_1_fd.read())
 
         # write stage 2 offset
-        target_fd.seek(offset * SECTOR_SIZE + stage_2_location, SEEK_SET)
+        target_fd.seek(stage_1_offset_bytes + stage_2_lba_offset, SEEK_SET)
         target_fd.write(stage_2_offset.to_bytes(4, byteorder="little"))
+        # write stage 2 size
+        target_fd.seek(stage_1_offset_bytes + stage_2_size_offset, SEEK_SET)
         target_fd.write(stage_2_size.to_bytes(1, byteorder="little"))
 
 
@@ -163,6 +170,11 @@ def make_disk(
     bootloader_stage_2_size_sectors = (
         bootloader_stage_2_size + SECTOR_SIZE - 1
     ) // SECTOR_SIZE
+
+    if bootloader_stage_2_size_sectors > 127:
+        raise Exception(
+            f"Bootloader stage 2 size {bootloader_stage_2_size_sectors} sectors is too large. This is because some BIOSes limit disk reads to 127 sectors and I can't be bothered to read the disk multiple times."
+        )
 
     create_empty_file(target_file, disk_image_size_sectors)
 

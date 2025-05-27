@@ -12,8 +12,10 @@ global entry
 entry:
     cli
 
-    ; stage 1 put the boot drive in dl
+    ; info from stage 1
     mov [g_boot_drive], dl
+    mov [g_partition_info.lba], ebx
+    mov [g_partition_info.size], cl
 
     ; set up segments
     mov ax, ds
@@ -54,9 +56,20 @@ entry:
     ; call global contructors
     call _init
 
+    ; --- partition table entry address parameter
+    ; offset
+    mov edx, [g_partition_info.size]
+    push edx
+    ; segment
+    mov edx, [g_partition_info.lba]
+    push edx
+
+    ; boot drive parameter
     xor edx, edx
     mov dl, [g_boot_drive]
     push edx
+
+    ; call kernel
     call cstart
 
     cli
@@ -161,3 +174,7 @@ g_gdt_descriptor:
 
 g_boot_drive:
     db 0
+
+g_partition_info:
+    .lba        dd 0
+    .size       db 0

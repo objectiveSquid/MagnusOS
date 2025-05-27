@@ -17,11 +17,11 @@ extern void _init();
 extern char __bss_start;
 extern char __end;
 
-typedef void (*KernelStart)(uint8_t bootDrive, MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount);
+typedef void (*KernelStart)(uint8_t bootDrive, MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount, uint32_t partitionLBA, uint32_t partitionSize);
 
 static uint8_t *kernelAddress = (uint8_t *)MEMORY_KERNEL_ADDRESS;
 
-void ASMCALL cstart(uint8_t bootDrive) {
+void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partitionSize) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
     _init(); // call global constructors
 
@@ -63,7 +63,7 @@ void ASMCALL cstart(uint8_t bootDrive) {
     }
     printf("Initialized disk! (%llu sectors)\n", disk.cylinders * disk.heads * disk.sectors);
 
-    if (!FAT_Initialize(&disk)) {
+    if (!FAT_Initialize(&disk, partitionLBA)) {
         puts("Failed to initialize FAT.\n");
         return;
     }
@@ -97,5 +97,5 @@ void ASMCALL cstart(uint8_t bootDrive) {
 
     // run kernel
     KernelStart kernelStart = (KernelStart)kernelAddress;
-    kernelStart(bootDrive, memoryRegions, memoryRegionsCount);
+    kernelStart(bootDrive, memoryRegions, memoryRegionsCount, partitionLBA, partitionSize);
 }

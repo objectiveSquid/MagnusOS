@@ -39,6 +39,15 @@ section .fsheaders
 section .entry
     global start
     start:
+        ; copy info from mbr for later use
+        mov [ebr_drive_number], dl
+        add si, 0x8
+        mov ebx, [ds:si]
+        mov [partition_info.lba], ebx
+        add si, 0x4
+        mov cl, [ds:si]
+        mov [partition_info.size], cl
+
         ; set up the data segments
         mov ax, 0
         mov ds, ax
@@ -53,13 +62,11 @@ section .entry
         retf
 
     .after_basic_setup:
-        mov [ebr_drive_number], dl
-
         ; print hello message
         mov si, msg_hello
         call puts
 
-        ; check extensions present
+        ; check disk extensions present
         mov ah, 0x41
         mov bx, 0x55AA
         stc
@@ -79,42 +86,32 @@ section .entry
         jmp wait_key_and_reboot
 
     .after_disk_extensions_check:
-        ; load stage 2
-        mov si, stage_2_location
-
         ; es:bx = stage 2 load address
         mov ax, STAGE_2_LOAD_SEGMENT
         mov es, ax
         mov bx, STAGE_2_LOAD_OFFSET
 
-    .load_stage_2_loop:
-        mov eax, [si]  ;; lba
-        add si, 4
-        mov cl, [si]   ; length
-        inc si
-
-        cmp eax, 0
-        je .read_stage_2_finish
+        mov dl, [ebr_drive_number]     ; disk id
+        mov eax, [stage_2_info.lba]  ;; lba
+        mov cl, [stage_2_info.size]   ; length
 
         call disk_read
 
-        ; move to next stage 2 load address
-        xor ch, ch
-        shl cx, 5
-        mov di, es  ;; cant add directly to es
-        add di, cx
-        mov es, di
-
-        jmp .load_stage_2_loop
-
     .read_stage_2_finish:
-        ; far jump to the second stage
-        mov dl, [ebr_drive_number]              ;; dl = boot device
+        ; boot device
+        mov dl, [ebr_drive_number]
+        ; prepare partition location
+        mov ebx, [partition_info.lba]
+        mov cl, [partition_info.size]
 
+        ; setup stack for stage 2
         mov ax, STAGE_2_LOAD_SEGMENT
         mov ds, ax
         mov es, ax
 
+    global run_stage_2
+    run_stage_2:
+        ; far jump to the second stage
         jmp STAGE_2_LOAD_SEGMENT:STAGE_2_LOAD_OFFSET
 
         jmp wait_key_and_reboot                 ;; this should never run
@@ -191,7 +188,7 @@ section .text
 
     .disk_read_retry:
         pusha
-        stc
+
         int 0x13
         jnc .disk_read_done
 
@@ -200,8 +197,8 @@ section .text
         call disk_reset
 
         dec di
-        test di, di
-        jnz .disk_read_retry
+        cmp di, 0
+        jne .disk_read_retry
     .disk_read_fail:
         jmp disk_error
     .disk_read_done:
@@ -251,9 +248,15 @@ section .data
         .segment        dw 0
         .lba            dq 0
 
-    global stage_2_location
-    stage_2_location:
-        times 30 db 0
+    partition_info:
+        .lba            dd 0
+        .size           dd 0
+
+    global stage_2_info.lba
+    global stage_2_info.size
+    stage_2_info:
+        .lba            dd 0 ;; why this cant be a double word bewilders, befuddles and discombobulates me, as it only uses 4 bytes. but i do not care to investiagte as to why such an occurence would happen because i believe such efforts would be a waste of time
+        .size           db 0
 
 section .bss
     misc_buffer:

@@ -20,7 +20,7 @@ extern void _init();
 extern char __bss_start;
 extern char __end;
 
-void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount) {
+void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount, uint32_t partitionLBA, uint32_t partitionSize) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
     _init(); // call global constructors
 
@@ -50,7 +50,7 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_Memor
     }
     puts("Initialized disks!\n");
 
-    if (!FAT_Initialize(&masterDisk)) {
+    if (!FAT_Initialize(&masterDisk, partitionLBA)) {
         puts("Failed to initialize FAT!\n");
         return;
     }
