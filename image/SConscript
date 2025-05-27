@@ -253,18 +253,14 @@ def make_image(
     generated_root_directory = source[4]
 
     image = str(target[0])
-    match env["image_type"]:
-        case "hdd":
-            make_disk(
-                image,
-                bootloader_stage_1,
-                bootloader_stage_2,
-                kernel,
-                root_directory,
-                generated_root_directory,
-            )
-        case "_":
-            raise ValueError(f"Unknown image type: {env['image_type']}")
+    make_disk(
+        image,
+        bootloader_stage_1,
+        bootloader_stage_2,
+        kernel,
+        root_directory,
+        generated_root_directory,
+    )
 
 
 Import("bootloader_stage_1")
@@ -285,13 +281,7 @@ make_image_inputs = [
     generated_root_directory,
 ]
 
-match env["image_type"]:
-    case "hdd":
-        output_format = "img"
-    case _:
-        raise ValueError(f"Unknown image type: {env['image_type']}")
-
-output_file = f"image.{output_format}"
+output_file = "image.img"
 
 disk_image = env.Command(
     output_file,

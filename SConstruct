@@ -22,12 +22,6 @@ VARS.AddVariables(
         allowed_values=["i686"],
     ),
     EnumVariable(
-        "image_type",
-        help="Output image type",
-        default="hdd",
-        allowed_values=["hdd"],
-    ),
-    EnumVariable(
         "image_filesystem",
         help="File system to use for the output image",
         default="fat12",
@@ -224,14 +218,12 @@ PhonyTargets(
     run=[
         sys.executable,
         "scripts/run.py",
-        HOST_ENVIRONMENT["image_type"],
         disk_image[0].path,
         HOST_ENVIRONMENT["memory_size"],
     ],
     gdb=[
         sys.executable,
         "scripts/gdb.py",
-        HOST_ENVIRONMENT["image_type"],
         disk_image[0].path,
         HOST_ENVIRONMENT["memory_size"],
     ],
