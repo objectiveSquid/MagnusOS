@@ -23,9 +23,6 @@ src/kernel/visual/rasterfont_sizes.h
 image/generated_root
 
 # Copied files
-src/bootloader/stage_2/memdefs.h
-src/kernel/memdefs.h
-
 src/bootloader/stage_2/util/memory.c
 src/kernel/util/memory.c
 src/bootloader/stage_2/util/memory.h

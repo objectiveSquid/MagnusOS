@@ -1,8 +1,4 @@
 {
-    "memdefs.h": [
-        "bootloader/stage_2/memdefs.h",
-        "kernel/memdefs.h"
-    ],
     "memory.c": [
         "bootloader/stage_2/util/memory.c",
         "kernel/util/memory.c"
