@@ -53,3 +53,8 @@ src/kernel/crtn.asm
 
 src/bootloader/stage_2/prep/memdetect.h
 src/kernel/memory/memdetect.h
+
+src/bootloader/stage_2/disk/mbr.c
+src/kernel/disk/mbr.c
+src/bootloader/stage_2/disk/mbr.h
+src/kernel/disk/mbr.h

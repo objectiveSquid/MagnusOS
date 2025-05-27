@@ -1,5 +1,6 @@
 #include "disk/disk.h"
 #include "disk/fat.h"
+#include "disk/mbr.h"
 #include "memdefs.h"
 #include "prep/memdetect.h"
 #include "prep/vbe.h"
@@ -63,14 +64,17 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
     }
     printf("Initialized disk! (%llu sectors)\n", disk.cylinders * disk.heads * disk.sectors);
 
-    if (!FAT_Initialize(&disk, partitionLBA)) {
+    Partition bootPartition;
+    MBR_DetectPartition(&bootPartition, &disk, partitionLBA, partitionSize);
+
+    if (!FAT_Initialize(&bootPartition)) {
         puts("Failed to initialize FAT.\n");
         return;
     }
     puts("Initialized FAT!\n");
 
     // load kernel
-    FAT_File *kernelFd = FAT_Open(&disk, "boot/kernel.bin");
+    FAT_File *kernelFd = FAT_Open(&bootPartition, "boot/kernel.bin");
     if (kernelFd == NULL) {
         puts("Failed to open kernel file.\n");
         return;
@@ -83,7 +87,7 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
     uint32_t readCount;
     uint8_t *kernelBuffer = kernelAddress;
     uint8_t *maxKernelAddress = kernelAddress + MEMORY_MAX_KERNEL_SIZE;
-    while (readCount = FAT_Read(&disk, kernelFd, MEMORY_LOAD_KERNEL_CHUNK_SIZE, kernelBuffer))
+    while (readCount = FAT_Read(&bootPartition, kernelFd, MEMORY_LOAD_KERNEL_CHUNK_SIZE, kernelBuffer))
         kernelBuffer += readCount;
     FAT_Close(kernelFd);
     printf("Kernel loaded! (%llu bytes)\n", kernelBuffer - kernelAddress);

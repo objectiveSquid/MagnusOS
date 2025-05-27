@@ -50,7 +50,10 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_Memor
     }
     puts("Initialized disks!\n");
 
-    if (!FAT_Initialize(&masterDisk, partitionLBA)) {
+    Partition bootPartition;
+    MBR_DetectPartition(&bootPartition, &masterDisk, partitionLBA, partitionSize);
+
+    if (!FAT_Initialize(&bootPartition)) {
         puts("Failed to initialize FAT!\n");
         return;
     }

@@ -14,4 +14,4 @@ typedef struct {
 } DISK;
 
 bool DISK_Initialize(DISK *disk, uint8_t driveNumber);
-bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint16_t count, void *dataOutput);
+uint8_t DISK_ReadSectors(DISK *disk, uint32_t lba, uint16_t count, void *dataOutput);

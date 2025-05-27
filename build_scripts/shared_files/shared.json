@@ -46,5 +46,13 @@
     "memdetect.h": [
         "bootloader/stage_2/prep/memdetect.h",
         "kernel/memory/memdetect.h"
+    ],
+    "mbr.h": [
+        "bootloader/stage_2/disk/mbr.h",
+        "kernel/disk/mbr.h"
+    ],
+    "mbr.c": [
+        "bootloader/stage_2/disk/mbr.c",
+        "kernel/disk/mbr.c"
     ]
 }

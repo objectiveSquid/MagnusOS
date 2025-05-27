@@ -26,15 +26,15 @@ bool DISK_Initialize(DISK *disk, uint8_t driveNumber) {
     return true;
 }
 
-bool DISK_ReadSectors(DISK *disk, uint32_t lba, uint16_t count, void *dataOutput) {
+uint8_t DISK_ReadSectors(DISK *disk, uint32_t lba, uint16_t count, void *dataOutput) {
     uint8_t readCount, errorCode;
 
     for (uint8_t i = 0; i < DISK_READ_RETRY_COUNT; ++i) {
         if ((errorCode = x86_Disk_Read(disk->id, lba, count, &readCount, dataOutput)) == 0)
-            return true;
+            return readCount;
 
         x86_Disk_Reset(disk->id);
     }
 
-    return false;
+    return 0;
 }
