@@ -49,8 +49,8 @@ section .fsheaders
                                 db 0
     ebr_signature:              db 0
     ebr_volume_id:              db 0x73, 0x65, 0x78, 0x79
-    ebr_volume_label:           db 0
-    ebr_system_id:              db 0
+    ebr_volume_label:           times 11 db 0
+    ebr_system_id:              times 8 db 0
 
 section .entry
     global start
