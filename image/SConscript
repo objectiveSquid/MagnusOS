@@ -161,6 +161,11 @@ def make_disk(
     root_directory: SConsDir,
     generated_root_directory: SConsDir,
 ) -> None:
+    if os.geteuid() != 0:
+        raise Exception(
+            "You will need root permissions to create the disk image (for mounting files), try running with sudo."
+        )
+
     disk_image_size_sectors = (env["image_size"] + SECTOR_SIZE - 1) // SECTOR_SIZE
     filesystem = env["image_filesystem"]
     partition_offset = 2048  # sectors
