@@ -171,9 +171,14 @@ def make_disk(
         bootloader_stage_2_size + SECTOR_SIZE - 1
     ) // SECTOR_SIZE
 
+    if bootloader_stage_2_size > (0x0000FFFF - 0x00000500):
+        raise Exception(
+            f"Bootloader stage 2 size ({bootloader_stage_2_size} bytes) is too large. This is because I have put the bootloader stage 2 at 0x00000500 to 0x0000FFFF."
+        )
+
     if bootloader_stage_2_size_sectors > 127:
         raise Exception(
-            f"Bootloader stage 2 size {bootloader_stage_2_size_sectors} sectors is too large. This is because some BIOSes limit disk reads to 127 sectors and I can't be bothered to read the disk multiple times."
+            f"Bootloader stage 2 size ({bootloader_stage_2_size_sectors} sectors) is too large. This is because some BIOSes limit disk reads to 127 sectors and I can't be bothered to read the disk multiple times."
         )
 
     create_empty_file(target_file, disk_image_size_sectors)
