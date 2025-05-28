@@ -31,3 +31,6 @@
 #define MEMORY_MAX_KERNEL_SIZE 0x100000
 
 // 0x00100000 - 0x001FFFFF - kernel
+
+// everything after this point must be the same in the kernels memdefs.h
+#define MEMORY_ALLOCATOR_CHUNK_SIZE 512 // 4 kilobyte chunks

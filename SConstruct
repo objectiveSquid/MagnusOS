@@ -24,7 +24,7 @@ VARS.AddVariables(
     EnumVariable(
         "image_filesystem",
         help="File system to use for the output image",
-        default="fat12",
+        default="fat32",
         allowed_values=["fat12", "fat16", "fat32"],
     ),
     BoolVariable(
@@ -109,11 +109,6 @@ if not HOST_ENVIRONMENT["display_commands"]:
 #
 # Target environment
 #
-
-if HOST_ENVIRONMENT["image_filesystem"] != "fat12":
-    print("Only fat12 is supported for now")
-    Exit(1)
-    exit(1)
 
 platform_prefix = ""
 if HOST_ENVIRONMENT["arch"] == "i686":

@@ -5,6 +5,10 @@ bits 16
 STAGE_2_LOAD_SEGMENT        equ 0x0
 STAGE_2_LOAD_OFFSET         equ 0x500
 
+%define fat12 1
+%define fat16 2
+%define fat32 3
+
 ;
 ; FAT12 header
 ;
@@ -13,28 +17,40 @@ section .fsjump
     jmp short start
     nop
 
+; everything here will be overwritten by mkfs.fat later anyway
 section .fsheaders
-    bdb_oem:                    db "MSWIN4.1"  ;; OEM identifier, must be 8 bytes. mswin4.1 is the most compatible, i've read
-    bdb_bytes_per_sector:       dw 512
-    bdb_bytes_per_cluster:      db 1
-    bdb_reserved_sectors:       dw 1
-    bdb_fat_count:              db 2
-    bdb_dir_entries_count:      dw 0xE0
-    bdb_total_sectors:          dw 2880  ;; 2880 * 512 = 1.44MB
-    bdb_media_descriptor_type:  db 0xF8  ;; 0xF8 = fixed disk (i.e. hard disk)
-    bdb_sectors_per_fat:        dw 9
-    bdb_sectors_per_track:      dw 32   ;; maybe correct these in a build script
-    bdb_heads:                  dw 4    ;; maybe correct these in a build script
+
+    bdb_oem:                    times 8 db 0
+    bdb_bytes_per_sector:       dw 0
+    bdb_sectors_per_cluster:    db 0
+    bdb_reserved_sectors:       dw 0
+    bdb_fat_count:              db 0
+    bdb_dir_entries_count:      dw 0
+    bdb_total_sectors:          dw 0
+    bdb_media_descriptor_type:  db 0
+    bdb_sectors_per_fat:        dw 0
+    bdb_sectors_per_track:      dw 0
+    bdb_heads:                  dw 0
     bdb_hidden_sectors:         dd 0
     bdb_large_sector_count:     dd 0
 
-    ; Extended boot record
-    ebr_drive_number:           db 0x80  ;; 0x00 = first Floppy, 0x80 = first HDD. this gets set later from dl
-                                db 0  ;; Reserved
-    ebr_signature:              db 0x29
-    ebr_volume_id:              db 0x73, 0x65, 0x78, 0x79  ;; Serial number, doesn't matter
-    ebr_volume_label:           db "MagnusOS   "  ;; Label, must be 11 bytes
-    ebr_system_id:              db "FAT12   "  ;; Filesystem id, must be 8 bytes
+    %if (FILESYSTEM == fat32)
+        fat32_sectors_per_fat:      dd 0
+        fat32_flags:                dw 0
+        fat32_fat_version_number:   dw 0
+        fat32_rootdir_cluster:      dd 0
+        fat32_fsinfo_sector:        dw 0
+        fat32_backup_boot_sector:   dw 0
+        fat32_reserved:             times 12 db 0
+    %endif
+
+    ; extended boot record
+    ebr_drive_number:           db 0
+                                db 0
+    ebr_signature:              db 0
+    ebr_volume_id:              db 0x73, 0x65, 0x78, 0x79
+    ebr_volume_label:           db 0
+    ebr_system_id:              db 0
 
 section .entry
     global start

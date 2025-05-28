@@ -1,5 +1,3 @@
-#pragma once
-
 #include "mbr.h"
 #include <stdbool.h>
 #include <stdint.h>
