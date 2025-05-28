@@ -20,7 +20,7 @@ entry:
     ; set up segments
     mov ax, ds
     mov ss, ax
-    mov sp, 0xFFF0
+    mov sp, 0xFFFF
     mov bp, sp
 
     ; switch to protected mode

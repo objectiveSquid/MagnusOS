@@ -176,9 +176,13 @@ def make_disk(
         bootloader_stage_2_size + SECTOR_SIZE - 1
     ) // SECTOR_SIZE
 
-    if bootloader_stage_2_size > (0x0000FFFF - 0x00000500):
+    min_bootloader_stage_2_address = 0x00000500
+    max_bootloader_stage_2_address = 0x00007BFF
+    if bootloader_stage_2_size > (
+        max_bootloader_stage_2_address - min_bootloader_stage_2_address
+    ):
         raise Exception(
-            f"Bootloader stage 2 size ({bootloader_stage_2_size} bytes) is too large. This is because I have put the bootloader stage 2 at 0x00000500 to 0x0000FFFF."
+            f"Bootloader stage 2 size ({bootloader_stage_2_size} bytes) is too large. This is because I have put the bootloader stage 2 at {min_bootloader_stage_2_address} to {max_bootloader_stage_2_address}."
         )
 
     if bootloader_stage_2_size_sectors > 127:

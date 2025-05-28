@@ -3,7 +3,10 @@
 // 0x00000000 - 0x000003FF - interrupt vector table
 // 0x00000400 - 0x000004FF - BIOS data area
 
-// 0x00000500 - 0x0000FFFF - bootloader stage 2
+// 0x00007C00 - 0x00007E00 - bootloader stage 1
+
+// 0x00000500 - 0x00007BFF - bootloader stage 2
+// 0x00007C00 - 0x0000FFFF - bootloader stage 2 stack
 
 #define MEMORY_FAT_ADDRESS ((void *)0x00010000) // this must be under 1mb (because the bios has to be able to write to it from the disk)
 #define MEMORY_FAT_SIZE 0x20000                 // 128 kilobytes

@@ -122,7 +122,7 @@ section .entry
 
         ; setup stack for stage 2
         mov ax, STAGE_2_LOAD_SEGMENT
-        mov ds, ax
+        mov ds, ax  ; will eventually be the stage 2 stack segment (ss register)
         mov es, ax
 
     global run_stage_2
