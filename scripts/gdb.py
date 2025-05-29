@@ -12,9 +12,8 @@ def make_gdbscript(kernel_path: str, image_path: str, memory_size: str) -> str:
     with open(path, "w") as fd:
         fd.write(
             f"""set disassembly-flavor intel
-layout asm
-layout regs
 set architecture i386
+layout src
 symbol-file {kernel_path}
 
 target remote | qemu-system-i386 -S -gdb stdio \
@@ -34,7 +33,7 @@ def main(kernel_path: str, image_path: str, memory_size: str) -> None:
     gdbscript_path = make_gdbscript(kernel_path, image_path, memory_size)
 
     # run gdb (use this because i need stdio directly)
-    os.system(" ".join(["gdb", "-x", gdbscript_path]))
+    os.system(" ".join(["gdb", "-tui", "-x", gdbscript_path]))
 
     # cleanup
     shutil.rmtree(os.path.dirname(gdbscript_path))
