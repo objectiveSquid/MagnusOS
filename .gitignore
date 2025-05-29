@@ -26,6 +26,9 @@ image/generated_root
 E9.log
 
 # Copied (hard linked) files
+src/bootloader/stage_2/memdefs.h
+src/kernel/memdefs.h
+
 src/bootloader/stage_2/util/memory.c
 src/kernel/util/memory.c
 src/bootloader/stage_2/util/memory.h
