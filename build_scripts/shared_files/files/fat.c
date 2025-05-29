@@ -267,12 +267,13 @@ uint32_t FAT_NextCluster(Partition *partition, uint32_t currentCluster) {
     return nextCluster;
 }
 
+// if dataOutput is NULL, it is ignored and this function is pretty much just a seek function
 uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void *dataOutput) {
     FAT_FileData *fd = (file->handle == ROOT_DIRECTORY_HANDLE)
                            ? &g_Data->rootDirectory
                            : &g_Data->openFiles[file->handle];
 
-    char *charDataOutput = (char *)dataOutput;
+    uint8_t *u8DataOutput = (uint8_t *)dataOutput;
 
     if (!fd->public.isDirectory || (fd->public.isDirectory && fd->public.size != 0))
         byteCount = min(byteCount, fd->public.size - fd->public.position);
@@ -281,8 +282,10 @@ uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void
         uint32_t leftInBuffer = SECTOR_SIZE - (fd->public.position % SECTOR_SIZE);
         uint32_t take = min(byteCount, leftInBuffer);
 
-        memcpy(charDataOutput, fd->buffer + fd->public.position % SECTOR_SIZE, take);
-        charDataOutput += take;
+        if (dataOutput != NULL)
+            memcpy(u8DataOutput, fd->buffer + fd->public.position % SECTOR_SIZE, take);
+
+        u8DataOutput += take;
         fd->public.position += take;
         byteCount -= take;
 
@@ -320,7 +323,7 @@ uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void
         }
     }
 
-    return charDataOutput - (char *)dataOutput;
+    return u8DataOutput - (uint8_t *)dataOutput;
 }
 
 bool FAT_ReadEntry(Partition *partition, FAT_File *file, FAT_DirectoryEntry *directoryEntryOutput) {
