@@ -1,6 +1,7 @@
 #include "disk/disk.h"
 #include "disk/fat.h"
 #include "disk/mbr.h"
+#include "elf/elf.h"
 #include "memdefs.h"
 #include "memory/allocator.h"
 #include "memory/memdetect.h"
@@ -26,8 +27,6 @@ typedef void (*KernelStart)(uint8_t bootDrive,
                             uint32_t partitionSize,
                             VbeModeInfo *vbeModeInfo);
 
-static uint8_t *kernelAddress = (uint8_t *)MEMORY_KERNEL_ADDRESS;
-
 void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partitionSize) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
     _init(); // call global constructors
@@ -42,7 +41,7 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
         printf("Failed to get any memory regions! (%s)\n", MEMDETECT_ErrorCodeStrings[memDetectErrorCode - 1]);
         return;
     }
-    printf("Got %llu memory regions!\n", memoryRegionsCount);
+    printf("Got %lu memory regions!\n", memoryRegionsCount);
 
     uint64_t allocatorBitsSize = 0;
     for (uint32_t index = 0; index < memoryRegionsCount; ++index)
@@ -72,7 +71,7 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
         puts("Failed to initialize disk.\n");
         return;
     }
-    printf("Initialized disk! (%llu sectors)\n", disk.cylinders * disk.heads * disk.sectors);
+    printf("Initialized disk! (%lu sectors)\n", disk.cylinders * disk.heads * disk.sectors);
 
     Partition bootPartition;
     MBR_DetectPartition(&bootPartition, &disk, partitionLBA, partitionSize);
@@ -84,26 +83,12 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
     puts("Initialized FAT!\n");
 
     // load kernel
-    FAT_File *kernelFd = FAT_Open(&bootPartition, "boot/kernel.bin");
-    if (kernelFd == NULL) {
-        puts("Failed to open kernel file.\n");
+    KernelStart kernelStart;
+    if (!ELF_Open32Bit(&bootPartition, "/boot/kernel.elf", (void **)&kernelStart)) {
+        puts("Failed to load kernel elf.\n");
         return;
     }
-    if (kernelFd->size > MEMORY_MAX_KERNEL_SIZE) {
-        printf("Kernel file is too big! (file is %llu bytes, only have %llu bytes)\n", kernelFd->size, MEMORY_MAX_KERNEL_SIZE);
-        return;
-    }
-
-    uint32_t readCount;
-    uint8_t *kernelBuffer = kernelAddress;
-    uint8_t *kernelLoadBuffer = ALLOCATOR_Malloc(MEMORY_LOAD_KERNEL_CHUNK_SIZE, true);
-    while ((readCount = FAT_Read(&bootPartition, kernelFd, MEMORY_LOAD_KERNEL_CHUNK_SIZE, kernelLoadBuffer))) {
-        memcpy(kernelBuffer, kernelLoadBuffer, readCount);
-        kernelBuffer += readCount;
-    }
-    FAT_Close(kernelFd);
-    free(kernelLoadBuffer);
-    printf("Kernel loaded! (%llu bytes)\n", kernelBuffer - kernelAddress);
+    puts("Kernel loaded!\n");
 
     // free fat memory
     FAT_DeInitialize();
@@ -116,6 +101,5 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
     }
 
     // run kernel
-    KernelStart kernelStart = (KernelStart)kernelAddress;
     kernelStart(bootDrive, memoryRegions, memoryRegionsCount, partitionLBA, partitionSize, selectedVbeModeInfo);
 }

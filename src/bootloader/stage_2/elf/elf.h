@@ -5,8 +5,44 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ELF_MAGIC "\x7F" \
-                  "ELF"
+typedef enum {
+    ELF_PROGRAMHEADER_EXECUTABLE = 1,
+    ELF_PROGRAMHEADER_WRITABLE = 2,
+    ELF_PROGRAMHEADER_READABLE = 4,
+} ELF_ProgramHeaderFlags;
+
+typedef enum {
+    ELF_PROGRAMHEADER_TYPE_NULL = 0,        // ignore the entry
+    ELF_PROGRAMHEADER_TYPE_LOAD = 1,        // clear `memorySize` bytes at `physicalAddress` to 0, then copy `segmentSize` bytes from `offset` to `virtualAddress`
+    ELF_PROGRAMHEADER_TYPE_DYNAMIC = 2,     // requires dynamic linking
+    ELF_PROGRAMHEADER_TYPE_INTERPRETED = 3, // contains a file path to an executable to use as an interpreter for the following segment
+    ELF_PROGRAMHEADER_TYPE_NOTES = 3,
+} ELF_ProgramHeaderSegmentType;
+
+typedef struct {
+    uint32_t type;
+    uint32_t offset;
+    uint32_t virtualAddress;
+    uint32_t physicalAddress;
+    uint32_t segmentSize;
+    uint32_t memorySize; // >= segmentSize
+    uint32_t flags;
+    uint32_t requiredAlignment; // usually a power of 2
+} __attribute((packed)) ELF_32BitProgramHeader;
+
+typedef struct {
+    uint32_t type;
+    uint32_t flags;
+    uint64_t offset;
+    uint64_t virtualAddress;
+    uint64_t physicalAddress;
+    uint64_t segmentSize;
+    uint64_t memorySize;        // >= segmentSize
+    uint64_t requiredAlignment; // usually a power of 2
+} __attribute((packed)) ELF_64BitProgramHeader;
+
+#define ELF_MAGIC ("\x7F" \
+                   "ELF")
 
 typedef enum {
     ELF_BITNESS_32BIT = 1,
@@ -83,4 +119,4 @@ typedef struct {
     uint16_t sectionHeaderStringTableIndex;
 } __attribute__((packed)) ELF_64BitHeader;
 
-bool ELF_Open(Partition *partition, FAT_File *fd);
+bool ELF_Open32Bit(Partition *partition, const char *filepath, void **entryPoint);

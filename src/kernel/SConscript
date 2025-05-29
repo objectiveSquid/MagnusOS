@@ -39,7 +39,7 @@ objects = [
     obj_crtn,
 ]
 
-kernel = env.Program("kernel.bin", objects)
+kernel = env.Program("kernel.elf", objects)
 
 Import("generate_font_header")
 env.Requires(kernel, generate_font_header)
