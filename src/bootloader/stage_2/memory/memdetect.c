@@ -16,6 +16,7 @@ uint8_t MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32
     do {
         errorCode = x86_MEMDETECT_GetRegion(regionsOutput + regionCount, &offset);
         if (errorCode != 0) {
+            *regionCountOutput = regionCount;
             return errorCode;
         }
         regionCount++;
