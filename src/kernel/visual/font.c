@@ -48,7 +48,7 @@ bool FONT_Initialize(VbeModeInfo *vbeModeInfo) {
 
     ensureFontInfoSet();
 
-    if ((g_ScreenCharacterBuffer = malloc(FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight())) == NULL)
+    if ((g_ScreenCharacterBuffer = zalloc(FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight() * sizeof(FONT_Character))) == NULL)
         return false;
 
     return true;
@@ -93,8 +93,10 @@ bool FONT_SetFont(Partition *fontsPartition, const FONT_FontInfo *fontInfo, bool
         return true;
 
     // backup old fontinfo
+    size_t oldScreenCharacterBufferSize = FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight() * sizeof(FONT_Character);
     const FONT_FontInfo *oldFontInfo = g_FontInfo;
     uint8_t *oldFontBits = g_FontBits;
+    FONT_Character *oldScreenCharacterBuffer = g_ScreenCharacterBuffer;
 
     g_FontInfo = fontInfo;
 
@@ -105,19 +107,34 @@ bool FONT_SetFont(Partition *fontsPartition, const FONT_FontInfo *fontInfo, bool
     if (!readFont(fontsPartition)) {
         g_FontInfo = oldFontInfo;
         g_FontBits = oldFontBits;
+        g_ScreenCharacterBuffer = oldScreenCharacterBuffer;
         return false;
     }
 
     if (oldFontBits != FALLBACK_FONT_8x8)
         free(oldFontBits);
 
-    if (!reDraw)
-        return true;
+    if (reDraw) {
+        GRAPHICS_ClearScreen();
+        for (uint16_t y = 0; y < FONT_ScreenCharacterHeight(); ++y)
+            for (uint16_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
+                FONT_PutCharacter(x, y, g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x]);
+    }
 
-    GRAPHICS_ClearScreen();
-    for (uint16_t y = 0; y < FONT_ScreenCharacterHeight(); ++y)
-        for (uint16_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
-            FONT_PutCharacter(x, y, g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x]);
+    size_t screenCharacterBufferSize = FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight() * sizeof(FONT_Character);
+    g_ScreenCharacterBuffer = zalloc(screenCharacterBufferSize);
+    if (g_ScreenCharacterBuffer == NULL) {
+        g_FontInfo = oldFontInfo;
+        g_FontBits = oldFontBits;
+        g_ScreenCharacterBuffer = oldScreenCharacterBuffer;
+        return false;
+    }
+
+    if (oldScreenCharacterBufferSize > screenCharacterBufferSize)
+        memcpy(g_ScreenCharacterBuffer, ((void *)oldScreenCharacterBuffer) + (oldScreenCharacterBufferSize - screenCharacterBufferSize), min(oldScreenCharacterBufferSize, screenCharacterBufferSize));
+    else
+        memcpy(g_ScreenCharacterBuffer, oldScreenCharacterBuffer, min(oldScreenCharacterBufferSize, screenCharacterBufferSize));
+    free(oldScreenCharacterBuffer);
 
     return true;
 }

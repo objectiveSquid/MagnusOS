@@ -84,6 +84,16 @@ void *malloc(size_t size) {
     return ALLOCATOR_Malloc(size, false);
 }
 
+void *zalloc(size_t size) {
+    void *ptr = malloc(size);
+    if (ptr == NULL)
+        return NULL;
+
+    memset(ptr, 0, size);
+
+    return ptr;
+}
+
 void *calloc(size_t count, size_t size) {
     if (count == 0 || size == 0)
         return NULL;

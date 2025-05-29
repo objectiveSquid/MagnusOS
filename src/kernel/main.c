@@ -72,6 +72,12 @@ void start(uint8_t bootDrive,
 
     // TODO: check if other fonts can be loaded
 
+    FONT_SetPixelScale(1);
+    if (!FONT_SetFont(&bootPartition, FONT_FindFontInfo(NULL, 25, 57), true)) {
+        puts("Failed to set font!\n");
+        return;
+    }
+
     // everything is now initialized
     clearScreen();
 
