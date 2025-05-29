@@ -285,7 +285,7 @@ void setScancodeHeld(uint16_t scancode, bool held) {
     else
         g_ScancodesHeld[bitIndex / 8] &= ~(1 << (bitIndex % 8));
 
-    printf("Scancode %x is %s\n", scancode, held ? "held" : "not held");
+    printf("Scancode %hx is %s\n", scancode, held ? "held" : "not held");
     return;
 }
 
