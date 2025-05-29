@@ -8,7 +8,7 @@
 // 0x00000500 - 0x00007BFF - bootloader stage 2
 
 // 0x00007C00 - 0x0000FFFF - bootloader stage 2 stack
-// 0x00000500 - 0x0000FFFF - kernel stack
+// 0x00000500 - 0x0000FFFF - kernel stack (a little under 64kb)
 
 // memdetect stuff
 #define MEMORY_MEMDETECT_MAX_REGIONS 256
