@@ -21,7 +21,7 @@ target remote | qemu-system-i386 -S -gdb stdio \
 -drive file={image_path},format=raw,if=ide \
 -debugcon file:E9.log \
 -serial null \
--no-reboot \
+-no-reboot
 """
         )
 
