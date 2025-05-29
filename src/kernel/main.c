@@ -18,16 +18,12 @@
 
 extern void _init();
 
-extern char __bss_start;
-extern char __end;
-
-void __attribute__((section(".entry"))) start(uint8_t bootDrive,
-                                              MEMDETECT_MemoryRegion *memoryRegions,
-                                              uint32_t memoryRegionsCount,
-                                              uint32_t partitionLBA,
-                                              uint32_t partitionSize,
-                                              VbeModeInfo *vbeModeInfo) {
-    memset(&__bss_start, 0, (&__end) - (&__bss_start));
+void start(uint8_t bootDrive,
+           MEMDETECT_MemoryRegion *memoryRegions,
+           uint32_t memoryRegionsCount,
+           uint32_t partitionLBA,
+           uint32_t partitionSize,
+           VbeModeInfo *vbeModeInfo) {
     _init(); // call global constructors
 
     // in use bits already initialized by stage 2
