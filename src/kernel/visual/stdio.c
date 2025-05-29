@@ -69,6 +69,7 @@ void putc(char character) {
     }
     if (g_CursorPosition[1] >= screenHeight) {
         FONT_ScrollBack(1);
+        --g_CursorPosition[1];
     }
 }
 

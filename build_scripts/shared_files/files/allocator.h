@@ -9,6 +9,5 @@ void ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t 
 void *ALLOCATOR_Malloc(size_t size, bool lower);
 
 void *malloc(size_t size);
-void *zalloc(size_t size);
 void *calloc(size_t count, size_t size);
 void free(void *ptr);

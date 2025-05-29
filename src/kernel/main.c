@@ -75,6 +75,9 @@ void start(uint8_t bootDrive,
 
     puts("Hello from kernel!\n");
 
+    for (;;)
+        ;
+
     // deinitialize/free everything
     DISK_DeInitialize(&masterDisk);
     DISK_DeInitialize(&slaveDisk);

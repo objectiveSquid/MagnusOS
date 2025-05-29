@@ -48,7 +48,7 @@ bool FONT_Initialize(VbeModeInfo *vbeModeInfo) {
 
     ensureFontInfoSet();
 
-    if ((g_ScreenCharacterBuffer = zalloc(FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight() * sizeof(FONT_Character))) == NULL)
+    if ((g_ScreenCharacterBuffer = calloc(FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight(), sizeof(FONT_Character))) == NULL)
         return false;
 
     return true;
@@ -121,8 +121,9 @@ bool FONT_SetFont(Partition *fontsPartition, const FONT_FontInfo *fontInfo, bool
                 FONT_PutCharacter(x, y, g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x]);
     }
 
-    size_t screenCharacterBufferSize = FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight() * sizeof(FONT_Character);
-    g_ScreenCharacterBuffer = zalloc(screenCharacterBufferSize);
+    size_t screenCharacterBufferEntries = FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight();
+    size_t screenCharacterBufferSize = screenCharacterBufferEntries * sizeof(FONT_Character);
+    g_ScreenCharacterBuffer = calloc(screenCharacterBufferEntries, sizeof(FONT_Character));
     if (g_ScreenCharacterBuffer == NULL) {
         g_FontInfo = oldFontInfo;
         g_FontBits = oldFontBits;
@@ -148,26 +149,36 @@ uint8_t FONT_GetPixelScale() {
     return g_FontPixelScale;
 }
 
+void FONT_SetCharacter(uint16_t x, uint16_t y, FONT_Character character) {
+    ensureFontInfoSet();
+    g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x] = character;
+}
+
 FONT_Character FONT_GetCharacter(uint16_t x, uint16_t y) {
+    ensureFontInfoSet();
     return g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x];
 }
 
 void FONT_ScrollBack(uint16_t lineCount) {
+    if (lineCount == 0)
+        return;
+
     // copy lines
-    for (uint16_t y = lineCount; y < FONT_ScreenCharacterHeight(); ++y)
-        for (uint16_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
+    for (uint32_t y = min(lineCount, FONT_ScreenCharacterHeight()); y < FONT_ScreenCharacterHeight(); ++y)
+        for (uint32_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
             FONT_PutCharacter(x, y - lineCount, FONT_GetCharacter(x, y));
 
     // delete last lines
-    for (uint16_t y = FONT_ScreenCharacterHeight() - lineCount; y < FONT_ScreenCharacterHeight(); ++y)
-        for (uint16_t x = 0; x < FONT_ScreenCharacterWidth(); ++x) {
-            FONT_Character tempCharacter = EMPTY_CHARACTER;
+    FONT_Character tempCharacter = EMPTY_CHARACTER;
+    for (uint32_t y = FONT_ScreenCharacterHeight() - lineCount; y < FONT_ScreenCharacterHeight(); ++y)
+        for (uint32_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
             FONT_PutCharacter(x, y, tempCharacter);
-        }
 }
 
 void FONT_PutCharacter(uint16_t x, uint16_t y, FONT_Character character) {
     ensureFontInfoSet();
+
+    FONT_SetCharacter(x, y, character);
 
     uint32_t characterBitIndex = character.typed.character * g_FontInfo->width * g_FontInfo->height;
     for (uint8_t img_x = 0; img_x < g_FontInfo->width; ++img_x) {
