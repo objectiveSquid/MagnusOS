@@ -27,7 +27,7 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive,
                                               uint32_t partitionLBA,
                                               uint32_t partitionSize,
                                               VbeModeInfo *vbeModeInfo) {
-    memset(&__bss_start, '\0', (&__end) - (&__bss_start));
+    memset(&__bss_start, 0, (&__end) - (&__bss_start));
     _init(); // call global constructors
 
     // in use bits already initialized by stage 2
