@@ -14,12 +14,25 @@
 
 static uint16_t g_CursorPosition[2] = {0, 0};
 
+#if DEBUG_BUILD == 1
+// the e9 port is unused and can be used to output debug messages
+void E9putc(char c) {
+    if (c == '\0') // '\0' should only be used by the clearScreen function, which we dont want to be used in debug output
+        return;
+    x86_OutByte(0xE9, c);
+}
+#endif
+
 void setCursorPosition(uint16_t x, uint16_t y) {
     g_CursorPosition[0] = x;
     g_CursorPosition[1] = y;
 }
 
 void putc(char character) {
+#if DEBUG_BUILD == 1
+    E9putc(character);
+#endif
+
     switch (character) {
     case '\n':
         g_CursorPosition[0] = 0; // '\r'
