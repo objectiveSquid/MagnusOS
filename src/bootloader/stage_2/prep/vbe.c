@@ -1,5 +1,6 @@
 #include "vbe.h"
 #include "memdefs.h"
+#include "memory/allocator.h"
 #include "util/memory.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
@@ -7,8 +8,6 @@
 #define DESIRED_WIDTH 1920
 #define DESIRED_HEIGHT 1080
 #define DESIRED_BITS_PER_PIXEL 24
-
-static VbeModeInfo *vbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
 
 bool VBE_GetControllerInfo(VbeInfoBlock *infoOutput) {
     if (x86_VBE_GetControllerInfo(infoOutput) == 0x00) {
@@ -28,11 +27,12 @@ bool VBE_SetVideoMode(uint16_t mode) {
     return x86_VBE_SetVideoMode(mode) == 0x00;
 }
 
-bool VBE_Initialize() {
+// returns NULL on error
+VbeModeInfo *VBE_Initialize() {
     uint16_t pickedMode = UINT16_MAX;
 
-    VbeInfoBlock *vbeInfo = (VbeInfoBlock *)MEMORY_VESA_INFO;
-    VbeModeInfo *vbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
+    VbeInfoBlock *vbeInfo = (VbeInfoBlock *)ALLOCATOR_Malloc(sizeof(VbeInfoBlock), true);
+    VbeModeInfo *vbeModeInfo = (VbeModeInfo *)ALLOCATOR_Malloc(sizeof(VbeModeInfo), true);
     if (VBE_GetControllerInfo(vbeInfo)) {
         puts("Got VBE controller info!\n");
 
@@ -53,13 +53,13 @@ bool VBE_Initialize() {
         }
     } else {
         puts("Failed to get VBE controller info!\n");
-        return false;
+        return NULL;
     }
 
     if (pickedMode == UINT16_MAX || !VBE_SetVideoMode(pickedMode)) {
         puts("No suitable VBE mode found!\n");
-        return false;
+        return NULL;
     }
 
-    return true;
+    return vbeModeInfo;
 }

@@ -1,6 +1,12 @@
 #include "memdetect.h"
 #include "util/x86.h"
 
+const char *MEMDETECT_ErrorCodeStrings[] = {
+    "BIOS function not supported",
+    "Carry flag set",
+    "Other error",
+};
+
 // maxRegions is assumed to be at least 1
 uint8_t MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t maxRegions, uint32_t *regionCountOutput) {
     uint32_t regionCount = 0;

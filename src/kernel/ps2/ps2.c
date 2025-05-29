@@ -57,7 +57,6 @@ typedef enum {
     LED_SET_TOGGLE = 3,
 } SetLEDNumber;
 
-static bool g_ExtendedScancode = false;
 static bool g_KeyboardDetected = false;
 static uint8_t g_LEDState = 0;
 static uint8_t g_SkipPS2Interrupts = 0;
@@ -152,11 +151,12 @@ void setPS2ControllerConfiguration(bool setIRQ1, bool setIRQ2) {
     else
         FLAG_UNSET(config, 0b1);
 
-    if (false)
+    if (false) {
         if (setIRQ2)
             FLAG_SET(config, 0b10);
         else
             FLAG_UNSET(config, 0b10);
+    }
 
     FLAG_UNSET(config, 0b1000000); // translation
     FLAG_SET(config, 0b10000);     // enable clock signal

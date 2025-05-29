@@ -9,7 +9,6 @@
 
 #define TAB_SIZE 4
 
-static VbeModeInfo *g_VbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
 static uint16_t g_CursorPosition[2] = {0, 0};
 
 #if DEBUG_BUILD == 1
@@ -235,7 +234,7 @@ void ASMCALL printf(const char *format, ...) {
                 break;
             }
 
-            if (number)
+            if (number) {
                 if (sign)
                     switch (length) {
                     case PRINTF_LENGTH_SHORT_SHORT:
@@ -268,6 +267,7 @@ void ASMCALL printf(const char *format, ...) {
                         printf_number_unsigned(va_arg(args, unsigned long long), radix, capital);
                         break;
                     }
+            }
 
             state = PRINTF_STATE_NORMAL;
             length = PRINTF_LENGTH_DEFAULT;

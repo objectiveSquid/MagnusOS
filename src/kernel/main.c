@@ -13,6 +13,7 @@
 #include "visual/font.h"
 #include "visual/graphics.h"
 #include "visual/stdio.h"
+#include "visual/vbe.h"
 #include <stdint.h>
 
 extern void _init();
@@ -20,11 +21,27 @@ extern void _init();
 extern char __bss_start;
 extern char __end;
 
-void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount, uint32_t partitionLBA, uint32_t partitionSize) {
+void __attribute__((section(".entry"))) start(uint8_t bootDrive,
+                                              MEMDETECT_MemoryRegion *memoryRegions,
+                                              uint32_t memoryRegionsCount,
+                                              uint32_t partitionLBA,
+                                              uint32_t partitionSize,
+                                              VbeModeInfo *vbeModeInfo) {
     memset(&__bss_start, '\0', (&__end) - (&__bss_start));
     _init(); // call global constructors
 
+    // in use bits already initialized by stage 2
+    ALLOCATOR_Initialize(memoryRegions, memoryRegionsCount, true);
+
+    // initialize the graphics
+    GRAPHICS_Initialize(vbeModeInfo);
     GRAPHICS_ClearScreen();
+
+    // initialize the font
+    if (!FONT_Initialize(vbeModeInfo)) {
+        puts("Failed to initialize the font!\n"); // the fallback font might still work, so it's worth a try to log the error
+        return;
+    }
     FONT_SetPixelScale(2);
 
     HAL_Initialize();
@@ -36,9 +53,6 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_Memor
     // a little bit too buggy for now
     // PS2_Initialize();
     // puts("Initialized the PS2 driver!\n");
-
-    ALLOCATOR_Initialize(memoryRegions, memoryRegionsCount);
-    puts("Initialized allocator!\n");
 
     DISK masterDisk;
     DISK slaveDisk;
@@ -52,8 +66,9 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_Memor
 
     Partition bootPartition;
     MBR_DetectPartition(&bootPartition, &masterDisk, partitionLBA, partitionSize);
+    puts("Detected boot partition!\n");
 
-    if (!FAT_Initialize(&bootPartition)) {
+    if (!FAT_Initialize(&bootPartition, true)) {
         puts("Failed to initialize FAT!\n");
         return;
     }
@@ -65,4 +80,10 @@ void __attribute__((section(".entry"))) start(uint8_t bootDrive, MEMDETECT_Memor
     clearScreen();
 
     puts("Hello from kernel!\n");
+
+    // deinitialize/free everything
+    DISK_DeInitialize(&masterDisk);
+    DISK_DeInitialize(&slaveDisk);
+    FAT_DeInitialize();
+    FONT_DeInitialize();
 }

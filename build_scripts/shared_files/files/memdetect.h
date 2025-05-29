@@ -25,11 +25,7 @@ typedef enum {
 } MEMDETECT_GetMemoryRegionsErrorCode;
 
 // also probably dont use in kernel
-static const char *MEMDETECT_ErrorCodeStrings[] = {
-    "BIOS function not supported",
-    "Carry flag set",
-    "Other error",
-};
+extern const char *MEMDETECT_ErrorCodeStrings[];
 
 // do not use in kernel, only defined in bootloader
 uint8_t MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t maxRegions, uint32_t *regionCountOutput);

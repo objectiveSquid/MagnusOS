@@ -22,7 +22,9 @@ def make_gdbscript(image_path: str, memory_size: str) -> str:
             f"target remote | qemu-system-i386 -S -gdb stdio \
 -m {memory_size} \
 -drive file={image_path},format=raw,if=ide \
--no-reboot\n"
+-no-reboot \
+-debugcon \
+file:E9.log\n"
         )
 
     return path

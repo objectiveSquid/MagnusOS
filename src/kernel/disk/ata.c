@@ -91,16 +91,14 @@ void poll() {
     }
 }
 
-bool identify(bool master) {
+bool identify(bool master, ATA_IdentifyData *outputBuffer) {
+    uint16_t *dataBuffer = (uint16_t *)outputBuffer;
+
     uint8_t slaveBit;
-    uint16_t *dataBuffer;
-    if (master) {
+    if (master)
         slaveBit = 0;
-        dataBuffer = (uint16_t *)MEMORY_ATA_MASTER_IDENTIFY_BUFFER;
-    } else {
+    else
         slaveBit = 0x10;
-        dataBuffer = (uint16_t *)MEMORY_ATA_SLAVE_IDENTIFY_BUFFER;
-    }
 
     x86_OutByte(ATA_PORT_DRIVE_SELECT, ATA_SELECT_IDENTIFY + slaveBit);
     x86_OutByte(ATA_PORT_SECTOR_COUNT, 0);
@@ -134,7 +132,7 @@ bool identify(bool master) {
     }
 
     for (uint16_t i = 0; i < 256; ++i)
-        ((uint16_t *)MEMORY_ATA_MASTER_IDENTIFY_BUFFER)[i] = x86_InWord(ATA_PORT_DATA);
+        dataBuffer[i] = x86_InWord(ATA_PORT_DATA);
 
     return true;
 }
@@ -204,13 +202,13 @@ uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk)
     waitForBSYClear();
     if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER) {
-            puts("ATA: LBA too large, must fit into 48 bits\n");
+            printf("ATA: LBA 0x%llx too large, must fit into 48 bits\n", lba);
             return 0;
         }
         readSectors48BitLba(lba, count, slaveBit);
     } else {
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max28BitLBA || lba > MAX_28_BIT_UNSIGNED_INTEGER) {
-            puts("ATA: LBA too large, must fit into 28 bits\n");
+            printf("ATA: LBA 0x%llx too large, must fit into 28 bits\n", lba);
             return 0;
         }
         readSectors28BitLba(lba, count, slaveBit);
@@ -269,13 +267,13 @@ uint16_t ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk
     waitForBSYClear();
     if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER) {
-            puts("ATA: LBA too large, must fit into 48 bits\n");
+            printf("ATA: LBA 0x%llx too large, must fit into 48 bits\n", lba);
             return 0;
         }
         writeSectors48BitLba(lba, count, slaveBit);
     } else {
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max28BitLBA || lba > MAX_28_BIT_UNSIGNED_INTEGER) {
-            puts("ATA: LBA too large, must fit into 28 bits\n");
+            printf("ATA: LBA 0x%llx too large, must fit into 28 bits\n", lba);
             return 0;
         }
         writeSectors28BitLba(lba, count, slaveBit);
@@ -304,8 +302,6 @@ void ATA_Initialize(ATA_InitializeOutput *output) {
     x86_OutByte(ATA_PORT_CONTROL, 0x00); // clear all properties of the control port (recommandation from wiki.osdev.org)
     g_ControlPortByte = 0x00;
 
-    output->masterDriveExists = identify(true);
-    output->slaveDriveExists = identify(false);
-    output->masterDriveData = (ATA_IdentifyData *)MEMORY_ATA_MASTER_IDENTIFY_BUFFER;
-    output->slaveDriveData = (ATA_IdentifyData *)MEMORY_ATA_SLAVE_IDENTIFY_BUFFER;
+    output->masterDriveExists = identify(true, output->masterDriveData);
+    output->slaveDriveExists = identify(false, output->slaveDriveData);
 }

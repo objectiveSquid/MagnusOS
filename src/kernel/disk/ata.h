@@ -489,7 +489,7 @@ typedef struct {
 
     uint16_t Signature : 8; // Word 255
     uint16_t CheckSum : 8;
-} __attribute__((packed)) ATA_IdentifyData;
+} __attribute__((aligned(2), packed)) ATA_IdentifyData;
 
 typedef struct {
     bool masterDriveExists;

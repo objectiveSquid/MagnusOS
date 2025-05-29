@@ -70,7 +70,7 @@ HOST_ENVIRONMENT = Environment(
     CXX="g++",
     CFLAGS=["-std=c11"],  # only c
     CXXFLAGS=["-std=c++17"],  # only c++
-    CCFLAGS=[],  # both for c and c++
+    CCFLAGS=["-Wall", "-Werror"],  # both for c and c++
     STRIP="strip",
     SRC_DIRECTORY=str(Path("src").resolve()),
     BUILD_SCRIPTS_DIRECTORY=str(Path("build_scripts").resolve()),

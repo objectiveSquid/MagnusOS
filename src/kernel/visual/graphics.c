@@ -2,8 +2,9 @@
 #include "memdefs.h"
 #include "util/memory.h"
 #include "vbe.h"
+#include <stddef.h>
 
-static VbeModeInfo *g_VbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
+static VbeModeInfo *g_VbeModeInfo = NULL;
 
 void GRAPHICS_WriteScalePixel(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t scale) {
     x = x * scale;
@@ -23,4 +24,9 @@ void GRAPHICS_WritePixel(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b
 
 void GRAPHICS_ClearScreen() {
     memset((void *)g_VbeModeInfo->framebuffer, 0, g_VbeModeInfo->pitch * g_VbeModeInfo->height);
+}
+
+void GRAPHICS_Initialize(VbeModeInfo *vbeModeInfo) {
+    g_VbeModeInfo = vbeModeInfo;
+    GRAPHICS_ClearScreen();
 }

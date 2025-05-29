@@ -35,7 +35,6 @@ enum {
 } PIC_CMD;
 
 static picmask_t g_PicMask = PICMASK_ALL;
-static bool g_AutoEndOfInterrupt = false;
 
 void i8259_SetMask(picmask_t newMask) {
     g_PicMask = newMask;

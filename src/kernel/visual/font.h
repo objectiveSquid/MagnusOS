@@ -1,6 +1,7 @@
 #pragma once
 
 #include "disk/mbr.h"
+#include "vbe.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,6 +24,8 @@ typedef struct {
     uint8_t height;
 } FONT_FontInfo;
 
+void FONT_DeInitialize();
+bool FONT_Initialize(VbeModeInfo *vbeModeInfo);
 const FONT_FontInfo *FONT_FindFontInfo(const char *filename, int16_t width, int16_t height);
 bool FONT_SetFont(Partition *fontsPartition, const FONT_FontInfo *fontInfo, bool reDraw);
 void FONT_PutCharacter(uint16_t x, uint16_t y, FONT_Character character);

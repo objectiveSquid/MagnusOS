@@ -52,7 +52,4 @@ typedef struct {
     uint8_t __reserved[206];
 } __attribute__((packed)) VbeModeInfo;
 
-bool VBE_GetControllerInfo(VbeInfoBlock *infoOutput);
-bool VBE_GetModeInfo(uint16_t mode, VbeModeInfo *infoOutput);
-bool VBE_SetVideoMode(uint16_t mode);
-bool VBE_Initialize();
+VbeModeInfo *VBE_Initialize();

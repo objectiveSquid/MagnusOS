@@ -1,6 +1,7 @@
 #include "fat.h"
 #include "mbr.h"
 #include "memdefs.h"
+#include "memory/allocator.h"
 #include "util/memory.h"
 #include "util/other.h"
 #include "util/string.h"
@@ -119,9 +120,18 @@ uint8_t FAT_DetectFatType(Partition *partition) {
         return 32;
 }
 
-bool FAT_Initialize(Partition *partition) {
-    g_Data = (FAT_Data *)MEMORY_FAT_ADDRESS;
-    memset(g_Data->openFiles, 0, sizeof(g_Data->openFiles));
+void FAT_DeInitialize() {
+    free(g_Data);
+    g_Data = NULL;
+}
+
+bool FAT_Initialize(Partition *partition, bool isKernel) {
+    if (isKernel)
+        g_Data = (FAT_Data *)malloc(sizeof(FAT_Data));
+    else
+        g_Data = (FAT_Data *)ALLOCATOR_Malloc(sizeof(FAT_Data), true);
+
+    memset(g_Data, 0, sizeof(FAT_Data));
 
     // read boot sector
     if (!FAT_ReadBootSector(partition)) {

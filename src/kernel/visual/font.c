@@ -3,6 +3,7 @@
 #include "fallback_font.h"
 #include "graphics.h"
 #include "memdefs.h"
+#include "memory/allocator.h"
 #include "rasterfont_sizes.h"
 #include "stdio.h"
 #include "util/memory.h"
@@ -13,12 +14,45 @@
 #include <stdint.h>
 
 #define FONT_READ_CHUNK_SIZE 0x1000
+#define FONT_MAX_CHARACTERS 0xFF
 
-static FONT_Character *g_ScreenCharacterBuffer = (FONT_Character *)MEMORY_SCREEN_CHARACTER_BUFFER;
-static VbeModeInfo *g_VbeModeInfo = (VbeModeInfo *)MEMORY_VESA_MODE_INFO;
-static uint8_t *g_FontBits = (uint8_t *)MEMORY_RASTERFONT_BITS;
+static FONT_Character *g_ScreenCharacterBuffer = NULL;
+static VbeModeInfo *g_VbeModeInfo = NULL;
+static uint8_t *g_FontBits = NULL;
 static const FONT_FontInfo *g_FontInfo = NULL;
 static uint8_t g_FontPixelScale = 1;
+
+void ensureFontInfoSet() {
+    if (g_FontInfo != NULL)
+        return;
+
+    // no font loaded
+    g_FontInfo = &FALLBACK_FONT_INFO;
+    g_FontBits = FALLBACK_FONT_8x8;
+}
+
+void FONT_DeInitialize() {
+    if (g_ScreenCharacterBuffer != NULL) {
+        free(g_ScreenCharacterBuffer);
+        g_ScreenCharacterBuffer = NULL;
+    }
+
+    if (g_FontBits != NULL) {
+        free(g_FontBits);
+        g_FontBits = NULL;
+    }
+}
+
+bool FONT_Initialize(VbeModeInfo *vbeModeInfo) {
+    g_VbeModeInfo = vbeModeInfo;
+
+    ensureFontInfoSet();
+
+    if ((g_ScreenCharacterBuffer = malloc(FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight())) == NULL)
+        return false;
+
+    return true;
+}
 
 // finds a font based on name, width and height (can be NULL, -1, -1 to ignore). returns NULL if none are found or all three inputs are NULL, -1, -1
 const FONT_FontInfo *FONT_FindFontInfo(const char *filename, int16_t width, int16_t height) {
@@ -46,7 +80,7 @@ bool readFont(Partition *fontsPartition) {
 
     uint8_t *fontBuffer = g_FontBits;
     uint32_t readCount;
-    while (readCount = FAT_Read(fontsPartition, fontFd, FONT_READ_CHUNK_SIZE, fontBuffer))
+    while ((readCount = FAT_Read(fontsPartition, fontFd, FONT_READ_CHUNK_SIZE, fontBuffer)))
         fontBuffer += readCount;
 
     FAT_Close(fontFd);
@@ -60,14 +94,22 @@ bool FONT_SetFont(Partition *fontsPartition, const FONT_FontInfo *fontInfo, bool
 
     // backup old fontinfo
     const FONT_FontInfo *oldFontInfo = g_FontInfo;
+    uint8_t *oldFontBits = g_FontBits;
 
     g_FontInfo = fontInfo;
+
+    if ((g_FontBits = malloc(DIV_ROUND_UP(g_FontInfo->height * g_FontInfo->width, 8) * FONT_MAX_CHARACTERS)) == NULL)
+        return false;
 
     // possibly restore old fontinfo
     if (!readFont(fontsPartition)) {
         g_FontInfo = oldFontInfo;
+        g_FontBits = oldFontBits;
         return false;
     }
+
+    if (oldFontBits != FALLBACK_FONT_8x8)
+        free(oldFontBits);
 
     if (!reDraw)
         return true;
@@ -80,15 +122,6 @@ bool FONT_SetFont(Partition *fontsPartition, const FONT_FontInfo *fontInfo, bool
     return true;
 }
 
-void ensureFontInfoSet() {
-    if (g_FontInfo != NULL)
-        return;
-
-    // no font loaded
-    g_FontInfo = &FALLBACK_FONT_INFO;
-    g_FontBits = FALLBACK_FONT_8x8;
-}
-
 // next 2 functions are because i dont really understand variable sharing across files in c
 void FONT_SetPixelScale(uint8_t scale) {
     g_FontPixelScale = scale;
@@ -99,8 +132,6 @@ uint8_t FONT_GetPixelScale() {
 }
 
 FONT_Character FONT_GetCharacter(uint16_t x, uint16_t y) {
-    FONT_Character output = EMPTY_CHARACTER;
-
     return g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x];
 }
 

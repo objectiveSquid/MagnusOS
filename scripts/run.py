@@ -14,7 +14,7 @@ def main(image_path: str, memory_size: str) -> None:
         "-drive",
         f"file={image_path},format=raw,if=ide",
         "-debugcon",  # for the e9 port hack
-        "stdio",  #
+        "file:E9.log",  #
         "-serial",  # disable com1 serial port (also for e9 port hack)
         "null",  #
         "-no-reboot",  # do not reboot on triple fault

@@ -213,7 +213,7 @@ void ASMCALL printf(const char *format, ...) {
                 break;
             }
 
-            if (number)
+            if (number) {
                 if (sign)
                     switch (length) {
                     case PRINTF_LENGTH_SHORT_SHORT:
@@ -246,6 +246,7 @@ void ASMCALL printf(const char *format, ...) {
                         printf_number_unsigned(va_arg(args, unsigned long long), radix);
                         break;
                     }
+            }
 
             state = PRINTF_STATE_NORMAL;
             length = PRINTF_LENGTH_DEFAULT;
