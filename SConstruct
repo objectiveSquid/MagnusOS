@@ -203,6 +203,7 @@ SConscript(
     duplicate=0,
 )
 
+Import("kernel")
 Import("disk_image")
 
 #
@@ -219,6 +220,7 @@ PhonyTargets(
     gdb=[
         sys.executable,
         "scripts/gdb.py",
+        kernel[0].path,
         disk_image[0].path,
         HOST_ENVIRONMENT["memory_size"],
     ],

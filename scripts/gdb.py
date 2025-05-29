@@ -6,33 +6,32 @@ import sys
 import os
 
 
-def make_gdbscript(image_path: str, memory_size: str) -> str:
+def make_gdbscript(kernel_path: str, image_path: str, memory_size: str) -> str:
     path = tempfile.mkdtemp(prefix="magnusos") + "/gdbscript.gdb"
 
     with open(path, "w") as fd:
-        fd.write("set disassembly-flavor intel\n")
-        fd.write("b *0x7C00\n")
-        fd.write("layout asm\n")
-        fd.write("layout regs\n")
         fd.write(
-            "set architecture i8086\n"
-        )  # tell gdb to use display 16 bit asm. i386 = 32 bit, i8086 = 16bit
-        # parameters for qemu are explained in the run.py file
-        fd.write(
-            f"target remote | qemu-system-i386 -S -gdb stdio \
+            f"""set disassembly-flavor intel
+layout asm
+layout regs
+set architecture i386
+symbol-file {kernel_path}
+
+target remote | qemu-system-i386 -S -gdb stdio \
 -m {memory_size} \
 -drive file={image_path},format=raw,if=ide \
+-debugcon file:E9.log \
+-serial null \
 -no-reboot \
--debugcon \
-file:E9.log\n"
+"""
         )
 
     return path
 
 
-def main(image_path: str, memory_size: str) -> None:
+def main(kernel_path: str, image_path: str, memory_size: str) -> None:
     # make script
-    gdbscript_path = make_gdbscript(image_path, memory_size)
+    gdbscript_path = make_gdbscript(kernel_path, image_path, memory_size)
 
     # run gdb (use this because i need stdio directly)
     os.system(" ".join(["gdb", "-x", gdbscript_path]))
@@ -42,8 +41,8 @@ def main(image_path: str, memory_size: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python3 gdb.py <image path> <memory size>")
+    if len(sys.argv) != 4:
+        print("Usage: python3 gdb.py <kernel path> <image path> <memory size>")
         sys.exit(1)
 
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], sys.argv[3])
