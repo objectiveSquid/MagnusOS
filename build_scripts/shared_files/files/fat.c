@@ -267,11 +267,79 @@ uint32_t FAT_NextCluster(Partition *partition, uint32_t currentCluster) {
     return nextCluster;
 }
 
-// if dataOutput is NULL, it is ignored and this function is pretty much just a seek function
+// - returns `UINT32_MAX` on error
+// - returns the new position on success
+uint32_t FAT_Seek(Partition *partition, FAT_File *file, int64_t targetPosition, uint8_t whence) {
+    FAT_FileData *fd = (file->handle == ROOT_DIRECTORY_HANDLE)
+                           ? &g_Data->rootDirectory
+                           : &g_Data->openFiles[file->handle];
+
+    if (whence == FAT_WHENCE_CURSOR)
+        targetPosition += fd->public.position;
+    if (whence == FAT_WHENCE_END)
+        targetPosition += fd->public.size;
+
+    // out of bounds
+    if (targetPosition < 0) {
+        puts("FAT: Failed to seek, position is negative.\n");
+        return UINT32_MAX;
+    }
+
+    if (targetPosition > fd->public.size) {
+        puts("FAT: Failed to seek, position is past EOF.\n");
+        return UINT32_MAX;
+    }
+
+    // set file info to beggining
+    fd->public.position = 0;
+    fd->currentCluster = fd->firstCluster;
+    fd->currentSectorInCluster = 0;
+
+    // short path if seeking to the beginning
+    if (targetPosition == 0) {
+        // load the first sector into buffer
+        uint16_t sectorsRead = Partition_ReadSectors(partition, FAT_ClusterToLba(fd->currentCluster), 1, fd->buffer);
+        if (sectorsRead != 1) {
+            puts("FAT: Failed to seek, read error.\n");
+            return UINT32_MAX;
+        }
+        return targetPosition;
+    }
+
+    // calculate cluster and sector to reach position
+    uint32_t clusterSize = SECTOR_SIZE * g_Data->BS.bootSector.sectorsPerCluster;
+    uint32_t clustersToAdvance = targetPosition / clusterSize;
+    uint32_t remainingBytes = targetPosition % clusterSize;
+    uint32_t sectorInCluster = remainingBytes / SECTOR_SIZE;
+
+    // follow cluster chain
+    while (clustersToAdvance-- > 0) {
+        uint32_t nextCluster = FAT_NextCluster(partition, fd->currentCluster);
+        if (nextCluster == UINT32_MAX)
+            return UINT32_MAX; // error
+        fd->currentCluster = nextCluster;
+    }
+
+    fd->currentSectorInCluster = sectorInCluster;
+    fd->public.position = targetPosition;
+
+    // coad the sector into the buffer
+    uint32_t lba = FAT_ClusterToLba(fd->currentCluster) + fd->currentSectorInCluster;
+    if (Partition_ReadSectors(partition, lba, 1, fd->buffer) != 1) {
+        puts("FAT: Failed to seek, read error.\n");
+        return UINT32_MAX;
+    }
+
+    return targetPosition;
+}
+
 uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void *dataOutput) {
     FAT_FileData *fd = (file->handle == ROOT_DIRECTORY_HANDLE)
                            ? &g_Data->rootDirectory
                            : &g_Data->openFiles[file->handle];
+
+    if (dataOutput == NULL)
+        return 0;
 
     uint8_t *u8DataOutput = (uint8_t *)dataOutput;
 
@@ -282,8 +350,7 @@ uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void
         uint32_t leftInBuffer = SECTOR_SIZE - (fd->public.position % SECTOR_SIZE);
         uint32_t take = min(byteCount, leftInBuffer);
 
-        if (dataOutput != NULL)
-            memcpy(u8DataOutput, fd->buffer + fd->public.position % SECTOR_SIZE, take);
+        memcpy(u8DataOutput, fd->buffer + fd->public.position % SECTOR_SIZE, take);
 
         u8DataOutput += take;
         fd->public.position += take;

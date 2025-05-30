@@ -27,7 +27,7 @@ typedef struct {
     uint32_t size;
 } FAT_File;
 
-enum FAT_Attributes {
+typedef enum {
     FAT_ATTRIBUTE_READ_ONLY = 0x01,
     FAT_ATTRIBUTE_HIDDEN = 0x02,
     FAT_ATTRIBUTE_SYSTEM = 0x04,
@@ -35,11 +35,18 @@ enum FAT_Attributes {
     FAT_ATTRIBUTE_DIRECTORY = 0x10,
     FAT_ATTRIBUTE_ARCHIVE = 0x20,
     FAT_ATTRIBUTE_LFN = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
-};
+} FAT_Attributes;
+
+typedef enum {
+    FAT_WHENCE_SET = 0,
+    FAT_WHENCE_CURSOR = 1, // aka CUR
+    FAT_WHENCE_END = 2,
+} FAT_Whence;
 
 bool FAT_Initialize(Partition *partition, bool isKernel);
 void FAT_DeInitialize();
 FAT_File *FAT_Open(Partition *partition, const char *path);
+uint32_t FAT_Seek(Partition *partition, FAT_File *file, int64_t targetPosition, uint8_t whence);
 uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void *dataOutput);
 bool FAT_ReadEntry(Partition *partition, FAT_File *file, FAT_DirectoryEntry *directoryEntryOutput);
 void FAT_Close(FAT_File *file);

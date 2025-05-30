@@ -80,7 +80,7 @@ bool ELF_Open32Bit(Partition *partition, const char *filepath, void **entryPoint
     *entryPoint = (void *)header->programEntryOffset;
 
     // the program header table contains information about the segments in the program
-    if (FAT_Read(partition, elfFd, header->programHeaderTableOffset - elfFd->position, NULL) != (header->programHeaderTableOffset - elfFd->position)) {
+    if (!FAT_Seek(partition, elfFd, header->programHeaderTableOffset, FAT_WHENCE_SET)) {
         puts("ELF: Failed to seek to ELF program header table.\n");
         returnValue = false;
         goto free_header;
@@ -93,7 +93,6 @@ bool ELF_Open32Bit(Partition *partition, const char *filepath, void **entryPoint
         returnValue = false;
         goto free_header;
     }
-    FAT_Close(elfFd); // closing it because i may need to seek backwards later
 
     uint8_t *loadSegmentBuffer = ALLOCATOR_Malloc(ELF_LOAD_SEGMENT_CHUNK_SIZE, true);
     if (loadSegmentBuffer == NULL) {
@@ -110,24 +109,9 @@ bool ELF_Open32Bit(Partition *partition, const char *filepath, void **entryPoint
         // clean memory
         memset((void *)currentProgramHeader->virtualAddress, 0, currentProgramHeader->memorySize);
 
-        // im sorry for this. i have not yet implemented a seek function in the fat driver
-        elfFd = FAT_Open(partition, filepath);
-        if (elfFd == NULL) {
-            puts("ELF: Failed to open ELF file.\n");
-            returnValue = false;
-            goto free_segment_buffer;
-        }
-        while (elfFd->position < currentProgramHeader->offset) {
-            uint32_t shouldRead = min(currentProgramHeader->offset, ELF_LOAD_SEGMENT_CHUNK_SIZE);
-            uint32_t readCount = FAT_Read(partition, elfFd, shouldRead, NULL);
-            if (readCount != shouldRead) {
-                printf("ELF: Failed to seek to ELF load segment.!\n");
-                returnValue = false;
-                goto free_segment_buffer;
-            }
-        }
+        FAT_Seek(partition, elfFd, currentProgramHeader->offset, FAT_WHENCE_SET);
 
-        // spaghetti, this is where we read the segments and load them (naively) directly to their written virtual address
+        // spaghetti, this is where we read the segments and load them (naively) directly to their virtual address
         size_t bytesToRead = currentProgramHeader->segmentSize;
         while (bytesToRead > 0) {
             size_t readNow = min(bytesToRead, ELF_LOAD_SEGMENT_CHUNK_SIZE);
