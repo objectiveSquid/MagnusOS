@@ -98,7 +98,7 @@ bool ELF_Open32Bit(Partition *partition, const char *filepath, void **entryPoint
     if (loadSegmentBuffer == NULL) {
         puts("ELF: Failed to allocate buffer for ELF load segment.\n");
         returnValue = false;
-        goto free_header;
+        goto free_segment_buffer;
     }
     ELF_32BitProgramHeader *currentProgramHeader;
     for (size_t i = 0; i < header->programHeaderTableEntryCount; ++i) {
