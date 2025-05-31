@@ -75,8 +75,15 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
 
     Partition bootPartition;
     MBR_DetectPartition(&bootPartition, &disk, partitionLBA, partitionSize);
+    puts("Detected boot partition!\n");
 
-    if (!FAT_Initialize(&bootPartition, false)) {
+    FAT_Filesystem *bootFilesystem = ALLOCATOR_Malloc(sizeof(FAT_Filesystem), true);
+    if (bootFilesystem == NULL || (size_t)bootFilesystem > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
+        puts("Failed to allocate memory for filesystem!\n");
+        return;
+    }
+    bootFilesystem->partition = &bootPartition;
+    if (!FAT_Initialize(bootFilesystem)) {
         puts("Failed to initialize FAT.\n");
         return;
     }
@@ -84,14 +91,14 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
 
     // load kernel
     KernelStart kernelStart;
-    if (!ELF_Open32Bit(&bootPartition, "/boot/kernel.elf", (void **)&kernelStart)) {
+    if (!ELF_Read32Bit(bootFilesystem, "/boot/kernel.elf", (void **)&kernelStart)) {
         puts("Failed to load kernel elf.\n");
         return;
     }
     puts("Kernel loaded!\n");
 
     // free fat memory
-    FAT_DeInitialize();
+    free(bootFilesystem);
 
     // initialize vbe (graphics)
     VbeModeInfo *selectedVbeModeInfo;

@@ -10,181 +10,107 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SECTOR_SIZE 512
-#define MAX_PATH_SIZE 256
-#define MAX_FILE_HANDLES 32
-#define FAT_CACHE_SIZE_SECTORS 5 // 5 sectors
-
 #define ROOT_DIRECTORY_HANDLE -1
 #define UNUSED_HANDLE -2
 
 typedef struct {
-    // extended boot record (marked with ebr_ in boot.asm)
-    uint8_t driveNumber;
-    uint8_t _reserved;
-    uint8_t signature;
-    uint32_t volumeId;       // serial number, value doesn't matter
-    uint8_t volumeLabel[11]; // 11 bytes, padded with spaces
-    uint8_t systemId[8];
-} __attribute__((packed)) FAT_ExtendedBootRecord;
+    char name[11];
+    uint8_t attributes;
+    uint8_t _Reserved;
+    uint8_t createdTimeTenths;
+    uint16_t createdTime;
+    uint16_t createdDate;
+    uint16_t accessedDate;
+    uint16_t firstClusterHigh;
+    uint16_t modifiedTime;
+    uint16_t modifiedDate;
+    uint16_t firstClusterLow;
+    uint32_t size;
+} __attribute__((packed)) FAT_DirectoryEntry;
 
-typedef struct {
-    // fat32 extended boot record (marked with fat32_ in boot.asm)
-    uint32_t sectorsPerFat;
-    uint16_t flags;
-    uint16_t fatVersion;
-    uint32_t rootDirectoryCluster;
-    uint16_t FSInfoSector;
-    uint16_t backupBootSector;
-    uint8_t _reserved[12];
-    // normal extended boot record (marked with ebr_ in boot.asm)
-    FAT_ExtendedBootRecord EBR;
-
-} __attribute((packed)) FAT32_ExtendedBootRecord;
-
-typedef struct {
-    uint8_t bootJumpInstruction[3];
-    uint8_t oemIdentifier[8];
-    uint16_t bytesPerSector;
-    uint8_t sectorsPerCluster;
-    uint16_t reservedSectors;
-    uint8_t fatCount;
-    uint16_t dirEntryCount;
-    uint16_t totalSectors;
-    uint8_t mediaDescriptorType;
-    uint16_t sectorsPerFat;
-    uint16_t sectorsPerTrack;
-    uint16_t heads;
-    uint32_t hiddenSectors;
-    uint32_t largeSectorCount;
-
-    union {
-        FAT_ExtendedBootRecord ebr12and16;
-        FAT32_ExtendedBootRecord ebr32;
-    };
-} __attribute__((packed)) FAT_BootSector;
-
-typedef struct {
-    char buffer[SECTOR_SIZE];
-    FAT_File public;
-    bool open;
-    uint32_t firstCluster;
-    uint32_t currentCluster;
-    uint32_t currentSectorInCluster;
-} FAT_FileData;
-
-typedef struct {
-    union {
-        FAT_BootSector bootSector;
-        char bootSectorBytes[SECTOR_SIZE];
-    } BS;
-
-    FAT_FileData rootDirectory;
-
-    FAT_FileData openFiles[MAX_FILE_HANDLES];
-
-    uint8_t fatCache[FAT_CACHE_SIZE_SECTORS * SECTOR_SIZE];
-    uint32_t fatCachePosition;
-} FAT_Data;
-
-static FAT_Data *g_Data;
-static uint32_t g_DataSectionLba;
-static uint8_t g_FatType;
-static uint32_t g_SectorsPerFat;
-
-bool FAT_ReadBootSector(Partition *partition) {
-    return Partition_ReadSectors(partition, 0, 1, g_Data->BS.bootSectorBytes) == 1;
+bool FAT_ReadBootSector(FAT_Filesystem *filesystem) {
+    return Partition_ReadSectors(filesystem->partition, 0, 1, filesystem->fatData.bootSector.bootSectorBytes) == 1;
 }
 
-bool FAT_ReadFat(Partition *partition, uint64_t lbaIndex) {
-    bool success = Partition_ReadSectors(partition, g_Data->BS.bootSector.reservedSectors + lbaIndex, FAT_CACHE_SIZE_SECTORS, g_Data->fatCache) == FAT_CACHE_SIZE_SECTORS;
+bool FAT_ReadFat(FAT_Filesystem *filesystem, uint64_t lbaIndex) {
+    bool success = Partition_ReadSectors(filesystem->partition, filesystem->fatData.bootSector.info.reservedSectors + lbaIndex, FAT_CACHE_SIZE_SECTORS, filesystem->fatData.fatCache) == FAT_CACHE_SIZE_SECTORS;
 
     if (success)
-        g_Data->fatCachePosition = lbaIndex;
+        filesystem->fatData.fatCachePosition = lbaIndex;
 
     return success;
 }
 
-bool FAT_IsFat32() {
-    return g_Data->BS.bootSector.sectorsPerFat == 0;
+bool FAT_IsFat32(FAT_Filesystem *filesystem) {
+    return filesystem->fatData.bootSector.info.sectorsPerFat == 0;
 }
 
-uint8_t FAT_DetectFatType(Partition *partition) {
-    uint32_t dataClusters = (partition->partitionSize - g_DataSectionLba) / g_Data->BS.bootSector.sectorsPerCluster;
+uint8_t FAT_DetectFatType(FAT_Filesystem *filesystem) {
+    uint32_t dataClusters = (filesystem->partition->partitionSize - filesystem->fatData.dataSectionLba) / filesystem->fatData.bootSector.info.sectorsPerCluster;
 
     if (dataClusters < 0xFF5)
         return 12;
-    else if (g_Data->BS.bootSector.sectorsPerFat != 0) // in fat32 this is always 0
+    else if (filesystem->fatData.bootSector.info.sectorsPerFat != 0) // in fat32 this is always 0
         return 16;
     else
         return 32;
 }
 
-void FAT_DeInitialize() {
-    free(g_Data);
-    g_Data = NULL;
-}
-
-bool FAT_Initialize(Partition *partition, bool isKernel) {
-    if (isKernel)
-        g_Data = (FAT_Data *)malloc(sizeof(FAT_Data));
-    else
-        g_Data = (FAT_Data *)ALLOCATOR_Malloc(sizeof(FAT_Data), true);
-
-    memset(g_Data, 0, sizeof(FAT_Data));
+bool FAT_Initialize(FAT_Filesystem *filesystem) {
+    memset(&filesystem->fatData, 0, sizeof(FAT_Data));
 
     // read boot sector
-    if (!FAT_ReadBootSector(partition)) {
+    if (!FAT_ReadBootSector(filesystem)) {
         puts("FAT: Failed to read boot sector.\n");
         return false;
     }
 
-    if (FAT_IsFat32())
-        g_SectorsPerFat = g_Data->BS.bootSector.ebr32.sectorsPerFat;
+    if (FAT_IsFat32(filesystem))
+        filesystem->fatData.sectorsPerFat = filesystem->fatData.bootSector.info.ebr32.sectorsPerFat;
     else
-        g_SectorsPerFat = g_Data->BS.bootSector.sectorsPerFat;
+        filesystem->fatData.sectorsPerFat = filesystem->fatData.bootSector.info.sectorsPerFat;
 
     // read root directory
-    g_Data->fatCachePosition = UINT32_MAX;
-    uint32_t rootDirectoryLba = g_Data->BS.bootSector.reservedSectors + (g_SectorsPerFat * g_Data->BS.bootSector.fatCount);
-    uint32_t rootDirectorySize = sizeof(FAT_DirectoryEntry) * g_Data->BS.bootSector.dirEntryCount;
+    filesystem->fatData.fatCachePosition = UINT32_MAX;
+    uint32_t rootDirectoryLba = filesystem->fatData.bootSector.info.reservedSectors + (filesystem->fatData.sectorsPerFat * filesystem->fatData.bootSector.info.fatCount);
+    uint32_t rootDirectorySize = sizeof(FAT_DirectoryEntry) * filesystem->fatData.bootSector.info.dirEntryCount;
 
     // open root directory file
-    g_Data->rootDirectory.open = true;
-    g_Data->rootDirectory.public.handle = ROOT_DIRECTORY_HANDLE;
-    g_Data->rootDirectory.public.isDirectory = true;
-    g_Data->rootDirectory.public.position = 0;
-    g_Data->rootDirectory.public.size = rootDirectorySize;
-    g_Data->rootDirectory.firstCluster = rootDirectoryLba;
-    g_Data->rootDirectory.currentCluster = rootDirectoryLba;
-    g_Data->rootDirectory.currentSectorInCluster = 0;
+    filesystem->fatData.rootDirectory.open = true;
+    filesystem->fatData.rootDirectory.public.handle = ROOT_DIRECTORY_HANDLE;
+    filesystem->fatData.rootDirectory.public.isDirectory = true;
+    filesystem->fatData.rootDirectory.public.position = 0;
+    filesystem->fatData.rootDirectory.public.size = rootDirectorySize;
+    filesystem->fatData.rootDirectory.firstCluster = rootDirectoryLba;
+    filesystem->fatData.rootDirectory.currentCluster = rootDirectoryLba;
+    filesystem->fatData.rootDirectory.currentSectorInCluster = 0;
 
-    if (Partition_ReadSectors(partition, rootDirectoryLba, 1, g_Data->rootDirectory.buffer) != 1) {
+    if (Partition_ReadSectors(filesystem->partition, rootDirectoryLba, 1, filesystem->fatData.rootDirectory.buffer) != 1) {
         puts("FAT: Failed to read root directory.\n");
         return false;
     }
 
     // calculate data section
-    uint32_t rootDirectorySectors = (rootDirectorySize + g_Data->BS.bootSector.bytesPerSector - 1) / g_Data->BS.bootSector.bytesPerSector;
-    g_DataSectionLba = rootDirectoryLba + rootDirectorySectors;
+    uint32_t rootDirectorySectors = (rootDirectorySize + filesystem->fatData.bootSector.info.bytesPerSector - 1) / filesystem->fatData.bootSector.info.bytesPerSector;
+    filesystem->fatData.dataSectionLba = rootDirectoryLba + rootDirectorySectors;
 
     // reset open files
     for (uint32_t i = 0; i < MAX_FILE_HANDLES; ++i)
-        g_Data->openFiles[i].open = false;
+        filesystem->fatData.openFiles[i].open = false;
 
-    g_FatType = FAT_DetectFatType(partition);
+    filesystem->fatData.fatType = FAT_DetectFatType(filesystem);
 
     return true;
 }
 
-uint32_t FAT_ClusterToLba(uint32_t cluster) {
-    return g_DataSectionLba + (cluster - 2) * g_Data->BS.bootSector.sectorsPerCluster;
+uint32_t FAT_ClusterToLba(FAT_Filesystem *filesystem, uint32_t cluster) {
+    return filesystem->fatData.dataSectionLba + (cluster - 2) * filesystem->fatData.bootSector.info.sectorsPerCluster;
 }
 
-FAT_File *FAT_OpenEntry(Partition *partition, FAT_DirectoryEntry *entry) {
+FAT_File *FAT_OpenEntry(FAT_Filesystem *filesystem, FAT_DirectoryEntry *entry) {
     int32_t handle = UNUSED_HANDLE;
     for (size_t i = 0; i < MAX_FILE_HANDLES && handle < 0; ++i) {
-        if (!g_Data->openFiles[i].open)
+        if (!filesystem->fatData.openFiles[i].open)
             handle = i;
     }
 
@@ -194,7 +120,7 @@ FAT_File *FAT_OpenEntry(Partition *partition, FAT_DirectoryEntry *entry) {
     }
 
     // set up variables
-    FAT_FileData *fd = &g_Data->openFiles[handle];
+    FAT_FileData *fd = &filesystem->fatData.openFiles[handle];
     fd->public.handle = handle;
     fd->public.isDirectory = (entry->attributes & FAT_ATTRIBUTE_DIRECTORY) != 0;
     fd->public.position = 0;
@@ -203,7 +129,7 @@ FAT_File *FAT_OpenEntry(Partition *partition, FAT_DirectoryEntry *entry) {
     fd->currentCluster = fd->firstCluster;
     fd->currentSectorInCluster = 0;
 
-    if (Partition_ReadSectors(partition, FAT_ClusterToLba(fd->currentCluster), 1, fd->buffer) != 1) {
+    if (Partition_ReadSectors(filesystem->partition, FAT_ClusterToLba(filesystem, fd->currentCluster), 1, fd->buffer) != 1) {
         puts("FAT: Read error.\n");
         return false;
     }
@@ -213,10 +139,10 @@ FAT_File *FAT_OpenEntry(Partition *partition, FAT_DirectoryEntry *entry) {
 }
 
 // returns UINT32_MAX on error
-uint32_t FAT_NextCluster(Partition *partition, uint32_t currentCluster) {
+uint32_t FAT_NextCluster(FAT_Filesystem *filesystem, uint32_t currentCluster) {
     uint32_t fatIndex;
 
-    switch (g_FatType) {
+    switch (filesystem->fatData.fatType) {
     case 12:
         fatIndex = currentCluster * 3 / 2;
         break;
@@ -231,34 +157,34 @@ uint32_t FAT_NextCluster(Partition *partition, uint32_t currentCluster) {
     }
 
     uint32_t fatIndexSector = fatIndex / SECTOR_SIZE;
-    if (fatIndexSector < g_Data->fatCachePosition || fatIndexSector >= g_Data->fatCachePosition + FAT_CACHE_SIZE_SECTORS)
-        if (!FAT_ReadFat(partition, fatIndexSector)) // cache miss
+    if (fatIndexSector < filesystem->fatData.fatCachePosition || fatIndexSector >= filesystem->fatData.fatCachePosition + FAT_CACHE_SIZE_SECTORS)
+        if (!FAT_ReadFat(filesystem, fatIndexSector)) // cache miss
             return UINT32_MAX;
 
-    fatIndex -= g_Data->fatCachePosition * SECTOR_SIZE;
+    fatIndex -= filesystem->fatData.fatCachePosition * SECTOR_SIZE;
 
     uint32_t nextCluster;
     // comparisons with 0xFF...FF8 are eof checks
-    switch (g_FatType) {
+    switch (filesystem->fatData.fatType) {
     case 12:
         if (currentCluster % 2 == 0)
-            nextCluster = (*(uint16_t *)(g_Data->fatCache + fatIndex)) & 0x0FFF;
+            nextCluster = (*(uint16_t *)(filesystem->fatData.fatCache + fatIndex)) & 0x0FFF;
         else
-            nextCluster = (*(uint16_t *)(g_Data->fatCache + fatIndex)) >> 4;
+            nextCluster = (*(uint16_t *)(filesystem->fatData.fatCache + fatIndex)) >> 4;
 
         if (nextCluster >= 0xFF8)
             nextCluster |= 0xFFFFF000;
 
         break;
     case 16:
-        nextCluster = *(uint16_t *)(g_Data->fatCache + fatIndex);
+        nextCluster = *(uint16_t *)(filesystem->fatData.fatCache + fatIndex);
 
         if (nextCluster >= 0xFFF8)
             nextCluster |= 0xFFFF0000;
 
         break;
     case 32:
-        nextCluster = *(uint32_t *)(g_Data->fatCache + fatIndex);
+        nextCluster = *(uint32_t *)(filesystem->fatData.fatCache + fatIndex);
         break;
     default:
         return UINT32_MAX;
@@ -269,10 +195,10 @@ uint32_t FAT_NextCluster(Partition *partition, uint32_t currentCluster) {
 
 // - returns `UINT32_MAX` on error
 // - returns the new position on success
-uint32_t FAT_Seek(Partition *partition, FAT_File *file, int64_t targetPosition, uint8_t whence) {
+uint32_t FAT_Seek(FAT_Filesystem *filesystem, FAT_File *file, int64_t targetPosition, uint8_t whence) {
     FAT_FileData *fd = (file->handle == ROOT_DIRECTORY_HANDLE)
-                           ? &g_Data->rootDirectory
-                           : &g_Data->openFiles[file->handle];
+                           ? &filesystem->fatData.rootDirectory
+                           : &filesystem->fatData.openFiles[file->handle];
 
     if (whence == FAT_WHENCE_CURSOR)
         targetPosition += fd->public.position;
@@ -298,7 +224,7 @@ uint32_t FAT_Seek(Partition *partition, FAT_File *file, int64_t targetPosition, 
     // short path if seeking to the beginning
     if (targetPosition == 0) {
         // load the first sector into buffer
-        uint16_t sectorsRead = Partition_ReadSectors(partition, FAT_ClusterToLba(fd->currentCluster), 1, fd->buffer);
+        uint16_t sectorsRead = Partition_ReadSectors(filesystem->partition, FAT_ClusterToLba(filesystem, fd->currentCluster), 1, fd->buffer);
         if (sectorsRead != 1) {
             puts("FAT: Failed to seek, read error.\n");
             return UINT32_MAX;
@@ -307,14 +233,14 @@ uint32_t FAT_Seek(Partition *partition, FAT_File *file, int64_t targetPosition, 
     }
 
     // calculate cluster and sector to reach position
-    uint32_t clusterSize = SECTOR_SIZE * g_Data->BS.bootSector.sectorsPerCluster;
+    uint32_t clusterSize = SECTOR_SIZE * filesystem->fatData.bootSector.info.sectorsPerCluster;
     uint32_t clustersToAdvance = targetPosition / clusterSize;
     uint32_t remainingBytes = targetPosition % clusterSize;
     uint32_t sectorInCluster = remainingBytes / SECTOR_SIZE;
 
     // follow cluster chain
     while (clustersToAdvance-- > 0) {
-        uint32_t nextCluster = FAT_NextCluster(partition, fd->currentCluster);
+        uint32_t nextCluster = FAT_NextCluster(filesystem, fd->currentCluster);
         if (nextCluster == UINT32_MAX)
             return UINT32_MAX; // error
         fd->currentCluster = nextCluster;
@@ -324,8 +250,8 @@ uint32_t FAT_Seek(Partition *partition, FAT_File *file, int64_t targetPosition, 
     fd->public.position = targetPosition;
 
     // coad the sector into the buffer
-    uint32_t lba = FAT_ClusterToLba(fd->currentCluster) + fd->currentSectorInCluster;
-    if (Partition_ReadSectors(partition, lba, 1, fd->buffer) != 1) {
+    uint32_t lba = FAT_ClusterToLba(filesystem, fd->currentCluster) + fd->currentSectorInCluster;
+    if (Partition_ReadSectors(filesystem->partition, lba, 1, fd->buffer) != 1) {
         puts("FAT: Failed to seek, read error.\n");
         return UINT32_MAX;
     }
@@ -333,10 +259,10 @@ uint32_t FAT_Seek(Partition *partition, FAT_File *file, int64_t targetPosition, 
     return targetPosition;
 }
 
-uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void *dataOutput) {
+uint32_t FAT_Read(FAT_Filesystem *filesystem, FAT_File *file, uint32_t byteCount, void *dataOutput) {
     FAT_FileData *fd = (file->handle == ROOT_DIRECTORY_HANDLE)
-                           ? &g_Data->rootDirectory
-                           : &g_Data->openFiles[file->handle];
+                           ? &filesystem->fatData.rootDirectory
+                           : &filesystem->fatData.openFiles[file->handle];
 
     if (dataOutput == NULL)
         return 0;
@@ -361,14 +287,14 @@ uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void
             if (fd->public.handle == ROOT_DIRECTORY_HANDLE) {
                 ++fd->currentCluster;
 
-                if (Partition_ReadSectors(partition, fd->currentCluster, 1, fd->buffer) != 1) {
+                if (Partition_ReadSectors(filesystem->partition, fd->currentCluster, 1, fd->buffer) != 1) {
                     puts("FAT: Failed to read next sector.\n");
                     break;
                 }
             } else {
-                if (++fd->currentSectorInCluster >= g_Data->BS.bootSector.sectorsPerCluster) {
+                if (++fd->currentSectorInCluster >= filesystem->fatData.bootSector.info.sectorsPerCluster) {
                     fd->currentSectorInCluster = 0;
-                    uint32_t nextCluster = FAT_NextCluster(partition, fd->currentCluster);
+                    uint32_t nextCluster = FAT_NextCluster(filesystem, fd->currentCluster);
                     if (nextCluster == UINT32_MAX) {
                         puts("FAT: Failed to get next cluster.\n");
                         break;
@@ -382,7 +308,7 @@ uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void
                     break;
                 }
 
-                if (Partition_ReadSectors(partition, FAT_ClusterToLba(fd->currentCluster) + fd->currentSectorInCluster, 1, fd->buffer) != 1) {
+                if (Partition_ReadSectors(filesystem->partition, FAT_ClusterToLba(filesystem, fd->currentCluster) + fd->currentSectorInCluster, 1, fd->buffer) != 1) {
                     puts("FAT: Failed to read next sector.\n");
                     break;
                 }
@@ -393,20 +319,20 @@ uint32_t FAT_Read(Partition *partition, FAT_File *file, uint32_t byteCount, void
     return u8DataOutput - (uint8_t *)dataOutput;
 }
 
-bool FAT_ReadEntry(Partition *partition, FAT_File *file, FAT_DirectoryEntry *directoryEntryOutput) {
-    return FAT_Read(partition, file, sizeof(FAT_DirectoryEntry), directoryEntryOutput) == sizeof(FAT_DirectoryEntry);
+bool FAT_ReadEntry(FAT_Filesystem *filesystem, FAT_File *file, FAT_DirectoryEntry *directoryEntryOutput) {
+    return FAT_Read(filesystem, file, sizeof(FAT_DirectoryEntry), directoryEntryOutput) == sizeof(FAT_DirectoryEntry);
 }
 
-void FAT_Close(FAT_File *file) {
+void FAT_Close(FAT_Filesystem *filesystem, FAT_File *file) {
     if (file->handle == ROOT_DIRECTORY_HANDLE) {
         file->position = 0;
-        g_Data->rootDirectory.currentCluster = g_Data->rootDirectory.firstCluster;
+        filesystem->fatData.rootDirectory.currentCluster = filesystem->fatData.rootDirectory.firstCluster;
     } else {
-        g_Data->openFiles[file->handle].open = false;
+        filesystem->fatData.openFiles[file->handle].open = false;
     }
 }
 
-bool FAT_FindFile(Partition *partition, FAT_File *file, const char *name, FAT_DirectoryEntry *entryOutput) {
+bool FAT_FindFile(FAT_Filesystem *filesystem, FAT_File *file, const char *name, FAT_DirectoryEntry *entryOutput) {
     char fatName[12];
     FAT_DirectoryEntry entry;
 
@@ -424,7 +350,7 @@ bool FAT_FindFile(Partition *partition, FAT_File *file, const char *name, FAT_Di
         for (uint8_t i = 0; i < 3 && extension[i + 1]; ++i)
             fatName[i + 8] = toUpper(extension[i + 1]);
 
-    while (FAT_ReadEntry(partition, file, &entry)) {
+    while (FAT_ReadEntry(filesystem, file, &entry)) {
         if (memcmp(fatName, entry.name, 11) == 0) {
             *entryOutput = entry;
             return true;
@@ -435,13 +361,13 @@ bool FAT_FindFile(Partition *partition, FAT_File *file, const char *name, FAT_Di
 }
 
 // returns NULL on error
-FAT_File *FAT_Open(Partition *partition, const char *path) {
+FAT_File *FAT_Open(FAT_Filesystem *filesystem, const char *path) {
     char name[MAX_PATH_SIZE];
 
     if (path[0] == '/')
         ++path;
 
-    FAT_File *current = &g_Data->rootDirectory.public;
+    FAT_File *current = &filesystem->fatData.rootDirectory.public;
 
     while (*path) {
         bool isLast = false;
@@ -460,8 +386,8 @@ FAT_File *FAT_Open(Partition *partition, const char *path) {
         }
 
         FAT_DirectoryEntry entry;
-        if (FAT_FindFile(partition, current, name, &entry)) {
-            FAT_Close(current);
+        if (FAT_FindFile(filesystem, current, name, &entry)) {
+            FAT_Close(filesystem, current);
 
             if (!isLast && ((entry.attributes & FAT_ATTRIBUTE_DIRECTORY) == 0)) {
                 printf("FAT: %s not a directory\n", name);
@@ -469,9 +395,9 @@ FAT_File *FAT_Open(Partition *partition, const char *path) {
             }
 
             // open new directory entry
-            current = FAT_OpenEntry(partition, &entry);
+            current = FAT_OpenEntry(filesystem, &entry);
         } else {
-            FAT_Close(current);
+            FAT_Close(filesystem, current);
 
             printf("FAT: %s not found.\n", name);
             return NULL;

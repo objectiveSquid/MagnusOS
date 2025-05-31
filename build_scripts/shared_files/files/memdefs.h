@@ -1,5 +1,8 @@
 #pragma once
 
+// other contstants
+#define MEMORY_HIGHEST_BIOS_ADDRESS ((void *)0xA0000)
+
 // 0x00000000 - 0x000003FF - interrupt vector table
 // 0x00000400 - 0x000004FF - BIOS data area
 

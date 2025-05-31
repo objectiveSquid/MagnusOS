@@ -64,7 +64,13 @@ void start(uint8_t bootDrive,
     MBR_DetectPartition(&bootPartition, &masterDisk, partitionLBA, partitionSize);
     puts("Detected boot partition!\n");
 
-    if (!FAT_Initialize(&bootPartition, true)) {
+    FAT_Filesystem *bootFilesystem = malloc(sizeof(FAT_Filesystem));
+    if (bootFilesystem == NULL) {
+        puts("Failed to allocate memory for filesystem!\n");
+        return;
+    }
+    bootFilesystem->partition = &bootPartition;
+    if (!FAT_Initialize(bootFilesystem)) {
         puts("Failed to initialize FAT!\n");
         return;
     }
@@ -81,6 +87,6 @@ void start(uint8_t bootDrive,
     // deinitialize/free everything
     DISK_DeInitialize(&masterDisk);
     DISK_DeInitialize(&slaveDisk);
-    FAT_DeInitialize();
+    free(bootFilesystem);
     FONT_DeInitialize();
 }
