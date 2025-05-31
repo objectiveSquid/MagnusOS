@@ -80,7 +80,7 @@ bool ELF_Open32Bit(Partition *partition, const char *filepath, void **entryPoint
     *entryPoint = (void *)header->programEntryOffset;
 
     // the program header table contains information about the segments in the program
-    if (!FAT_Seek(partition, elfFd, header->programHeaderTableOffset, FAT_WHENCE_SET)) {
+    if (FAT_Seek(partition, elfFd, header->programHeaderTableOffset, FAT_WHENCE_SET) == UINT32_MAX) {
         puts("ELF: Failed to seek to ELF program header table.\n");
         returnValue = false;
         goto free_header;
@@ -109,7 +109,11 @@ bool ELF_Open32Bit(Partition *partition, const char *filepath, void **entryPoint
         // clean memory
         memset((void *)currentProgramHeader->virtualAddress, 0, currentProgramHeader->memorySize);
 
-        FAT_Seek(partition, elfFd, currentProgramHeader->offset, FAT_WHENCE_SET);
+        if (FAT_Seek(partition, elfFd, currentProgramHeader->offset, FAT_WHENCE_SET) == UINT32_MAX) {
+            puts("ELF: Failed to seek to ELF load segment.\n");
+            returnValue = false;
+            goto free_segment_buffer;
+        }
 
         // spaghetti, this is where we read the segments and load them (naively) directly to their virtual address
         size_t bytesToRead = currentProgramHeader->segmentSize;
