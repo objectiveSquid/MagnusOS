@@ -94,7 +94,7 @@ def install_bootloader_stage_1(
 
 
 def install_bootloader_stage_2(
-    target_file: str, stage_2_file: str, offset: int = 0, limit: int | None = None
+    target_file: str, stage_2_file: str, offset: int = 0
 ) -> None:
     with (
         open(stage_2_file, "rb") as stage_2_fd,
@@ -167,42 +167,48 @@ def make_disk(
 
     disk_image_size_sectors = (env["image_size"] + SECTOR_SIZE - 1) // SECTOR_SIZE
     filesystem = env["image_filesystem"]
-    partition_offset = 2048  # sectors
+    partition_offset_sectors = 2048  # probably should be 2048 (1mb aligned)
 
-    bootloader_stage_1_size = os.stat(bootloader_stage_1).st_size
     bootloader_stage_2_size = os.stat(bootloader_stage_2).st_size
     bootloader_stage_2_size_sectors = (
         bootloader_stage_2_size + SECTOR_SIZE - 1
     ) // SECTOR_SIZE
+    bootloader_stage_2_offset = partition_offset_sectors + (
+        2 if filesystem == "fat32" else 1
+    )  # ugly
 
-    min_bootloader_stage_2_address = 0x00000500
-    max_bootloader_stage_2_address = 0x00007BFF
+    min_bootloader_stage_2_address = 0x00010000
+    max_bootloader_stage_2_address = 0x00030000
     if bootloader_stage_2_size > (
         max_bootloader_stage_2_address - min_bootloader_stage_2_address
     ):
         raise Exception(
-            f"Bootloader stage 2 size ({bootloader_stage_2_size} bytes) is too large. This is because I have put the bootloader stage 2 at {min_bootloader_stage_2_address} to {max_bootloader_stage_2_address}."
+            f"Bootloader stage 2 size ({bootloader_stage_2_size} bytes) is too large. This is because I have put the bootloader stage 2 at {min_bootloader_stage_2_address} to {max_bootloader_stage_2_address} in memory."
         )
 
     create_empty_file(target_file, disk_image_size_sectors)
 
-    create_partition_table(target_file, partition_offset)
+    create_partition_table(target_file, partition_offset_sectors)
 
-    create_filesystem(target_file, filesystem, offset=partition_offset)
+    create_filesystem(
+        target_file,
+        filesystem,
+        reserved_sectors=bootloader_stage_2_size_sectors,
+        offset=partition_offset_sectors,
+    )
 
     install_bootloader_stage_1(
         target_file,
         bootloader_stage_1,
-        offset=partition_offset,
-        stage_2_offset=1,
+        offset=partition_offset_sectors,
+        stage_2_offset=bootloader_stage_2_offset,
         stage_2_size=bootloader_stage_2_size_sectors,
     )
 
     install_bootloader_stage_2(
         target_file,
         bootloader_stage_2,
-        offset=1,
-        limit=partition_offset,
+        offset=bootloader_stage_2_offset,
     )
 
     temp_dir = tempfile.mkdtemp(
@@ -217,7 +223,7 @@ def make_disk(
                 )
             return shutil.copy2(src, dst, **kwargs)
 
-        mount_filesystem(target_file, temp_dir, partition_offset * SECTOR_SIZE)
+        mount_filesystem(target_file, temp_dir, partition_offset_sectors * SECTOR_SIZE)
 
         # copy kernel
         boot_directory = os.path.join(temp_dir, "boot")

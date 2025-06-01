@@ -8,14 +8,13 @@
 
 // 0x00007C00 - 0x00007E00 - bootloader stage 1
 
-// 0x00000500 - 0x00007BFF - bootloader stage 2
+// 0x00000500 - 0x0000FFFF - c stack (a little under 64kb of space)
 
-// 0x00007C00 - 0x0000FFFF - bootloader stage 2 stack
-// 0x00000500 - 0x0000FFFF - kernel stack (a little under 64kb)
+// 0x00010000 - 0x0002FFFF - bootloader stage 2
 
 // memdetect stuff
 #define MEMORY_MEMDETECT_MAX_REGIONS 256
-#define MEMORY_MEMDETECT_REGIONS_BUFFER ((void *)0x00010000)
+#define MEMORY_MEMDETECT_REGIONS_BUFFER ((void *)0x00030000)
 #define MEMORY_MEMDETECT_REGIONS_BUFFER_SIZE (MEMORY_MEMDETECT_MAX_REGIONS * 24)
 
 #define MEMORY_LOWEST_LOW_MEMORY_ADDRESS ((void *)MEMORY_MEMDETECT_REGIONS_BUFFER + MEMORY_MEMDETECT_REGIONS_BUFFER_SIZE)
