@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// everything except for FAT_File and FAT_DirectoryEntry i dont like exposing, but for now, i'll put them here because FAT_Data needs them
+// everything except for FAT_File, FAT_DirectoryEntry and maybe FAT_Attributes i dont like exposing, but for now, i'll put them here because FAT_Data needs them
 #define SECTOR_SIZE 512
 #define MAX_PATH_SIZE 256
 #define MAX_FILE_HANDLES 32
