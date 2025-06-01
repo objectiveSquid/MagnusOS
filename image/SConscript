@@ -116,7 +116,6 @@ def find_symbol_in_map_file(
         match = re.search(regex_string, fd.read())
         if match == None:
             fd.seek(0)
-            print(fd.read())
             raise Exception(f"Could not find symbol {symbol} in map file {file}")
 
         return int(match.group(1), 16)
