@@ -3,3 +3,4 @@
 - Make everything return an error value instead of printing the error. Thus moving the responibility of displaying errors to the caller.
     - Also standardize errors, so for example all disk read errors are the same value.
 - Support a stage 2 bigger than 127 sectors.
+- Make stage 2 of the bootloader not be at a constant sector, it should be a part of boot partition.
