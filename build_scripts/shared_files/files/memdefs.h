@@ -34,4 +34,4 @@
 #define MEMORY_ALLOCATOR_IN_USE_BITS ((void *)0x00200000)
 #define MEMORY_ALLOCATOR_CHUNK_SIZE 512
 
-// everything after here is ram
+// everything after here is upper ram

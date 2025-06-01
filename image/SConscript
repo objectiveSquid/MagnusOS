@@ -90,7 +90,7 @@ def install_bootloader_stage_1(
         target_fd.write(stage_2_offset.to_bytes(4, byteorder="little"))
         # write stage 2 size
         target_fd.seek(stage_1_offset_bytes + stage_2_size_offset, SEEK_SET)
-        target_fd.write(stage_2_size.to_bytes(1, byteorder="little"))
+        target_fd.write(stage_2_size.to_bytes(2, byteorder="little"))
 
 
 def install_bootloader_stage_2(
@@ -185,11 +185,6 @@ def make_disk(
             f"Bootloader stage 2 size ({bootloader_stage_2_size} bytes) is too large. This is because I have put the bootloader stage 2 at {min_bootloader_stage_2_address} to {max_bootloader_stage_2_address}."
         )
 
-    if bootloader_stage_2_size_sectors > 127:
-        raise Exception(
-            f"Bootloader stage 2 size ({bootloader_stage_2_size_sectors} sectors) is too large. This is because some BIOSes limit disk reads to 127 sectors and I can't be bothered to read the disk multiple times."
-        )
-
     create_empty_file(target_file, disk_image_size_sectors)
 
     create_partition_table(target_file, partition_offset)
@@ -205,7 +200,10 @@ def make_disk(
     )
 
     install_bootloader_stage_2(
-        target_file, bootloader_stage_2, offset=1, limit=partition_offset
+        target_file,
+        bootloader_stage_2,
+        offset=1,
+        limit=partition_offset,
     )
 
     temp_dir = tempfile.mkdtemp(

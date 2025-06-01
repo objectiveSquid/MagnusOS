@@ -107,18 +107,24 @@ section .entry
         mov es, ax
         mov bx, STAGE_2_LOAD_OFFSET
 
-        mov dl, [ebr_drive_number]     ; disk id
+        mov dl, [ebr_drive_number]     ;; disk id
         mov eax, [stage_2_info.lba]  ;; lba
-        mov cl, [stage_2_info.size]   ; length
+        mov cx, [stage_2_info.size]   ;; length
 
-        call disk_read
+    .read_stage_2_loop:
+        call disk_read ;; the bios puts number of sectors read in extensions_dap.sector_count
+        sub cx, [extensions_dap.sector_count]
+        add eax, [extensions_dap.sector_count]
+
+        cmp cx, 0
+        jne .read_stage_2_loop
 
     .read_stage_2_finish:
-        ; boot device
-        mov dl, [ebr_drive_number]
+        ; boot device already in dl
+
         ; prepare partition location
         mov ebx, [partition_info.lba]
-        mov cl, [partition_info.size]
+        mov cx, [partition_info.size]
 
         ; setup stack for stage 2
         mov ax, STAGE_2_LOAD_SEGMENT
@@ -179,9 +185,12 @@ section .text
     ; Reads sectors from a disk
     ; - Input parameters:
     ;   - eax: An LBA adress
-    ;   - cl: Number of sectors to read
+    ;   - cx: Number of sectors to read
     ;   - dl: Drive number
     ;   - es:bx: Output data
+    ;
+    ; - Output:
+    ;   - extensions_dap.sector_count: Number of sectors successfully read
     ;
     disk_read:
         push eax
@@ -196,20 +205,17 @@ section .text
         mov [extensions_dap.lba], eax
         mov [extensions_dap.segment], es
         mov [extensions_dap.offset], bx
-        mov [extensions_dap.sector_count], cl
+        mov [extensions_dap.sector_count], cx
 
-        mov ah, 0x42
         mov si, extensions_dap
         mov di, 3  ;; 3 retries before failing
 
     .disk_read_retry:
-        pusha
-
+        mov ah, 0x42
         int 0x13
         jnc .disk_read_done
 
         ; Failed to read from disk
-        popa
         call disk_reset
 
         dec di
@@ -218,7 +224,6 @@ section .text
     .disk_read_fail:
         jmp disk_error
     .disk_read_done:
-        popa
 
         pop di
         pop si
@@ -271,8 +276,8 @@ section .data
     global stage_2_info.lba
     global stage_2_info.size
     stage_2_info:
-        .lba            dd 0 ;; why this cant be a double word bewilders, befuddles and discombobulates me, as it only uses 4 bytes. but i do not care to investiagte as to why such an occurence would happen because i believe such efforts would be a waste of time
-        .size           db 0
+        .lba            dd 0
+        .size           dw 0
 
 section .bss
     misc_buffer:
