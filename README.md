@@ -26,11 +26,11 @@ Then you can build the OS, *yes you will sadly need `sudo`, it's for mounting th
 ```sh
 sudo scons
 ```
-### Running with Qemu
+### Running with QEMU
 ```sh
 scons run
 ```
-### Debugging with GDB
+### Debugging with GDB + QEMU
 ```sh
 scons gdb
 ```
