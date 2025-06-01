@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// everything except for FAT_File i dont like exposing, but for now, i'll put them here because FAT_Data needs them
+// everything except for FAT_File and FAT_DirectoryEntry i dont like exposing, but for now, i'll put them here because FAT_Data needs them
 #define SECTOR_SIZE 512
 #define MAX_PATH_SIZE 256
 #define MAX_FILE_HANDLES 32
@@ -17,6 +17,21 @@ typedef struct {
     uint32_t position;
     uint32_t size;
 } FAT_File;
+
+typedef struct {
+    char name[11];
+    uint8_t attributes;
+    uint8_t _Reserved;
+    uint8_t createdTimeTenths;
+    uint16_t createdTime;
+    uint16_t createdDate;
+    uint16_t accessedDate;
+    uint16_t firstClusterHigh;
+    uint16_t modifiedTime;
+    uint16_t modifiedDate;
+    uint16_t firstClusterLow;
+    uint32_t size;
+} __attribute__((packed)) FAT_DirectoryEntry;
 
 typedef enum {
     FAT_ATTRIBUTE_READ_ONLY = 0x01,
@@ -113,6 +128,7 @@ typedef struct {
 } FAT_Filesystem;
 
 bool FAT_Initialize(FAT_Filesystem *filesystem);
+size_t FAT_ListDirectory(FAT_Filesystem *filesystem, const char *path, FAT_DirectoryEntry *entries, size_t maxEntries);
 FAT_File *FAT_Open(FAT_Filesystem *filesystem, const char *path);
 uint32_t FAT_Seek(FAT_Filesystem *filesystem, FAT_File *file, int64_t targetPosition, uint8_t whence);
 uint32_t FAT_Read(FAT_Filesystem *filesystem, FAT_File *file, uint32_t byteCount, void *dataOutput);

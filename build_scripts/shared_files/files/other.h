@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #define GET_BIT(array, bit) (array[(bit) / 8] & (1 << ((bit) % 8)))
@@ -12,7 +14,5 @@
 #define BITS2BYTES(bits) DIV_ROUND_UP(bits, 8)
 
 uint32_t min(uint32_t firstNumber, uint32_t secondNumber);
-
 char toUpper(char character);
-
 uint8_t findLowestSetBit(uint64_t number);

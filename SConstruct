@@ -12,8 +12,8 @@ VARS.AddVariables(
     EnumVariable(
         "config",
         help="Build configuration",
-        default="test",
-        allowed_values=["debug", "test", "release"],
+        default="debug",
+        allowed_values=["debug", "release"],
     ),
     EnumVariable(
         "arch",
@@ -82,12 +82,9 @@ match HOST_ENVIRONMENT["config"]:
     case "debug":
         HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 1, "RELEASE_BUILD": 0})
         HOST_ENVIRONMENT.Append(CFLAGS=["-O0", "-g"])
-    case "test":
-        HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 0, "RELEASE_BUILD": 0})
-        HOST_ENVIRONMENT.Append(CFLAGS=["-O2"])
     case "release":
         HOST_ENVIRONMENT.Append(CPPDEFINES={"DEBUG_BUILD": 0, "RELEASE_BUILD": 1})
-        HOST_ENVIRONMENT.Append(CFLAGS=["-Ofast"])
+        HOST_ENVIRONMENT.Append(CFLAGS=["-O2"])
 
 
 if not HOST_ENVIRONMENT["display_commands"]:
