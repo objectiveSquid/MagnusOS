@@ -6,6 +6,7 @@
 #include "memory/allocator.h"
 #include "rasterfont_sizes.h"
 #include "stdio.h"
+#include "util/errors.h"
 #include "util/memory.h"
 #include "util/other.h"
 #include "util/string.h"
@@ -43,18 +44,19 @@ void FONT_DeInitialize() {
     }
 }
 
-bool FONT_Initialize(VbeModeInfo *vbeModeInfo) {
+int FONT_Initialize(VbeModeInfo *vbeModeInfo) {
     g_VbeModeInfo = vbeModeInfo;
 
     ensureFontInfoSet();
 
     if ((g_ScreenCharacterBuffer = calloc(FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight(), sizeof(FONT_Character))) == NULL)
-        return false;
+        return FAILED_TO_ALLOCATE_MEMORY_ERROR;
 
-    return true;
+    return NO_ERROR;
 }
 
-// finds a font based on name, width and height (can be NULL, -1, -1 to ignore). returns NULL if none are found or all three inputs are NULL, -1, -1
+// finds a font based on name, width and height (can be NULL, -1, -1 to ignore).
+// returns NULL if none are found or all three inputs are NULL, -1, -1
 const FONT_FontInfo *FONT_FindFontInfo(const char *filename, int16_t width, int16_t height) {
     if (filename == NULL && width == -1 && height == -1)
         return NULL;
@@ -66,31 +68,37 @@ const FONT_FontInfo *FONT_FindFontInfo(const char *filename, int16_t width, int1
     return NULL;
 }
 
-bool readFont(FAT_Filesystem *fontsFilesystem) {
+int readFont(FAT_Filesystem *fontsFilesystem) {
     char fontPath[6 + 10 + 1] = {0}; // 6 for "fonts/", 10 for filename, 1 for null terminator = 17
     strcpy(fontPath, "fonts/");
     strcpy(fontPath + strlen("fonts/"), g_FontInfo->filename);
     fontPath[strlen("fonts/") + strlen(g_FontInfo->filename)] = '\0';
 
-    FAT_File *fontFd = FAT_Open(fontsFilesystem, fontPath);
-    if (fontFd == NULL) {
-        printf("Failed to open font file: %s\n", fontPath);
-        return false;
-    }
+    FAT_File *fontFd;
+    int status;
+
+    if ((status = FAT_Open(fontsFilesystem, fontPath, &fontFd)) != NO_ERROR)
+        return status;
 
     uint8_t *fontBuffer = g_FontBits;
     uint32_t readCount;
-    while ((readCount = FAT_Read(fontsFilesystem, fontFd, FONT_READ_CHUNK_SIZE, fontBuffer)))
+    while ((status = FAT_Read(fontsFilesystem, fontFd, FONT_READ_CHUNK_SIZE, &readCount, fontBuffer)) == NO_ERROR && readCount == FONT_READ_CHUNK_SIZE)
         fontBuffer += readCount;
 
-    FAT_Close(fontsFilesystem, fontFd);
+    if (status != NO_ERROR)
+        return status;
 
-    return true;
+    FAT_Close(fontsFilesystem, fontFd); // we'll ignore errors here
+
+    return NO_ERROR;
 }
 
-bool FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo, bool reDraw) {
-    if (fontInfo == g_FontInfo || fontInfo == NULL)
-        return true;
+int FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo, bool reDraw) {
+    if (fontInfo == g_FontInfo)
+        return NO_ERROR;
+
+    if (fontsFilesystem == NULL || fontInfo == NULL)
+        return NULL_ERROR;
 
     // backup old fontinfo
     size_t oldScreenCharacterBufferSize = FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight() * sizeof(FONT_Character);
@@ -100,15 +108,18 @@ bool FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo
 
     g_FontInfo = fontInfo;
 
-    if ((g_FontBits = malloc(DIV_ROUND_UP(g_FontInfo->height * g_FontInfo->width, 8) * FONT_MAX_CHARACTERS)) == NULL)
-        return false;
-
-    // possibly restore old fontinfo
-    if (!readFont(fontsFilesystem)) {
+    if ((g_FontBits = malloc(DIV_ROUND_UP(g_FontInfo->height * g_FontInfo->width, 8) * FONT_MAX_CHARACTERS)) == NULL) {
         g_FontInfo = oldFontInfo;
         g_FontBits = oldFontBits;
-        g_ScreenCharacterBuffer = oldScreenCharacterBuffer;
-        return false;
+        return FAILED_TO_ALLOCATE_MEMORY_ERROR;
+    }
+
+    // possibly restore old fontinfo
+    int status;
+    if ((status = readFont(fontsFilesystem)) != NO_ERROR) {
+        g_FontInfo = oldFontInfo;
+        g_FontBits = oldFontBits;
+        return status;
     }
 
     if (oldFontBits != FALLBACK_FONT_8x8)
@@ -118,7 +129,7 @@ bool FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo
         GRAPHICS_ClearScreen();
         for (uint16_t y = 0; y < FONT_ScreenCharacterHeight(); ++y)
             for (uint16_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
-                FONT_PutCharacter(x, y, g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x]);
+                FONT_DrawCharacter(x, y, g_ScreenCharacterBuffer[(y * FONT_ScreenCharacterWidth()) + x]);
     }
 
     size_t screenCharacterBufferEntries = FONT_ScreenCharacterWidth() * FONT_ScreenCharacterHeight();
@@ -128,7 +139,7 @@ bool FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo
         g_FontInfo = oldFontInfo;
         g_FontBits = oldFontBits;
         g_ScreenCharacterBuffer = oldScreenCharacterBuffer;
-        return false;
+        return FAILED_TO_ALLOCATE_MEMORY_ERROR;
     }
 
     if (oldScreenCharacterBufferSize > screenCharacterBufferSize)
@@ -137,7 +148,7 @@ bool FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo
         memcpy(g_ScreenCharacterBuffer, oldScreenCharacterBuffer, min(oldScreenCharacterBufferSize, screenCharacterBufferSize));
     free(oldScreenCharacterBuffer);
 
-    return true;
+    return NO_ERROR;
 }
 
 // next 2 functions are because i dont really understand variable sharing across files in c
@@ -166,16 +177,16 @@ void FONT_ScrollBack(uint16_t lineCount) {
     // copy lines
     for (uint32_t y = min(lineCount, FONT_ScreenCharacterHeight()); y < FONT_ScreenCharacterHeight(); ++y)
         for (uint32_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
-            FONT_PutCharacter(x, y - lineCount, FONT_GetCharacter(x, y));
+            FONT_DrawCharacter(x, y - lineCount, FONT_GetCharacter(x, y));
 
     // delete last lines
     FONT_Character tempCharacter = EMPTY_CHARACTER;
     for (uint32_t y = FONT_ScreenCharacterHeight() - lineCount; y < FONT_ScreenCharacterHeight(); ++y)
         for (uint32_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
-            FONT_PutCharacter(x, y, tempCharacter);
+            FONT_DrawCharacter(x, y, tempCharacter);
 }
 
-void FONT_PutCharacter(uint16_t x, uint16_t y, FONT_Character character) {
+void FONT_DrawCharacter(uint16_t x, uint16_t y, FONT_Character character) {
     ensureFontInfoSet();
 
     FONT_SetCharacter(x, y, character);

@@ -3,7 +3,7 @@
 #include "memdetect.h"
 #include <stddef.h>
 
-void ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount, bool skipInUseBits);
+int ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount, bool skipInUseBits);
 
 // do not expose this to userspace
 void *ALLOCATOR_Malloc(size_t size, bool lower);

@@ -58,7 +58,7 @@ void putc(char character) {
         --g_CursorPosition[0];
         break;
     default:
-        FONT_PutCharacter(g_CursorPosition[0], g_CursorPosition[1], fontCharacter);
+        FONT_DrawCharacter(g_CursorPosition[0], g_CursorPosition[1], fontCharacter);
         ++g_CursorPosition[0];
         break;
     }

@@ -37,7 +37,6 @@ void VGA_PutColor(uint16_t x, uint16_t y, uint8_t color) {
     g_ScreenBuffer[2 * ((y * SCREEN_WIDTH) + x) + 1] = color;
 }
 
-/* WARNING: CALLER IS RESPONSIBLE FOR DECREASING THE VERTICAL SCREEN POSITION */
 void VGA_ScrollBack(uint16_t lineCount) {
     for (uint16_t y = lineCount; y < SCREEN_HEIGHT; ++y)
         for (uint16_t x = 0; x < SCREEN_WIDTH; ++x) {

@@ -62,5 +62,9 @@
     "allocator.c": [
         "bootloader/stage_2/memory/allocator.c",
         "kernel/memory/allocator.c"
+    ],
+    "errors.h": [
+        "bootloader/stage_2/util/errors.h",
+        "kernel/util/errors.h"
     ]
 }

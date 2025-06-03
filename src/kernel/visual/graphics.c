@@ -7,8 +7,8 @@
 static VbeModeInfo *g_VbeModeInfo = NULL;
 
 void GRAPHICS_WriteScalePixel(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t scale) {
-    x = x * scale;
-    y = y * scale;
+    x *= scale;
+    y *= scale;
     for (uint8_t relx = 0; relx < scale; ++relx)
         for (uint8_t rely = 0; rely < scale; ++rely)
             GRAPHICS_WritePixel(x + relx, y + rely, r, g, b);

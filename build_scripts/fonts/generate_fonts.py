@@ -1,8 +1,6 @@
 from PIL import Image
-import subprocess
 import bitarray
 import shutil
-import sys
 import os
 
 
@@ -57,7 +55,12 @@ def generate_font_files(output_directory: str) -> None:
 
         font_size: tuple[int, int] = [int(size) for size in font_filename.split("_")[0].split("x")]  # type: ignore
         png_bits = png_to_bits(relative_directory(f"rasterfonts/{font_filename}"))
-        converted_bits = convert_bits(png_bits, font_size)
+        converted_bits = bytearray(convert_bits(png_bits, font_size))
+
+        # custom stuff to make the null character always be empty, because it's used for clearing the screen
+        character_bits_size = font_size[0] * font_size[1]
+        for i in range((character_bits_size + 7) // 8):  # round up
+            converted_bits[i] = 0
 
         with open(
             f"{output_directory}/{'x'.join(str(x) for x in font_size)}.f", "wb"

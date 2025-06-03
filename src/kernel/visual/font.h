@@ -25,10 +25,10 @@ typedef struct {
 } FONT_FontInfo;
 
 void FONT_DeInitialize();
-bool FONT_Initialize(VbeModeInfo *vbeModeInfo);
+int FONT_Initialize(VbeModeInfo *vbeModeInfo);
 const FONT_FontInfo *FONT_FindFontInfo(const char *filename, int16_t width, int16_t height);
-bool FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo, bool reDraw);
-void FONT_PutCharacter(uint16_t x, uint16_t y, FONT_Character character);
+int FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo, bool reDraw);
+void FONT_DrawCharacter(uint16_t x, uint16_t y, FONT_Character character);
 void FONT_ScrollBack(uint16_t lineCount);
 uint16_t FONT_ScreenCharacterWidth();
 uint16_t FONT_ScreenCharacterHeight();

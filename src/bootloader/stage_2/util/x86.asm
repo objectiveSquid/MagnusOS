@@ -196,7 +196,7 @@ x86_Disk_Reset:
 
 
 ;
-; uint8_t ASMCALL x86_Disk_Read(uint8_t drive, uint32_t lba, uint16_t count, uint8_t* readCountOutput, void *dataOutput);
+; uint16_t ASMCALL x86_Disk_Read(uint8_t drive, uint32_t lba, uint16_t count, uint16_t* readCountOutput, void *dataOutput);
 ;
 global x86_Disk_Read
 x86_Disk_Read:

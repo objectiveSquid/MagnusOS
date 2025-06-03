@@ -28,4 +28,4 @@ typedef enum {
 extern const char *MEMDETECT_ErrorCodeStrings[];
 
 // do not use in kernel, only defined in bootloader
-uint8_t MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t maxRegions, uint32_t *regionCountOutput);
+int MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t maxRegions, uint32_t *regionCountOutput, uint8_t *errorCodeOutput);

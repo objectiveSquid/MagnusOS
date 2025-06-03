@@ -1,10 +1,9 @@
-/* NOTE: who actually cares about error handling lmao */
-
 #include "ps2.h"
 #include "arch/i686/irq.h"
 #include "scancode.h"
 #include "util/arrays.h"
 #include "util/binary.h"
+#include "util/errors.h"
 #include "util/io.h"
 #include "util/memory.h"
 #include "util/x86.h"
@@ -12,6 +11,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#define PS2_PORT_1_IRQ 1
+#define PS2_PORT_2_IRQ 12
 
 // ps2 ports
 #define PS2_CMD_PORT 0x64
@@ -47,7 +49,7 @@
 #define PS2_RESEND 0xFE
 #define PS2_KEY_DETECTION_ERROR_2 0xFF
 
-// other
+// other signals
 #define PS2_NEW_KEYBOARD 0x61
 
 typedef enum {
@@ -90,31 +92,17 @@ void writePS2Port2(uint8_t byte) {
     x86_OutByte(PS2_DATA_PORT, byte);
 }
 
-uint8_t resetPS2Keyboard(bool port_1, bool port_2) {
-    uint8_t output = 0;
-
-    waitForPS2Controller();
-    writePS2Port1(PS2_CMD_RESET);
-
-    if (!getPS2Success()) {
-        puts("Could not send command to reset PS2 keyboard on port 1\n");
-        BIT_UNSET(output, 0);
-    } else if (x86_InByte(PS2_DATA_PORT) != PS2_RESET_SUCCESS) {
-        puts("Could not reset PS2 keyboard on port 1\n");
-        BIT_UNSET(output, 0);
+// error probably not critical, so not handling it
+void resetPS2Keyboard(bool port_1, bool port_2) {
+    if (port_1) {
+        waitForPS2Controller();
+        writePS2Port1(PS2_CMD_RESET);
     }
 
-    waitForPS2Controller();
-    writePS2Port2(PS2_CMD_RESET);
-
-    if (!getPS2Success()) {
-        puts("Could not send command to reset PS2 keyboard on port 2\n");
-        BIT_UNSET(output, 1);
-    } else if (x86_InByte(PS2_DATA_PORT) != PS2_RESET_SUCCESS) {
-        puts("Could not reset PS2 keyboard on port 2\n");
-        BIT_UNSET(output, 1);
+    if (port_2) {
+        waitForPS2Controller();
+        writePS2Port2(PS2_CMD_RESET);
     }
-    return output;
 }
 
 void disablePS2ControllerPorts(bool port_1, bool port_2) {
@@ -293,10 +281,8 @@ bool runPS2ControllerSelfTest() {
     waitForPS2Controller();
     x86_OutByte(PS2_CMD_PORT, PS2_CMD_CONTROLLER_SELF_TEST);
 
-    if (x86_InByte(PS2_DATA_PORT) != PS2_SELF_TEST_SUCCESS) {
-        puts("PS2 controller self test failed\n");
+    if (x86_InByte(PS2_DATA_PORT) != PS2_SELF_TEST_SUCCESS)
         return false;
-    }
 
     return true;
 }
@@ -321,34 +307,21 @@ bool checkPS2ControllerDualChannel() {
     return true;
 }
 
-uint8_t runPS2InterfaceTests(bool isDualChannel) {
-    uint8_t output = 0;
-
+void runPS2InterfaceTests(bool isDualChannel, bool *usingPort1, bool *usingPort2) {
     waitForPS2Controller();
     x86_OutByte(PS2_CMD_PORT, PS2_CMD_INTERFACE_TEST_PORT_1);
 
-    if (!x86_InByte(PS2_DATA_PORT) == 0x00)
-        BIT_UNSET(output, 0);
-    else
-        BIT_SET(output, 0);
+    if (x86_InByte(PS2_DATA_PORT) == 0x00)
+        *usingPort1 = true;
 
-    if (!isDualChannel) {
-        if (!output)
-            puts("PS2 interface test failed (0 / 1)\n");
-        return output;
-    }
+    if (!isDualChannel)
+        return;
 
     waitForPS2Controller();
     x86_OutByte(PS2_CMD_PORT, PS2_CMD_INTERFACE_TEST_PORT_2);
 
-    if (!x86_InByte(PS2_DATA_PORT) == 0x00)
-        BIT_UNSET(output, 1);
-    else
-        BIT_SET(output, 1);
-
-    if (!output)
-        puts("PS2 interface test failed (0 / 2)\n");
-    return output;
+    if (x86_InByte(PS2_DATA_PORT) == 0x00)
+        *usingPort2 = true;
 }
 
 // port can be 1 or 2
@@ -437,23 +410,22 @@ void PS2Set2HandlerPort2(Registers *registers) {
     g_PicDriver->unmask(PS2_PORT_2_IRQ);
 }
 
-bool PS2_Initialize() {
+int PS2_Initialize() {
     // controller initialization
     disablePS2ControllerPorts(true, true); // true, true = port 1 disabled, port 2 disabled
     clearPS2Buffer();
     setPS2ControllerConfiguration(false, false); // false, false = disable irq1, disable irq2
     if (!runPS2ControllerSelfTest())
-        return false;
+        return PS2_SELF_TEST_FAILED;
     setPS2ControllerConfiguration(false, false); // should do this after self testing
     bool isDualChannel = checkPS2ControllerDualChannel();
-    uint8_t interfaceTestResult = runPS2InterfaceTests(isDualChannel);
-    if (!interfaceTestResult)
-        return false;
-    bool usingPort1 = BIT_IS_SET(interfaceTestResult, 0);
-    bool usingPort2 = BIT_IS_SET(interfaceTestResult, 1);
+    bool usingPort1, usingPort2;
+    runPS2InterfaceTests(isDualChannel, &usingPort1, &usingPort2);
+    if (!usingPort1 && !usingPort2) // both ports dont work/disabled
+        return PS2_INTERFACE_TESTS_FAILED;
     enablePS2ControllerPorts(usingPort1, usingPort2); // enable working ports
     setPS2ControllerConfiguration(usingPort1, usingPort2);
-    resetPS2Keyboard(usingPort1, usingPort2); // error probably not critical, so not handling it
+    resetPS2Keyboard(usingPort1, usingPort2);
 
     // other initialization
     memset(g_ScancodesHeld, 0, sizeof(g_ScancodesHeld));
@@ -471,5 +443,5 @@ bool PS2_Initialize() {
         g_PicDriver->unmask(PS2_PORT_2_IRQ);
     }
 
-    return true;
+    return NO_ERROR;
 }

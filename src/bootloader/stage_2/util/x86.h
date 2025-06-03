@@ -10,7 +10,7 @@ void ASMCALL x86_OutByte(uint16_t port, uint8_t value);
 uint8_t ASMCALL x86_InByte(uint16_t port);
 
 bool ASMCALL x86_Disk_Reset(uint8_t drive);
-uint8_t ASMCALL x86_Disk_Read(uint8_t drive, uint32_t lba, uint16_t count, uint8_t *readCountOutput, void *dataOutput);
+uint8_t ASMCALL x86_Disk_Read(uint8_t drive, uint32_t lba, uint16_t count, uint16_t *readCountOutput, void *dataOutput);
 uint8_t ASMCALL x86_Disk_GetDriveParams(uint8_t drive, uint16_t *infoFlagsOutput, uint32_t *cylindersOutput, uint32_t *headsOutput, uint32_t *sectorsPerTrackOutput, uint32_t *totalSectorsOutput, uint16_t *bytesPerSectorOutput);
 /*
 FROM RALPH BROWN LIST:

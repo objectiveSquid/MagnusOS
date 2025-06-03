@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 /*
-this struct is "borrrowed" from the windows driver for ata
+this struct is "borrrowed" from the windows driver for ata, slighty modified
 info is here:
 https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ata/ns-ata-_identify_device_data
 */
@@ -492,12 +492,11 @@ typedef struct {
 } __attribute__((aligned(2), packed)) ATA_IdentifyData;
 
 typedef struct {
-    bool masterDriveExists;
-    bool slaveDriveExists;
-    ATA_IdentifyData *masterDriveData;
-    ATA_IdentifyData *slaveDriveData;
-} ATA_InitializeOutput;
+    bool driveExists;
+    ATA_IdentifyData *driveData;
+    uint8_t errorCode;
+} ATA_InitializeDriveOutput;
 
-void ATA_Initialize(ATA_InitializeOutput *output);
-uint16_t ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk); // returns the number of sectors read
-uint16_t ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk);
+void ATA_Initialize(ATA_InitializeDriveOutput *masterOutput, ATA_InitializeDriveOutput *slaveOutput);
+int ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk);
+int ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk);

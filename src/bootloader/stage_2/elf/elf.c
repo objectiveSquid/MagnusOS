@@ -2,6 +2,7 @@
 #include "disk/fat.h"
 #include "memdefs.h"
 #include "memory/allocator.h"
+#include "util/errors.h"
 #include "util/memory.h"
 #include "util/other.h"
 #include "visual/stdio.h"
@@ -122,71 +123,75 @@ typedef struct {
     uint16_t sectionHeaderStringTableIndex;
 } __attribute__((packed)) ELF_64BitHeader;
 
-// if I call `FAT_Read` here with the output buffer being `NULL`, it is to seek
-bool ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entryPoint) {
-    bool returnValue = true;
+int ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entryPoint) {
+    int status;
 
-    FAT_File *elfFd = FAT_Open(filesystem, filepath);
-    if (elfFd == NULL) {
-        printf("ELF: Failed to open ELF file %s.\n", filepath);
-        return false;
-    }
+    printf("dgb 0\n");
 
-    ELF_32BitHeader *header = (ELF_32BitHeader *)ALLOCATOR_Malloc(sizeof(ELF_32BitHeader), true);
-    if (header == NULL || (size_t)header > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
-        puts("ELF: Failed to allocate buffer for ELF header.\n");
-        returnValue = false;
+    FAT_File *elfFd;
+    if ((status = FAT_Open(filesystem, filepath, &elfFd)) != NO_ERROR)
+        return status;
+
+    printf("dgb 1\n");
+
+    ELF_32BitHeader *header = ALLOCATOR_Malloc(sizeof(ELF_32BitHeader), true);
+    if (header == NULL) {
+        status = FAILED_TO_ALLOCATE_MEMORY_ERROR;
         goto close_file;
     }
-
-    // read header
-    uint32_t readHeaderCount;
-    if ((readHeaderCount = FAT_Read(filesystem, elfFd, sizeof(ELF_32BitHeader), (uint8_t *)header)) != sizeof(ELF_32BitHeader)) {
-        printf("ELF: Failed to read ELF header. Read %lu bytes instead of %lu.\n", readHeaderCount, sizeof(ELF_32BitHeader));
-        returnValue = false;
+    if ((size_t)header > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
+        status = ALLOCATED_MEMORY_TOO_HIGH_ERROR;
         goto free_header;
     }
 
+    printf("dgb 2\n");
+
+    // read header
+    uint32_t readHeaderCount;
+    if ((status = FAT_Read(filesystem, elfFd, sizeof(ELF_32BitHeader), &readHeaderCount, header)) == NO_ERROR) {
+        if (readHeaderCount != sizeof(ELF_32BitHeader)) {
+            status = ELF_FILE_TOO_SMALL_ERROR;
+            goto free_header;
+        }
+    } else {
+        goto free_header;
+    }
+
+    printf("dgb 3\n");
+
     // header checks
     if (memcmp(header->magic, ELF_MAGIC, sizeof(header->magic)) != 0) {
-        puts("ELF: Not an ELF file.\n");
-        returnValue = false;
+        status = ELF_NOT_AN_ELF_FILE;
         goto free_header;
     }
 
     if (header->headerVersion != 1) {
-        puts("ELF: Not a version 1 ELF header, only version 1 is supported.\n");
-        returnValue = false;
+        status = ELF_UNSUPPORTED_HEADER_VERSION;
         goto free_header;
     }
 
     if (header->elfVersion != 1) {
-        puts("ELF: Not a version 1 ELF file, only version 1 is supported.\n");
-        returnValue = false;
+        status = ELF_UNSUPPORTED_ELF_VERSION;
         goto free_header;
     }
 
     if (header->bitness != ELF_BITNESS_32BIT) {
-        puts("ELF: Not a 32 bit ELF file, use the 64 bit version of this function.\n");
-        returnValue = false;
+        status = ELF_UNSUPPORTED_BITNESS;
         goto free_header;
     }
 
     if (header->endianness != ELF_ENDIANNESS_LITTLE) {
-        puts("ELF: Not a little endian ELF file, this is a little endian machine.\n");
-        returnValue = false;
+        status = ELF_UNSUPPORTED_ENDIANNESS;
         goto free_header;
     }
 
     if (header->instructionSet != ELF_ISA_X86) {
-        puts("ELF: Not an x86 ELF file, this is an x86 machine.\n");
-        returnValue = false;
+        status = ELF_UNSUPPORTED_INSTRUCTION_SET;
         goto free_header;
     }
 
     if (header->type != ELF_TYPE_EXECUTABLE) {
-        puts("ELF: Not an executable ELF file, only executable ELF files are supported.\n");
-        returnValue = false;
+        status = ELF_UNSUPPORTED_ELF_TYPE;
         goto free_header;
     }
 
@@ -194,24 +199,37 @@ bool ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entr
     *entryPoint = (void *)header->programEntryOffset;
 
     // the program header table contains information about the segments in the program
-    if (FAT_Seek(filesystem, elfFd, header->programHeaderTableOffset, FAT_WHENCE_SET) == UINT32_MAX) {
-        puts("ELF: Failed to seek to ELF program header table.\n");
-        returnValue = false;
-        goto free_header;
-    }
+    if ((status = FAT_Seek(filesystem, elfFd, header->programHeaderTableOffset, FAT_WHENCE_SET)) != NO_ERROR)
+        goto free_header; // failed to seek
+
     uint32_t programHeaderTableSize = header->programHeaderTableEntryCount * header->programHeaderTableEntrySize;
 
     ELF_32BitProgramHeader *programHeaderTable = ALLOCATOR_Malloc(programHeaderTableSize, true);
-    if (FAT_Read(filesystem, elfFd, programHeaderTableSize, programHeaderTable) != programHeaderTableSize) {
-        puts("ELF: Failed to read ELF header.\n");
-        returnValue = false;
+    if (programHeaderTable == NULL) {
+        status = FAILED_TO_ALLOCATE_MEMORY_ERROR;
         goto free_header;
+    }
+    if ((size_t)programHeaderTable > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
+        status = ALLOCATED_MEMORY_TOO_HIGH_ERROR;
+        goto free_table_buffer;
+    }
+    uint32_t readProgramHeaderTableCount;
+    if ((status = FAT_Read(filesystem, elfFd, programHeaderTableSize, &readProgramHeaderTableCount, programHeaderTable)) == NO_ERROR) {
+        if (readProgramHeaderTableCount != programHeaderTableSize) {
+            status = ELF_FILE_TOO_SMALL_ERROR;
+            goto free_table_buffer;
+        }
+    } else {
+        goto free_table_buffer;
     }
 
     uint8_t *loadSegmentBuffer = ALLOCATOR_Malloc(ELF_LOAD_SEGMENT_CHUNK_SIZE, true);
     if (loadSegmentBuffer == NULL) {
-        puts("ELF: Failed to allocate buffer for ELF load segment.\n");
-        returnValue = false;
+        status = FAILED_TO_ALLOCATE_MEMORY_ERROR;
+        goto free_table_buffer;
+    }
+    if ((size_t)loadSegmentBuffer > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
+        status = ALLOCATED_MEMORY_TOO_HIGH_ERROR;
         goto free_segment_buffer;
     }
     ELF_32BitProgramHeader *currentProgramHeader;
@@ -223,35 +241,36 @@ bool ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entr
         // clean memory
         memset((void *)currentProgramHeader->virtualAddress, 0, currentProgramHeader->memorySize);
 
-        if (FAT_Seek(filesystem, elfFd, currentProgramHeader->offset, FAT_WHENCE_SET) == UINT32_MAX) {
-            puts("ELF: Failed to seek to ELF load segment.\n");
-            returnValue = false;
+        if ((status = FAT_Seek(filesystem, elfFd, currentProgramHeader->offset, FAT_WHENCE_SET)) != NO_ERROR)
             goto free_segment_buffer;
-        }
 
-        // spaghetti, this is where we read the segments and load them (naively) directly to their virtual address
+        // spaghetti, this is where we read the segments and load them (naively) directly to their listed virtual address
         size_t bytesToRead = currentProgramHeader->segmentSize;
         while (bytesToRead > 0) {
             size_t readNow = min(bytesToRead, ELF_LOAD_SEGMENT_CHUNK_SIZE);
-            if (FAT_Read(filesystem, elfFd, readNow, loadSegmentBuffer) != readNow) {
-                printf("ELF: Failed to read ELF load segment chunk (%lu bytes at file offset %lu).\n", readNow, elfFd->position);
-                returnValue = false;
+            size_t readCount;
+            if (FAT_Read(filesystem, elfFd, readNow, &readCount, loadSegmentBuffer) == NO_ERROR) {
+                if (readCount != readNow) {
+                    status = ELF_FILE_TOO_SMALL_ERROR;
+                    goto free_segment_buffer;
+                }
+            } else {
                 goto free_segment_buffer;
             }
 
             memcpy((void *)(currentProgramHeader->virtualAddress + currentProgramHeader->segmentSize - bytesToRead), loadSegmentBuffer, readNow);
             bytesToRead -= readNow;
         }
-
-        FAT_Close(filesystem, elfFd);
     }
 
 free_segment_buffer:
     free(loadSegmentBuffer);
+free_table_buffer:
+    free(programHeaderTable);
 free_header:
     free(header);
 close_file:
-    FAT_Close(filesystem, elfFd);
+    FAT_Close(filesystem, elfFd); // here we'll ignore the error for once
 
-    return returnValue;
+    return status;
 }

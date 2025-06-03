@@ -41,7 +41,7 @@ def link_shared_files(env: Environment) -> None:
                         )
                 else:
                     try:
-                        os.link(f"{input_directory}/{filename}", output_path)
+                        os.symlink(f"{input_directory}/{filename}", output_path)
                     except PermissionError:
                         print(f"Failed to link {filename} to {path}, copying instead.")
                         shutil.copy2(f"{input_directory}/{filename}", output_path)

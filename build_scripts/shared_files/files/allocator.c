@@ -1,5 +1,6 @@
 #include "allocator.h"
 #include "memdefs.h"
+#include "util/errors.h"
 #include "util/memory.h"
 #include "util/other.h"
 #include <stddef.h>
@@ -13,7 +14,12 @@ static uint64_t g_InUseBitsSize; // on 64 bit systems this might actually exceee
 static const MEMDETECT_MemoryRegion *g_MemoryRegions;
 static size_t g_MemoryRegionsCount;
 
-void ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount, bool skipInUseBits) {
+int ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount, bool skipInUseBits) {
+    if (memoryRegionsCount == 0)
+        return NOT_ENOUGH_INPUT_DATA_ERROR;
+    if (memoryRegions == NULL)
+        return NULL_ERROR;
+
     // set globals
     g_MemoryRegions = memoryRegions;
     g_MemoryRegionsCount = memoryRegionsCount;
@@ -29,7 +35,7 @@ void ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t 
     g_LowestUpperUsableAddress = ((size_t)MEMORY_ALLOCATOR_IN_USE_BITS) + BITS2BYTES(g_InUseBitsSize);
 
     if (skipInUseBits)
-        return;
+        return NO_ERROR;
 
     // clear in use bits
     memset(g_InUseBits, 0x00, BITS2BYTES(g_InUseBitsSize));
@@ -45,6 +51,8 @@ void ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t 
     for (uint32_t index = 0; index < g_MemoryRegionsCount; ++index)
         if (g_MemoryRegions[index].type != MEMORY_TYPE_AVAILABLE)
             memset(g_InUseBits + BITS2BYTES(DIV_ROUND_UP(g_MemoryRegions[index].baseAddress, MEMORY_ALLOCATOR_CHUNK_SIZE)), 0xFF, BITS2BYTES(DIV_ROUND_UP(g_MemoryRegions[index].size, MEMORY_ALLOCATOR_CHUNK_SIZE)));
+
+    return NO_ERROR;
 }
 
 // set `lower` to `true` to request memory below 1MB (0x100000)

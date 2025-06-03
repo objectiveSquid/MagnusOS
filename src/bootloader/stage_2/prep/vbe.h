@@ -52,4 +52,4 @@ typedef struct {
     uint8_t __reserved[206];
 } __attribute__((packed)) VbeModeInfo;
 
-VbeModeInfo *VBE_Initialize();
+int VBE_Initialize(VbeModeInfo *modeInfo);

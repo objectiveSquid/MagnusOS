@@ -1,4 +1,5 @@
 #include "dma.h"
+#include "util/errors.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
 
@@ -33,14 +34,12 @@ void clearFlipFlop() {
     x86_OutByte(DMA_CLEAR_PORT, 0xFF);
 }
 
-bool DMA_Setup(uint8_t *buffer, uint16_t length) {
+int DMA_Setup(uint8_t *buffer, uint16_t length) {
     clearFlipFlop();
     x86_OutByte(DMA_MASK_REGISTER, DMA_COMMAND_UNMASK_CHANNEL_2);
 
-    if (!checkDMAStatus()) {
-        printf("DMA channel is in use or error occurred\n");
-        return false;
-    }
+    if (!checkDMAStatus())
+        return DMA_CHANNEL_IN_USE_ERROR;
 
     uint32_t address = (uint32_t)buffer;
     clearFlipFlop();
@@ -57,10 +56,8 @@ bool DMA_Setup(uint8_t *buffer, uint16_t length) {
     clearFlipFlop();
     x86_OutByte(DMA_MASK_REGISTER, DMA_COMMAND_MASK_CHANNEL_2); // Unmask channel 2
 
-    if (!checkDMAStatus()) {
-        printf("Error: DMA setup failed\n");
-        return false;
-    }
+    if (!checkDMAStatus())
+        return DMA_SETUP_FAILED_ERROR;
 
-    return true;
+    return NO_ERROR;
 }

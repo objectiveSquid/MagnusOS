@@ -127,9 +127,9 @@ typedef struct {
     FAT_Data fatData;
 } FAT_Filesystem;
 
-bool FAT_Initialize(FAT_Filesystem *filesystem);
-size_t FAT_ListDirectory(FAT_Filesystem *filesystem, const char *path, FAT_DirectoryEntry *entries, size_t maxEntries);
-FAT_File *FAT_Open(FAT_Filesystem *filesystem, const char *path);
-uint32_t FAT_Seek(FAT_Filesystem *filesystem, FAT_File *file, int64_t targetPosition, uint8_t whence);
-uint32_t FAT_Read(FAT_Filesystem *filesystem, FAT_File *file, uint32_t byteCount, void *dataOutput);
-void FAT_Close(FAT_Filesystem *filesystem, FAT_File *file);
+int FAT_Initialize(FAT_Filesystem *filesystem);
+int FAT_ListDirectory(FAT_Filesystem *filesystem, const char *path, FAT_DirectoryEntry *entries, size_t maxEntries, size_t *entriesCountOutput);
+int FAT_Open(FAT_Filesystem *filesystem, const char *path, FAT_File **fileOutput);
+int FAT_Seek(FAT_Filesystem *filesystem, FAT_File *file, int64_t targetPosition, uint8_t whence);
+int FAT_Read(FAT_Filesystem *filesystem, FAT_File *file, uint32_t byteCount, uint32_t *readCountOutput, void *dataOutput);
+int FAT_Close(FAT_Filesystem *filesystem, FAT_File *file);

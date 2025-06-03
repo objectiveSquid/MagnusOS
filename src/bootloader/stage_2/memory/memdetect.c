@@ -1,5 +1,7 @@
 #include "memdetect.h"
+#include "util/errors.h"
 #include "util/x86.h"
+#include <stddef.h>
 
 const char *MEMDETECT_ErrorCodeStrings[] = {
     "BIOS function not supported",
@@ -8,20 +10,19 @@ const char *MEMDETECT_ErrorCodeStrings[] = {
 };
 
 // maxRegions is assumed to be at least 1
-uint8_t MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t maxRegions, uint32_t *regionCountOutput) {
-    uint32_t regionCount = 0;
+int MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t maxRegions, uint32_t *regionCountOutput, uint8_t *errorCodeOutput) {
     uint32_t offset = 0;
     uint8_t errorCode;
 
     do {
-        errorCode = x86_MEMDETECT_GetRegion(regionsOutput + regionCount, &offset);
-        if (errorCode != 0) {
-            *regionCountOutput = regionCount;
-            return errorCode;
+        errorCode = x86_MEMDETECT_GetRegion(regionsOutput + (*regionCountOutput), &offset);
+        if (errorCode != 0) { // 0 means no error
+            if (errorCodeOutput != NULL)
+                *errorCodeOutput = errorCode;
+            return FAILED_TO_DETECT_MEMORY_ERROR;
         }
-        regionCount++;
-    } while (offset != 0 && regionCount < maxRegions);
+        (*regionCountOutput)++;
+    } while (offset != 0 && (*regionCountOutput) < maxRegions);
 
-    *regionCountOutput = regionCount;
-    return 0; // 0 means no error
+    return NO_ERROR; // 0 means no error
 }
