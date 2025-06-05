@@ -126,13 +126,9 @@ typedef struct {
 int ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entryPoint) {
     int status;
 
-    printf("dgb 0\n");
-
     FAT_File *elfFd;
     if ((status = FAT_Open(filesystem, filepath, &elfFd)) != NO_ERROR)
         return status;
-
-    printf("dgb 1\n");
 
     ELF_32BitHeader *header = ALLOCATOR_Malloc(sizeof(ELF_32BitHeader), true);
     if (header == NULL) {
@@ -144,8 +140,6 @@ int ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
         goto free_header;
     }
 
-    printf("dgb 2\n");
-
     // read header
     uint32_t readHeaderCount;
     if ((status = FAT_Read(filesystem, elfFd, sizeof(ELF_32BitHeader), &readHeaderCount, header)) == NO_ERROR) {
@@ -156,8 +150,6 @@ int ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
     } else {
         goto free_header;
     }
-
-    printf("dgb 3\n");
 
     // header checks
     if (memcmp(header->magic, ELF_MAGIC, sizeof(header->magic)) != 0) {

@@ -1,5 +1,6 @@
 #include "stdio.h"
 #include "font.h"
+#include "graphics.h"
 #include "memdefs.h"
 #include "util/x86.h"
 #include "vbe.h"
@@ -14,8 +15,6 @@ static uint16_t g_CursorPosition[2] = {0, 0};
 #if DEBUG_BUILD == 1
 // the e9 port is unused and can be used to output debug messages
 void E9putc(char c) {
-    if (c == '\0') // '\0' should only be used by the clearScreen function, which we dont want to be used in debug output
-        return;
     x86_OutByte(0xE9, c);
 }
 #endif
@@ -81,16 +80,11 @@ void puts(const char *buf) {
 }
 
 void clearScreen() {
-    // this first thing here is to prevent writing out of bounds
     g_CursorPosition[0] = 0;
     g_CursorPosition[1] = 0;
 
-    for (uint8_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
-        for (uint8_t y = 0; y < FONT_ScreenCharacterHeight(); ++y)
-            putc('\0');
-
-    g_CursorPosition[0] = 0;
-    g_CursorPosition[1] = 0;
+    GRAPHICS_ClearScreen();
+    GRAPHICS_PushBuffer();
 }
 
 static const char g_HexChars[] = "0123456789abcdef";

@@ -18,10 +18,11 @@
 #define FONT_MAX_CHARACTERS 0xFF
 
 static FONT_Character *g_ScreenCharacterBuffer = NULL;
+static void *g_VideoBuffer = NULL;
 static VbeModeInfo *g_VbeModeInfo = NULL;
 static uint8_t *g_FontBits = NULL;
 static const FONT_FontInfo *g_FontInfo = NULL;
-static uint8_t g_FontPixelScale = 1;
+static uint16_t g_FontPixelScale = 1;
 
 void ensureFontInfoSet() {
     if (g_FontInfo != NULL)
@@ -44,8 +45,9 @@ void FONT_DeInitialize() {
     }
 }
 
-int FONT_Initialize(VbeModeInfo *vbeModeInfo) {
+int FONT_Initialize(VbeModeInfo *vbeModeInfo, void *videoBuffer) {
     g_VbeModeInfo = vbeModeInfo;
+    g_VideoBuffer = videoBuffer;
 
     ensureFontInfoSet();
 
@@ -152,11 +154,11 @@ int FONT_SetFont(FAT_Filesystem *fontsFilesystem, const FONT_FontInfo *fontInfo,
 }
 
 // next 2 functions are because i dont really understand variable sharing across files in c
-void FONT_SetPixelScale(uint8_t scale) {
+void FONT_SetPixelScale(uint16_t scale) {
     g_FontPixelScale = scale;
 }
 
-uint8_t FONT_GetPixelScale() {
+uint16_t FONT_GetPixelScale() {
     return g_FontPixelScale;
 }
 
@@ -174,16 +176,13 @@ void FONT_ScrollBack(uint16_t lineCount) {
     if (lineCount == 0)
         return;
 
-    // copy lines
-    for (uint32_t y = min(lineCount, FONT_ScreenCharacterHeight()); y < FONT_ScreenCharacterHeight(); ++y)
-        for (uint32_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
-            FONT_DrawCharacter(x, y - lineCount, FONT_GetCharacter(x, y));
+    size_t offset = g_VbeModeInfo->pitch * g_FontInfo->height * lineCount * g_FontPixelScale;
+    size_t memoryToCopy = g_VbeModeInfo->pitch * g_VbeModeInfo->height - offset;
 
-    // delete last lines
-    FONT_Character tempCharacter = EMPTY_CHARACTER;
-    for (uint32_t y = FONT_ScreenCharacterHeight() - lineCount; y < FONT_ScreenCharacterHeight(); ++y)
-        for (uint32_t x = 0; x < FONT_ScreenCharacterWidth(); ++x)
-            FONT_DrawCharacter(x, y, tempCharacter);
+    memcpy(g_VideoBuffer, g_VideoBuffer + offset, memoryToCopy);
+    memset(g_VideoBuffer + (FONT_ScreenCharacterHeight() * g_FontInfo->height * g_FontPixelScale * g_VbeModeInfo->pitch) - offset, 0, offset);
+
+    GRAPHICS_PushBuffer();
 }
 
 void FONT_DrawCharacter(uint16_t x, uint16_t y, FONT_Character character) {
@@ -205,14 +204,18 @@ void FONT_DrawCharacter(uint16_t x, uint16_t y, FONT_Character character) {
                 GRAPHICS_WriteScalePixel((x * g_FontInfo->width) + img_x, (y * g_FontInfo->height) + img_y, 0, 0, 0, g_FontPixelScale);
         }
     }
+
+    GRAPHICS_PushBufferRectangleScale(x * g_FontInfo->width, y * g_FontInfo->height, g_FontInfo->width, g_FontInfo->height, g_FontPixelScale);
 }
 
+// returns the number of characters that can fit on the screen horizontally
 uint16_t FONT_ScreenCharacterWidth() {
     ensureFontInfoSet();
 
     return (g_VbeModeInfo->width / g_FontInfo->width) / g_FontPixelScale;
 }
 
+// returns the number of characters that can fit on the screen vertically
 uint16_t FONT_ScreenCharacterHeight() {
     ensureFontInfoSet();
 

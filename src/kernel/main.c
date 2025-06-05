@@ -34,12 +34,15 @@ void start(uint8_t bootDrive,
         return;
     }
 
+    void *videoBuffer;
     // initialize the graphics
-    GRAPHICS_Initialize(vbeModeInfo);
-    GRAPHICS_ClearScreen();
+    if ((status = GRAPHICS_Initialize(vbeModeInfo, &videoBuffer)) != NO_ERROR) {
+        printf("Failed to initialize the graphics! Status: %d\n", status);
+        return;
+    }
 
     // initialize the font
-    if ((status = FONT_Initialize(vbeModeInfo)) != NO_ERROR) {
+    if ((status = FONT_Initialize(vbeModeInfo, videoBuffer)) != NO_ERROR) {
         printf("Failed to initialize the font! Status: %d\n", status); // the fallback font might still work, so it's worth a try to log the error
         return;
     }
@@ -51,7 +54,6 @@ void start(uint8_t bootDrive,
     PIT_Initialize();
     puts("Initialized the PIT driver!\n");
 
-    // a little bit too buggy for now
     if ((status = PS2_Initialize()) != NO_ERROR) {
         printf("Failed to initialize the PS2 driver! Status: %d\n", status);
         return;
@@ -92,12 +94,10 @@ void start(uint8_t bootDrive,
 
     puts("Hello from kernel!\n");
 
-    for (;;)
-        ;
-
     // deinitialize/free everything, technically not needed, but ill do it anyway for good measure
     DISK_DeInitialize(&masterDisk);
     DISK_DeInitialize(&slaveDisk);
     free(bootFilesystem);
+    GRAPHICS_DeInitialize();
     FONT_DeInitialize();
 }
