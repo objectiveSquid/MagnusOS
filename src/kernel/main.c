@@ -52,8 +52,11 @@ void start(uint8_t bootDrive,
     puts("Initialized the PIT driver!\n");
 
     // a little bit too buggy for now
-    // PS2_Initialize();
-    // puts("Initialized the PS2 driver!\n");
+    if ((status = PS2_Initialize()) != NO_ERROR) {
+        printf("Failed to initialize the PS2 driver! Status: %d\n", status);
+        return;
+    };
+    puts("Initialized the PS2 driver!\n");
 
     DISK masterDisk;
     DISK slaveDisk;
@@ -88,6 +91,9 @@ void start(uint8_t bootDrive,
     clearScreen();
 
     puts("Hello from kernel!\n");
+
+    for (;;)
+        ;
 
     // deinitialize/free everything, technically not needed, but ill do it anyway for good measure
     DISK_DeInitialize(&masterDisk);

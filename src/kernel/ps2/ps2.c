@@ -59,7 +59,6 @@ typedef enum {
     LED_SET_TOGGLE = 3,
 } SetLEDNumber;
 
-static bool g_KeyboardDetected = false;
 static uint8_t g_LEDState = 0;
 static uint8_t g_SkipPS2Interrupts = 0;
 static const PICDriver *g_PicDriver = NULL;
@@ -261,10 +260,11 @@ bool isScancodeHeld(uint16_t scancode) {
     return g_ScancodesHeld[bitIndex] & (1 << (bitIndex % 8));
 }
 
+// ugly ternaries
 void setScancodeHeld(uint16_t scancode, bool held) {
     int8_t bitIndex = getIndexFromScancode(scancode);
     if (bitIndex == -1) {
-        printf("Unknown scancode %x (on set)\n", scancode);
+        printf("Unknown scancode %x (on set %s)\n", scancode, held ? "held" : "release");
         return;
     }
 
@@ -273,7 +273,7 @@ void setScancodeHeld(uint16_t scancode, bool held) {
     else
         g_ScancodesHeld[bitIndex / 8] &= ~(1 << (bitIndex % 8));
 
-    printf("Scancode %hx is %s\n", scancode, held ? "held" : "not held");
+    printf("Scancode 0x%hx is %s\n", scancode, held ? "held" : "released");
     return;
 }
 
@@ -337,7 +337,6 @@ void PS2Set2Handler(uint8_t port) {
     switch (scancode) {
     case PS2_NEW_KEYBOARD:
         puts("PS2 Keyboard detected\n");
-        g_KeyboardDetected = true;
         return;
     case PS2_ACK:
         puts("Spillover PS2 command acknowledge response\n");
@@ -398,16 +397,17 @@ void PS2Set2Handler(uint8_t port) {
     }
 }
 
+// maybe mask the interrupts while handling, maybe some kind of race condition? not sure
 void PS2Set2HandlerPort1(Registers *registers) {
-    g_PicDriver->mask(PS2_PORT_1_IRQ);
+    // g_PicDriver->mask(PS2_PORT_1_IRQ);
     PS2Set2Handler(1);
-    g_PicDriver->unmask(PS2_PORT_1_IRQ);
+    // g_PicDriver->unmask(PS2_PORT_1_IRQ);
 }
 
 void PS2Set2HandlerPort2(Registers *registers) {
-    g_PicDriver->mask(PS2_PORT_2_IRQ);
+    // g_PicDriver->mask(PS2_PORT_2_IRQ);
     PS2Set2Handler(2);
-    g_PicDriver->unmask(PS2_PORT_2_IRQ);
+    // g_PicDriver->unmask(PS2_PORT_2_IRQ);
 }
 
 int PS2_Initialize() {
