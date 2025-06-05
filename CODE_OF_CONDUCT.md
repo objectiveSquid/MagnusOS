@@ -1,9 +1,4 @@
 # Code of conduct
-## Ground rules
-- Keep `master` golden.
-    - This means that if a feature has errors, it must **NOT** be merged into `master`.
-    - **No exceptions.**
-
 ## For all languages
 - Indentation consists of **4 spaces**, never a tab.
 - There should never be an if/else statement longer than **3 cases**, if it can be a match/switch statement instead.
