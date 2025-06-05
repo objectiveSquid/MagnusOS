@@ -63,7 +63,7 @@ static bool g_KeyboardDetected = false;
 static uint8_t g_LEDState = 0;
 static uint8_t g_SkipPS2Interrupts = 0;
 static const PICDriver *g_PicDriver = NULL;
-uint8_t g_ScancodesHeld[((ARRAY_SIZE(SCANCODE_SET_2_INDEXES) + 8) / 8)]; // add 8 then divide by 8 to round up
+uint8_t g_ScancodesHeld[((ARRAY_SIZE(SCANCODE_SET_2_INDEXES) + 7) / 8)]; // add 7 then divide by 8 to round up
 
 void clearPS2Buffer() {
     while (x86_InByte(PS2_CMD_PORT) & 1)
