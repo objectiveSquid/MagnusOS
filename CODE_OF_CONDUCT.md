@@ -17,7 +17,7 @@
 - Variable names should be in **pascalCase**.
     - If they are global they should be prefixed with **g_**, and should instead be in **CamelCase**.
 - Function names should be in **pascalCase**.
-    - If a function is in a larger collection of functions, it should be prefixed with the name of the collection (*unless it's a very standard function*) and it should instead in **CamelCase**. (Example: `void GRAPHICS_PutPixel(...)`)
+    - If a function is in a larger collection of functions, it should be prefixed with the name of the collection (*unless it's a very standard function, such as printf or memcpy*) and it should instead in **CamelCase**. (Example: `void GRAPHICS_PutPixel(...)`)
 - Enum names should be in **CamelCase** and like functions should be prefixed with the name of the collection.
 - Goto statements should only be used when having to deinitialize many variables in a function before returning.
     - Goto labels should be in **snake_case**.
