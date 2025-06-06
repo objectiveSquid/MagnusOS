@@ -6,4 +6,3 @@
 - Add timeouts in ATA and PS2 driver.
 - Implement DMA instead of polling in ATA driver.
 - Make bootloader stage 2 an elf.
-- Scrollback is SLOWWWW, maybe do memcpy instead of redrawing?
