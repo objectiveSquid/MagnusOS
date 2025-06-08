@@ -27,11 +27,6 @@ image/generated_root
 E9.log
 
 # Copied (linked) files
-src/bootloader/stage_2/util/string.h
-src/kernel/util/string.h
-src/bootloader/stage_2/util/string.c
-src/kernel/util/string.c
-
 src/bootloader/stage_2/disk/fat.h
 src/kernel/disk/fat.h
 src/bootloader/stage_2/disk/fat.c
@@ -42,15 +37,7 @@ src/kernel/crti.asm
 src/bootloader/stage_2/crtn.asm
 src/kernel/crtn.asm
 
-src/bootloader/stage_2/memory/memdetect.h
-src/kernel/memory/memdetect.h
-
 src/bootloader/stage_2/disk/mbr.h
 src/kernel/disk/mbr.h
 src/bootloader/stage_2/disk/mbr.c
 src/kernel/disk/mbr.c
-
-src/bootloader/stage_2/memory/allocator.h
-src/kernel/memory/allocator.h
-src/bootloader/stage_2/memory/allocator.c
-src/kernel/memory/allocator.c
