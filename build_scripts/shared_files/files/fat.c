@@ -1,13 +1,13 @@
 #include "fat.h"
 #include "mbr.h"
 #include "memory/allocator.h"
-#include "util/memory.h"
 #include "util/string.h"
 #include "visual/stdio.h"
 #include <lib/algorithm/ascii.h>
 #include <lib/algorithm/math.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/memdefs.h>
+#include <lib/memory/memory.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

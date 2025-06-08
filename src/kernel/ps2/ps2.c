@@ -4,10 +4,10 @@
 #include "util/arrays.h"
 #include "util/binary.h"
 #include "util/io.h"
-#include "util/memory.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
 #include <lib/errors/errors.h>
+#include <lib/memory/memory.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

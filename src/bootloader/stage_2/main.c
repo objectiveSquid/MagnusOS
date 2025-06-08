@@ -4,7 +4,6 @@
 #include "elf/elf.h"
 #include "memory/allocator.h"
 #include "prep/vbe.h"
-#include "util/memory.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
 #include "visual/vga.h"
@@ -12,6 +11,7 @@
 #include <lib/errors/errors.h>
 #include <lib/memory/memdefs.h>
 #include <lib/memory/memdetect.h>
+#include <lib/memory/memory.h>
 #include <stdint.h>
 
 #define MEMORY_LOAD_KERNEL_CHUNK_SIZE 0x10000

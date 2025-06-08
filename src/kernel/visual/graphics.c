@@ -1,9 +1,9 @@
 #include "graphics.h"
 #include "memory/allocator.h"
-#include "util/memory.h"
 #include "vbe.h"
 #include <lib/errors/errors.h>
 #include <lib/memory/memdefs.h>
+#include <lib/memory/memory.h>
 #include <stddef.h>
 
 static VbeModeInfo *g_VbeModeInfo = NULL;

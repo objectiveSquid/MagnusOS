@@ -1,5 +1,6 @@
-# Build directory
+# Built stuff
 build
+*.o
 
 # VSCode configuration
 .vscode
@@ -26,16 +27,6 @@ image/generated_root
 E9.log
 
 # Copied (linked) files
-src/bootloader/stage_2/util/memory.c
-src/kernel/util/memory.c
-src/bootloader/stage_2/util/memory.h
-src/kernel/util/memory.h
-
-src/bootloader/stage_2/util/other.h
-src/kernel/util/other.h
-src/bootloader/stage_2/util/other.c
-src/kernel/util/other.c
-
 src/bootloader/stage_2/util/string.h
 src/kernel/util/string.h
 src/bootloader/stage_2/util/string.c

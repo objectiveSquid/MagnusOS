@@ -6,7 +6,6 @@
 #include "memory/allocator.h"
 #include "pit/pit.h"
 #include "ps2/ps2.h"
-#include "util/memory.h"
 #include "util/x86.h"
 #include "visual/font.h"
 #include "visual/graphics.h"
@@ -15,6 +14,7 @@
 #include <lib/errors/errors.h>
 #include <lib/memory/memdefs.h>
 #include <lib/memory/memdetect.h>
+#include <lib/memory/memory.h>
 #include <stdint.h>
 
 extern void _init();

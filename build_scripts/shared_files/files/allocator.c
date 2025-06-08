@@ -1,9 +1,9 @@
 #include "allocator.h"
-#include "util/memory.h"
 #include <lib/algorithm/bits.h>
 #include <lib/algorithm/math.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/memdefs.h>
+#include <lib/memory/memory.h>
 #include <stddef.h>
 
 #define CHUNK_HEADER_TYPE size_t

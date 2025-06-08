@@ -1,12 +1,4 @@
 {
-    "memory.c": [
-        "bootloader/stage_2/util/memory.c",
-        "kernel/util/memory.c"
-    ],
-    "memory.h": [
-        "bootloader/stage_2/util/memory.h",
-        "kernel/util/memory.h"
-    ],
     "string.h": [
         "bootloader/stage_2/util/string.h",
         "kernel/util/string.h"
