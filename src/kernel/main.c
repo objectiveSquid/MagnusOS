@@ -3,7 +3,6 @@
 #include "disk/disk.h"
 #include "disk/fat.h"
 #include "hal/hal.h"
-#include "memory/allocator.h"
 #include "pit/pit.h"
 #include "ps2/ps2.h"
 #include "util/x86.h"
@@ -12,6 +11,7 @@
 #include "visual/stdio.h"
 #include "visual/vbe.h"
 #include <lib/errors/errors.h>
+#include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
 #include <lib/memory/memdetect.h>
 #include <lib/memory/memory.h>

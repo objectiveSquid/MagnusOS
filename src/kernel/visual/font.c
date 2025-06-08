@@ -2,7 +2,6 @@
 #include "disk/fat.h"
 #include "fallback_font.h"
 #include "graphics.h"
-#include "memory/allocator.h"
 #include "rasterfont_sizes.h"
 #include "stdio.h"
 #include "vbe.h"
@@ -10,6 +9,7 @@
 #include <lib/algorithm/math.h>
 #include <lib/algorithm/string.h>
 #include <lib/errors/errors.h>
+#include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
 #include <lib/memory/memory.h>
 #include <stdbool.h>

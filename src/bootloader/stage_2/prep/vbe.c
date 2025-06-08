@@ -1,8 +1,8 @@
 #include "vbe.h"
-#include "memory/allocator.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
 #include <lib/errors/errors.h>
+#include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
 #include <lib/memory/memory.h>
 

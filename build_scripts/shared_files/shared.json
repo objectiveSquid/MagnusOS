@@ -22,13 +22,5 @@
     "mbr.c": [
         "bootloader/stage_2/disk/mbr.c",
         "kernel/disk/mbr.c"
-    ],
-    "allocator.h": [
-        "bootloader/stage_2/memory/allocator.h",
-        "kernel/memory/allocator.h"
-    ],
-    "allocator.c": [
-        "bootloader/stage_2/memory/allocator.c",
-        "kernel/memory/allocator.c"
     ]
 }

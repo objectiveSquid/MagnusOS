@@ -1,7 +1,7 @@
 #include "graphics.h"
-#include "memory/allocator.h"
 #include "vbe.h"
 #include <lib/errors/errors.h>
+#include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
 #include <lib/memory/memory.h>
 #include <stddef.h>

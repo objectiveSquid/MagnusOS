@@ -1,9 +1,9 @@
 #include "elf.h"
 #include "disk/fat.h"
-#include "memory/allocator.h"
 #include "visual/stdio.h"
 #include <lib/algorithm/math.h>
 #include <lib/errors/errors.h>
+#include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
 #include <lib/memory/memory.h>
 
@@ -135,10 +135,12 @@ int ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
         status = FAILED_TO_ALLOCATE_MEMORY_ERROR;
         goto close_file;
     }
+#if defined(__BOOTLOADER__) && (__BOOTLOADER__ == 1)
     if ((size_t)header > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
         status = ALLOCATED_MEMORY_TOO_HIGH_ERROR;
         goto free_header;
     }
+#endif
 
     // read header
     uint32_t readHeaderCount;
@@ -201,10 +203,12 @@ int ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
         status = FAILED_TO_ALLOCATE_MEMORY_ERROR;
         goto free_header;
     }
+#if defined(__BOOTLOADER__) && (__BOOTLOADER__ == 1)
     if ((size_t)programHeaderTable > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
         status = ALLOCATED_MEMORY_TOO_HIGH_ERROR;
         goto free_table_buffer;
     }
+#endif
     uint32_t readProgramHeaderTableCount;
     if ((status = FAT_Read(filesystem, elfFd, programHeaderTableSize, &readProgramHeaderTableCount, programHeaderTable)) == NO_ERROR) {
         if (readProgramHeaderTableCount != programHeaderTableSize) {
@@ -220,10 +224,12 @@ int ELF_Read32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
         status = FAILED_TO_ALLOCATE_MEMORY_ERROR;
         goto free_table_buffer;
     }
+#if defined(__BOOTLOADER__) && (__BOOTLOADER__ == 1)
     if ((size_t)loadSegmentBuffer > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
         status = ALLOCATED_MEMORY_TOO_HIGH_ERROR;
         goto free_segment_buffer;
     }
+#endif
     ELF_32BitProgramHeader *currentProgramHeader;
     for (size_t i = 0; i < header->programHeaderTableEntryCount; ++i) {
         currentProgramHeader = &programHeaderTable[i];
