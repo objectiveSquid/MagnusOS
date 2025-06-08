@@ -5,10 +5,10 @@
 #include "memory/allocator.h"
 #include "rasterfont_sizes.h"
 #include "stdio.h"
-#include "util/string.h"
 #include "vbe.h"
 #include <lib/algorithm/arrays.h>
 #include <lib/algorithm/math.h>
+#include <lib/algorithm/string.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/memdefs.h>
 #include <lib/memory/memory.h>
