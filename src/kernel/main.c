@@ -3,18 +3,18 @@
 #include "disk/disk.h"
 #include "disk/fat.h"
 #include "hal/hal.h"
-#include "memdefs.h"
 #include "memory/allocator.h"
-#include "memory/memdetect.h"
 #include "pit/pit.h"
 #include "ps2/ps2.h"
-#include "util/errors.h"
 #include "util/memory.h"
 #include "util/x86.h"
 #include "visual/font.h"
 #include "visual/graphics.h"
 #include "visual/stdio.h"
 #include "visual/vbe.h"
+#include <lib/errors/errors.h>
+#include <lib/memory/memdefs.h>
+#include <lib/memory/memdetect.h>
 #include <stdint.h>
 
 extern void _init();

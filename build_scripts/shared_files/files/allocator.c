@@ -1,13 +1,13 @@
 #include "allocator.h"
-#include "memdefs.h"
-#include "util/errors.h"
 #include "util/memory.h"
-#include "util/other.h"
+#include <lib/algorithm/bits.h>
+#include <lib/algorithm/math.h>
+#include <lib/errors/errors.h>
+#include <lib/memory/memdefs.h>
 #include <stddef.h>
 
 #define CHUNK_HEADER_TYPE size_t
 #define CHUNK_HEADER_SIZE sizeof(CHUNK_HEADER_TYPE)
-
 static uint8_t *g_InUseBits = (uint8_t *)MEMORY_ALLOCATOR_IN_USE_BITS;
 static size_t g_LowestUpperUsableAddress;
 static uint64_t g_InUseBitsSize; // on 64 bit systems this might actually exceeed the 64 bit unsigned integer limit

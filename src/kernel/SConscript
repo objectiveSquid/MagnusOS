@@ -14,21 +14,30 @@ env.Append(
         env.File("linker.ld").srcnode().path,  # type: ignore
         "-Wl,-Map=" + env.File("kernel.map").path,  # type: ignore
     ],
-    CPATH=[env.Dir(".").srcnode()],  # type: ignore
-    CPPPATH=[env.Dir(".").srcnode()],  # type: ignore
-    ASFLAGS=["-I", env.Dir(".").srcnode()],  # type: ignore
+    OBJPREFIX="kernel_",
+    CPPDEFINES={"__KERNEL__": 1},
+    CPATH=[env.Dir(".").srcnode(), env["SOURCE_DIRECTORY"]],  # type: ignore
+    CPPPATH=[env.Dir(".").srcnode(), env["SOURCE_DIRECTORY"]],  # type: ignore
+    ASFLAGS=["-I", env.Dir(".").srcnode(), "-I", env["SOURCE_DIRECTORY"], "-D", "__KERNEL__=1"],  # type: ignore
 )
 
 sources = (
     glob_recursive(env, "*.c")
     + glob_recursive(env, "*.cpp")
     + glob_recursive(env, "*.asm")
+    + glob_recursive(env, "*.c", env["LIBRARY_DIRECTORY"])
+    + glob_recursive(env, "*.cpp", env["LIBRARY_DIRECTORY"])
+    + glob_recursive(env, "*.asm", env["LIBRARY_DIRECTORY"])
 )
 objects = env.Object(sources)
 
 # remove global contructor stuff
-obj_crti = objects.pop(find_index(objects, lambda obj: is_file_name(obj, "crti.o")))
-obj_crtn = objects.pop(find_index(objects, lambda obj: is_file_name(obj, "crtn.o")))
+obj_crti = objects.pop(
+    find_index(objects, lambda obj: is_file_name(obj, env["OBJPREFIX"] + "crti.o"))
+)
+obj_crtn = objects.pop(
+    find_index(objects, lambda obj: is_file_name(obj, env["OBJPREFIX"] + "crtn.o"))
+)
 
 # reorder objects
 objects = [

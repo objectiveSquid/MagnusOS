@@ -2,16 +2,16 @@
 #include "disk/fat.h"
 #include "disk/mbr.h"
 #include "elf/elf.h"
-#include "memdefs.h"
 #include "memory/allocator.h"
-#include "memory/memdetect.h"
 #include "prep/vbe.h"
-#include "util/errors.h"
 #include "util/memory.h"
-#include "util/other.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
 #include "visual/vga.h"
+#include <lib/algorithm/math.h>
+#include <lib/errors/errors.h>
+#include <lib/memory/memdefs.h>
+#include <lib/memory/memdetect.h>
 #include <stdint.h>
 
 #define MEMORY_LOAD_KERNEL_CHUNK_SIZE 0x10000

@@ -25,10 +25,7 @@ image/generated_root
 # Debug log file
 E9.log
 
-# Copied (hard linked) files
-src/bootloader/stage_2/memdefs.h
-src/kernel/memdefs.h
-
+# Copied (linked) files
 src/bootloader/stage_2/util/memory.c
 src/kernel/util/memory.c
 src/bootloader/stage_2/util/memory.h
@@ -66,6 +63,3 @@ src/bootloader/stage_2/memory/allocator.h
 src/kernel/memory/allocator.h
 src/bootloader/stage_2/memory/allocator.c
 src/kernel/memory/allocator.c
-
-src/bootloader/stage_2/util/errors.h
-src/kernel/util/errors.h

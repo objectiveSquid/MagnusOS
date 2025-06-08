@@ -1,6 +1,7 @@
-#include "memdetect.h"
-#include "util/errors.h"
+#if defined(__BOOTLOADER__) && (__BOOTLOADER__ == 1)
 #include "util/x86.h"
+#include <lib/errors/errors.h>
+#include <lib/memory/memdetect.h>
 #include <stddef.h>
 
 const char *MEMDETECT_ErrorCodeStrings[] = {
@@ -26,3 +27,4 @@ int MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t m
 
     return NO_ERROR; // 0 means no error
 }
+#endif

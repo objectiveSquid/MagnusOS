@@ -34,35 +34,34 @@ def parse_size_dry(size: str) -> str:
     return size
 
 
-def glob_recursive(env: Environment, pattern: str, node: str = ".") -> list:
-    src = str(env.Dir(node).srcnode())  # type: ignore
-    cwd = str(env.Dir(".").srcnode())  # type: ignore
+def glob_recursive(env: Environment, pattern: str, node: str = ".") -> list[File]:
+    source_directory = str(env.Dir(node).srcnode())  # type: ignore
 
-    directory_list = [src]
-    for root, directories, _ in os.walk(src):
+    directory_list = [source_directory]
+    for root, directories, _ in os.walk(source_directory):
         for directory in directories:
             directory_list.append(os.path.join(root, directory))
 
-    globs = []
+    all_sources: list[File] = []
     for directory in directory_list:
-        glob = env.Glob(os.path.join(os.path.relpath(directory, cwd), pattern))
-        globs.append(glob)
+        all_sources.extend(env.Glob(os.path.join(directory, pattern)))
 
-    return globs
+    return all_sources
 
 
-def find_index(array: list, predicate: Callable[[Any], bool]) -> int | None:
+def find_index(array: list, predicate: Callable[[Any], bool]) -> int:
     for i in range(len(array)):
         if predicate(array[i]):
             return i
 
+    raise ValueError(f"Element not found based on predicate, array: {array}")
     return None
 
 
 def is_file_name(obj: str | File | Dir | Entry, name: str) -> bool:
     if isinstance(obj, str):
-        return obj == name
+        return os.path.split(obj)[1] == name
     try:
-        return obj.name == name
+        return os.path.split(obj.name)[1] == name
     except AttributeError:
         return False

@@ -17,7 +17,7 @@ def link_shared_files(env: Environment) -> None:
 
     list_file = Path(env["BUILD_SCRIPTS_DIRECTORY"]) / "shared_files" / "shared.json"
     input_directory = Path(env["BUILD_SCRIPTS_DIRECTORY"]) / "shared_files" / "files"
-    output_directory = env["SRC_DIRECTORY"]
+    output_directory = env["SOURCE_DIRECTORY"]
     try:
         with open(list_file, "r") as fp:
             files = json.load(fp)

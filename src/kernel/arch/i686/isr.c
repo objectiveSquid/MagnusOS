@@ -1,9 +1,9 @@
 #include "isr.h"
 #include "idt.h"
 #include "isr_gen.h"
-#include "util/misc.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
+#include <lib/x86/misc.h>
 #include <stddef.h>
 
 ISRHandler g_ISRHandlers[256];

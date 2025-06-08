@@ -1,10 +1,9 @@
 #pragma once
 
-#include "memory/memdetect.h"
+#include <lib/memory/memdetect.h>
+#include <lib/x86/misc.h> // for asmcall
 #include <stdbool.h>
 #include <stdint.h>
-
-#define ASMCALL __attribute__((__cdecl__))
 
 void ASMCALL x86_OutByte(uint16_t port, uint8_t value);
 uint8_t ASMCALL x86_InByte(uint16_t port);

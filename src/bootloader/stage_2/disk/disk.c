@@ -1,7 +1,7 @@
 #include "disk.h"
-#include "util/errors.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
+#include <lib/errors/errors.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

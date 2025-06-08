@@ -9,7 +9,8 @@ Import("TARGET_ENVIRONMENT")
 
 env = TARGET_ENVIRONMENT.Clone()
 env.Append(
-    ASFLAGS=[f"-DFILESYSTEM={TARGET_ENVIRONMENT['image_filesystem']}"],
+    OBJPREFIX="bootloader_stage_1_",
+    ASFLAGS=["-D", f"FILESYSTEM={TARGET_ENVIRONMENT['image_filesystem']}"],
     LINKFLAGS=[
         "-Wl,-T",
         env.File("linker.ld").srcnode().path,  # type: ignore

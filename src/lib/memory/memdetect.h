@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 typedef enum {
@@ -17,6 +16,7 @@ typedef struct {
     uint32_t ACPIInfo;
 } __attribute__((packed)) MEMDETECT_MemoryRegion;
 
+#if defined(__BOOTLOADER__) && (__BOOTLOADER__ == 1)
 // probably dont use in kernel
 typedef enum {
     MEMDETECT_ERROR_CARRY_SET = 1,
@@ -29,3 +29,4 @@ extern const char *MEMDETECT_ErrorCodeStrings[];
 
 // do not use in kernel, only defined in bootloader
 int MEMDETECT_GetMemoryRegions(MEMDETECT_MemoryRegion *regionsOutput, uint32_t maxRegions, uint32_t *regionCountOutput, uint8_t *errorCodeOutput);
+#endif

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "memdefs.h"
+#include <lib/memory/memdefs.h>
 #include <stdbool.h>
 #include <stdint.h>
 

@@ -37,7 +37,7 @@ def generate_font_files_internal() -> None:
 def generate_font_header_internal() -> None:
     generate_header_file_func(
         str(Path(env["IMAGE_GENERATED_ROOT_DIRECTORY"]) / "fonts"),
-        str(Path(env["SRC_DIRECTORY"]) / "kernel" / "visual" / "rasterfont_sizes.h"),
+        str(Path(env["SOURCE_DIRECTORY"]) / "kernel" / "visual" / "rasterfont_sizes.h"),
     )
 
 

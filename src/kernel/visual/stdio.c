@@ -1,9 +1,9 @@
 #include "stdio.h"
 #include "font.h"
 #include "graphics.h"
-#include "memdefs.h"
 #include "util/x86.h"
 #include "vbe.h"
+#include <lib/memory/memdefs.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>

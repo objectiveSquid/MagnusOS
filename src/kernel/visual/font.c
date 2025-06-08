@@ -2,15 +2,16 @@
 #include "disk/fat.h"
 #include "fallback_font.h"
 #include "graphics.h"
-#include "memdefs.h"
 #include "memory/allocator.h"
 #include "rasterfont_sizes.h"
 #include "stdio.h"
-#include "util/errors.h"
 #include "util/memory.h"
-#include "util/other.h"
 #include "util/string.h"
 #include "vbe.h"
+#include <lib/algorithm/arrays.h>
+#include <lib/algorithm/math.h>
+#include <lib/errors/errors.h>
+#include <lib/memory/memdefs.h>
 #include <stdbool.h>
 #include <stdint.h>
 

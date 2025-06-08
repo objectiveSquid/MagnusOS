@@ -1,11 +1,11 @@
 #include "elf.h"
 #include "disk/fat.h"
-#include "memdefs.h"
 #include "memory/allocator.h"
-#include "util/errors.h"
 #include "util/memory.h"
-#include "util/other.h"
 #include "visual/stdio.h"
+#include <lib/algorithm/math.h>
+#include <lib/errors/errors.h>
+#include <lib/memory/memdefs.h>
 
 #define ELF_LOAD_SEGMENT_CHUNK_SIZE 0x2000 // 0x2000 = 8 kb
 

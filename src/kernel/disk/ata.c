@@ -1,13 +1,14 @@
 #include "ata.h"
 #include "disk.h"
-#include "memdefs.h"
 #include "pit/pit.h"
-#include "util/errors.h"
 #include "util/io.h"
-#include "util/other.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
+#include <lib/algorithm/math.h>
+#include <lib/errors/errors.h>
+#include <lib/memory/memdefs.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 // for restricting the size of the lba
 #define MAX_48_BIT_UNSIGNED_INTEGER 0x1000000000000

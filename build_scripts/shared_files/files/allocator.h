@@ -1,6 +1,7 @@
 #pragma once
 
-#include "memdetect.h"
+#include <lib/memory/memdetect.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 int ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t memoryRegionsCount, bool skipInUseBits);

@@ -1,19 +1,19 @@
 #include "fat.h"
 #include "mbr.h"
-#include "memdefs.h"
 #include "memory/allocator.h"
-#include "util/errors.h"
 #include "util/memory.h"
-#include "util/other.h"
 #include "util/string.h"
 #include "visual/stdio.h"
+#include <lib/algorithm/ascii.h>
+#include <lib/algorithm/math.h>
+#include <lib/errors/errors.h>
+#include <lib/memory/memdefs.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #define ROOT_DIRECTORY_HANDLE -1
 #define UNUSED_HANDLE -2
-
 const char *FAT_ALLOWED_ASCII_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!#$%&'()-@^_`{}~ ";
 
 int FAT_ReadBootSector(FAT_Filesystem *filesystem) {

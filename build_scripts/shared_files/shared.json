@@ -1,8 +1,4 @@
 {
-    "memdefs.h": [
-        "bootloader/stage_2/memdefs.h",
-        "kernel/memdefs.h"
-    ],
     "memory.c": [
         "bootloader/stage_2/util/memory.c",
         "kernel/util/memory.c"
@@ -10,14 +6,6 @@
     "memory.h": [
         "bootloader/stage_2/util/memory.h",
         "kernel/util/memory.h"
-    ],
-    "other.h": [
-        "bootloader/stage_2/util/other.h",
-        "kernel/util/other.h"
-    ],
-    "other.c": [
-        "bootloader/stage_2/util/other.c",
-        "kernel/util/other.c"
     ],
     "string.h": [
         "bootloader/stage_2/util/string.h",
@@ -43,10 +31,6 @@
         "bootloader/stage_2/crtn.asm",
         "kernel/crtn.asm"
     ],
-    "memdetect.h": [
-        "bootloader/stage_2/memory/memdetect.h",
-        "kernel/memory/memdetect.h"
-    ],
     "mbr.h": [
         "bootloader/stage_2/disk/mbr.h",
         "kernel/disk/mbr.h"
@@ -62,9 +46,5 @@
     "allocator.c": [
         "bootloader/stage_2/memory/allocator.c",
         "kernel/memory/allocator.c"
-    ],
-    "errors.h": [
-        "bootloader/stage_2/util/errors.h",
-        "kernel/util/errors.h"
     ]
 }

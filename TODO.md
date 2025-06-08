@@ -6,3 +6,4 @@
 - Add timeouts in ATA and PS2 driver.
 - Implement DMA instead of polling in ATA driver.
 - Make bootloader stage 2 an elf.
+- Make SCons not pollute the src directory with object files.

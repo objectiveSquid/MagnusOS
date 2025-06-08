@@ -72,7 +72,8 @@ HOST_ENVIRONMENT = Environment(
     CXXFLAGS=["-std=c++17"],  # only c++
     CCFLAGS=["-Wall", "-Werror"],  # both for c and c++
     STRIP="strip",
-    SRC_DIRECTORY=str(Path("src").resolve()),
+    SOURCE_DIRECTORY=str(Path("src").resolve()),
+    LIBRARY_DIRECTORY=str(Path("src/lib").resolve()),
     BUILD_SCRIPTS_DIRECTORY=str(Path("build_scripts").resolve()),
     IMAGE_ROOT_DIRECTORY=str(Path("image/root").resolve()),
     IMAGE_GENERATED_ROOT_DIRECTORY=str(Path("image/generated_root").resolve()),
@@ -172,7 +173,7 @@ SConscript(
 Import("link_shared_files")
 link_shared_files(TARGET_ENVIRONMENT)
 Import("generate_isr")
-generate_isr(f"{TARGET_ENVIRONMENT['SRC_DIRECTORY']}/kernel/arch/i686")
+generate_isr(f"{TARGET_ENVIRONMENT['SOURCE_DIRECTORY']}/kernel/arch/i686")
 
 # for the os
 SConscript(

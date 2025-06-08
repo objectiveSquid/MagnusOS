@@ -25,6 +25,6 @@
     - Example: If you know that a for loop will only iterate up to 5 times, you should use an `uint8_t`.
 
 ## Python/SConscripts
-- If you can **type hint with builtin types**, do so. And try to type hint everything you can.
+- If you can **type hint return types with builtin types**, do so.
 - Function and variable names should be in **snake_case**.
 - Classes should be in **CamelCase**.
