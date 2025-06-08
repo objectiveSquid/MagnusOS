@@ -7,14 +7,6 @@
         "bootloader/stage_2/disk/fat.c",
         "kernel/disk/fat.c"
     ],
-    "crti.asm": [
-        "bootloader/stage_2/crti.asm",
-        "kernel/crti.asm"
-    ],
-    "crtn.asm": [
-        "bootloader/stage_2/crtn.asm",
-        "kernel/crtn.asm"
-    ],
     "mbr.h": [
         "bootloader/stage_2/disk/mbr.h",
         "kernel/disk/mbr.h"
