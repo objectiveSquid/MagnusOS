@@ -1,4 +1,5 @@
 from SCons.Environment import Environment
+from SCons.Node.FS import Entry
 from build_scripts.utility import glob_recursive, is_file_name, find_index
 import os
 
@@ -29,7 +30,7 @@ sources = (
     + glob_recursive(env, "*.cpp", env["LIBRARY_DIRECTORY"])
     + glob_recursive(env, "*.asm", env["LIBRARY_DIRECTORY"])
 )
-objects = env.Object(sources)
+objects: list[Entry] = env.Object(sources)
 
 # remove global contructor stuff
 obj_crti = objects.pop(

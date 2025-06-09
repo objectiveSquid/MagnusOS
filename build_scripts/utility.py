@@ -34,7 +34,7 @@ def parse_size_dry(size: str) -> str:
     return size
 
 
-def glob_recursive(env: Environment, pattern: str, node: str = ".") -> list[File]:
+def glob_recursive(env: Environment, pattern: str, node: str = ".") -> list[Entry]:
     source_directory = str(env.Dir(node).srcnode())  # type: ignore
 
     directory_list = [source_directory]
@@ -42,7 +42,7 @@ def glob_recursive(env: Environment, pattern: str, node: str = ".") -> list[File
         for directory in directories:
             directory_list.append(os.path.join(root, directory))
 
-    all_sources: list[File] = []
+    all_sources: list[Entry] = []
     for directory in directory_list:
         all_sources.extend(env.Glob(os.path.join(directory, pattern)))
 
