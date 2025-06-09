@@ -17,6 +17,10 @@ def link_shared_files(env: Environment) -> None:
 
     list_file = Path(env["BUILD_SCRIPTS_DIRECTORY"]) / "shared_files" / "shared.json"
     input_directory = Path(env["BUILD_SCRIPTS_DIRECTORY"]) / "shared_files" / "files"
+    input_directory.mkdir(
+        parents=True, exist_ok=True
+    )  # make sure it exists, because if its empty, git will not create it
+
     output_directory = env["SOURCE_DIRECTORY"]
     try:
         with open(list_file, "r") as fp:

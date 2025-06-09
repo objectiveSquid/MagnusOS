@@ -27,7 +27,3 @@ image/generated_root
 E9.log
 
 # Copied (linked) files
-src/bootloader/stage_2/disk/fat.h
-src/kernel/disk/fat.h
-src/bootloader/stage_2/disk/fat.c
-src/kernel/disk/fat.c

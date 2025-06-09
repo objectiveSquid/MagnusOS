@@ -1,7 +1,7 @@
 #include "elf.h"
-#include "disk/fat.h"
 #include "visual/stdio.h"
 #include <lib/algorithm/math.h>
+#include <lib/disk/fat.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>

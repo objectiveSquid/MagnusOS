@@ -1,4 +1,3 @@
-#include "disk/fat.h"
 #include "hal/hal.h"
 #include "ps2/ps2.h"
 #include "visual/font.h"
@@ -7,6 +6,7 @@
 #include "visual/vbe.h"
 #include <lib/disk/ata.h>
 #include <lib/disk/disk.h>
+#include <lib/disk/fat.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>

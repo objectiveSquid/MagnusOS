@@ -1,7 +1,7 @@
 #pragma once
 
-#include "disk/fat.h"
 #include "vbe.h"
+#include <lib/disk/fat.h>
 #include <stdbool.h>
 #include <stdint.h>
 

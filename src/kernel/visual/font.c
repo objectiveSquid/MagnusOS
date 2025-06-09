@@ -1,5 +1,4 @@
 #include "font.h"
-#include "disk/fat.h"
 #include "fallback_font.h"
 #include "graphics.h"
 #include "rasterfont_sizes.h"
@@ -8,6 +7,7 @@
 #include <lib/algorithm/arrays.h>
 #include <lib/algorithm/math.h>
 #include <lib/algorithm/string.h>
+#include <lib/disk/fat.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
