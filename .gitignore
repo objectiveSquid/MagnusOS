@@ -15,9 +15,9 @@ __pycache__
 .sconsign.dblite
 
 # Generated files
-src/kernel/arch/i686/isr_gen.c
-src/kernel/arch/i686/isr_gen.h
-src/kernel/arch/i686/isr_gen.inc
+src/lib/interrupt/isr/isr_gen.c
+src/lib/interrupt/isr/isr_gen.h
+src/lib/interrupt/isr/isr_gen.inc
 
 src/kernel/visual/rasterfont_sizes.h
 

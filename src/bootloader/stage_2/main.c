@@ -1,4 +1,3 @@
-#include "disk/disk.h"
 #include "disk/fat.h"
 #include "disk/mbr.h"
 #include "elf/elf.h"
@@ -7,6 +6,7 @@
 #include "visual/stdio.h"
 #include "visual/vga.h"
 #include <lib/algorithm/math.h>
+#include <lib/disk/disk.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
@@ -71,22 +71,27 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
     };
     puts("Initialized allocator!\n");
 
-    // disk and fat
-    DISK disk;
-    memset(&disk, 0, sizeof(DISK));
-    if ((status = DISK_Initialize(&disk, bootDrive)) != NO_ERROR) {
-        printf("Failed to initialize disk. Status: %d\n", status);
+    // initialize disks
+    DISK masterDisk;
+    DISK slaveDisk;
+    DISK_InitializeResult diskInitializeResult;
+    if ((status = DISK_Initialize(&diskInitializeResult, &masterDisk, &slaveDisk)) != NO_ERROR) {
+        printf("Failed to initialize disks! Status: %d\n", status);
         return;
     }
-    printf("Initialized disk! (%lu sectors)\n", disk.cylinders * disk.heads * disk.sectors);
+    if (!diskInitializeResult.initializedMasterDisk) {
+        puts("Failed to initialize master disk!\n");
+        return;
+    }
+    puts("Initialized disks!\n");
 
     Partition bootPartition;
-    MBR_InitializePartition(&bootPartition, &disk, partitionLBA, partitionSize);
-    puts("Initialized boot partition!\n");
+    MBR_InitializePartition(&bootPartition, &masterDisk, partitionLBA, partitionSize);
+    puts("Detected boot partition!\n");
 
-    FAT_Filesystem *bootFilesystem = ALLOCATOR_Malloc(sizeof(FAT_Filesystem), true);
-    if (bootFilesystem == NULL || (size_t)bootFilesystem > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
-        puts("Failed to allocate proper memory for filesystem!\n");
+    FAT_Filesystem *bootFilesystem = malloc(sizeof(FAT_Filesystem));
+    if (bootFilesystem == NULL) {
+        puts("Failed to allocate memory for filesystem!\n");
         return;
     }
     bootFilesystem->partition = &bootPartition;

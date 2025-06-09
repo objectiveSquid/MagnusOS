@@ -20,7 +20,7 @@ i686_ISR_%1:
     jmp isr_common
 %endmacro
 
-%include "arch/i686/isr_gen.inc"
+%include "lib/interrupt/isr/isr_gen.inc"
 
 isr_common:
     pusha ;; save regs

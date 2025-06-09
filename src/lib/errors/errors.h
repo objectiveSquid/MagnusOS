@@ -89,3 +89,4 @@ Which functions don't need to return errors?
 #define PS2_ERROR 0x4001
 #define PS2_SELF_TEST_FAILED 0x4002
 #define PS2_INTERFACE_TESTS_FAILED 0x4003
+#define NO_PIC_DRIVER_FOUND 0x4004

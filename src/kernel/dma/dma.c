@@ -1,7 +1,7 @@
 #include "dma.h"
-#include "util/x86.h"
 #include "visual/stdio.h"
 #include <lib/errors/errors.h>
+#include <lib/x86/general.h>
 
 #define DMA_COMMAND_MASK_CHANNEL_2 0x06
 #define DMA_COMMAND_UNMASK_CHANNEL_2 0x02

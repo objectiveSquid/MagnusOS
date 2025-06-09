@@ -37,8 +37,8 @@ def generate_header_file(output_file: str) -> None:
             f"""/* {GENERATED_WARNING} */
 
 #pragma once
-#include "idt.h"
-#include "gdt.h"
+#include <lib/interrupt/idt/idt.h>
+#include <lib/interrupt/gdt/gdt.h>
 
 """
         )

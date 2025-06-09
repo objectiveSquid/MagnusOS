@@ -1,5 +1,5 @@
 #pragma once
 
-#include "pic.h"
+#include <lib/interrupt/pic/pic.h>
 
 const PICDriver *i8259_GetDriver();

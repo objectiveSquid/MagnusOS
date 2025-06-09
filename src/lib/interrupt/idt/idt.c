@@ -1,5 +1,5 @@
 #include "idt.h"
-#include "util/binary.h"
+#include <lib/algorithm/bits.h>
 #include <lib/x86/misc.h>
 #include <stdint.h>
 

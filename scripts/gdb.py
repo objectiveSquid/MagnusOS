@@ -14,14 +14,14 @@ def make_gdbscript(kernel_path: str, image_path: str, memory_size: str) -> str:
             f"""set disassembly-flavor intel
 set architecture i386
 layout src
+focus cmd
 symbol-file {kernel_path}
 
 target remote | qemu-system-i386 -S -gdb stdio \
 -m {memory_size} \
 -drive file={image_path},format=raw,if=ide \
 -debugcon file:E9.log \
--serial null \
--no-reboot
+-serial null
 """
         )
 

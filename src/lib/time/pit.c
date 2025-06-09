@@ -1,6 +1,6 @@
 #include "pit.h"
-#include "arch/i686/irq.h"
-#include "util/x86.h"
+#include <lib/interrupt/irq/irq.h>
+#include <lib/x86/general.h>
 #include <stdint.h>
 
 #define PIT_CHANNEL_0_PORT 0x40

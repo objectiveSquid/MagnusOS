@@ -1,9 +1,9 @@
 #include "stdio.h"
 #include "font.h"
 #include "graphics.h"
-#include "util/x86.h"
 #include "vbe.h"
 #include <lib/memory/memdefs.h>
+#include <lib/x86/misc.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,6 +13,8 @@
 static uint16_t g_CursorPosition[2] = {0, 0};
 
 #if DEBUG_BUILD == 1
+#include <lib/x86/general.h> // for x86_OutByte
+
 // the e9 port is unused and can be used to output debug messages
 void E9putc(char c) {
     x86_OutByte(0xE9, c);

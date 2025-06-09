@@ -1,8 +1,8 @@
 #include "isr.h"
-#include "idt.h"
 #include "isr_gen.h"
-#include "util/x86.h"
 #include "visual/stdio.h"
+#include <lib/interrupt/idt/idt.h>
+#include <lib/x86/general.h>
 #include <lib/x86/misc.h>
 #include <stddef.h>
 

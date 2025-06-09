@@ -1,5 +1,6 @@
 #include "stdio.h"
 #include "util/x86.h"
+#include <lib/x86/general.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>

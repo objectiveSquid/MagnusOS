@@ -1,13 +1,12 @@
 #include "ps2.h"
-#include "arch/i686/irq.h"
 #include "scancode.h"
-#include "util/arrays.h"
-#include "util/binary.h"
-#include "util/io.h"
-#include "util/x86.h"
 #include "visual/stdio.h"
+#include <lib/algorithm/arrays.h>
+#include <lib/algorithm/bits.h>
 #include <lib/errors/errors.h>
+#include <lib/interrupt/irq/irq.h>
 #include <lib/memory/memory.h>
+#include <lib/x86/general.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

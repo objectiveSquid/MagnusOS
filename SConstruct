@@ -173,7 +173,7 @@ SConscript(
 Import("link_shared_files")
 link_shared_files(TARGET_ENVIRONMENT)
 Import("generate_isr")
-generate_isr(f"{TARGET_ENVIRONMENT['SOURCE_DIRECTORY']}/kernel/arch/i686")
+generate_isr(f"{TARGET_ENVIRONMENT['SOURCE_DIRECTORY']}/lib/interrupt/isr")
 
 # for the os
 SConscript(

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "disk.h"
+#include <lib/disk/disk.h>
 #include <stdint.h>
 
 typedef struct {

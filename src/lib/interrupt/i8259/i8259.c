@@ -1,7 +1,5 @@
 #include "i8259.h"
-#include "pic.h"
-#include "util/io.h"
-#include "util/x86.h"
+#include <lib/x86/general.h>
 #include <stdbool.h>
 
 #define PIC_1_COMMAND_PORT 0x20
@@ -35,6 +33,10 @@ enum {
 } PIC_CMD;
 
 static picmask_t g_PicMask = PICMASK_ALL;
+
+void IOWait() {
+    x86_OutByte(0x80, 0);
+}
 
 void i8259_SetMask(picmask_t newMask) {
     g_PicMask = newMask;

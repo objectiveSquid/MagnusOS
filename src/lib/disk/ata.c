@@ -1,12 +1,11 @@
 #include "ata.h"
 #include "disk.h"
-#include "pit/pit.h"
-#include "util/io.h"
-#include "util/x86.h"
 #include "visual/stdio.h"
 #include <lib/algorithm/math.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/memdefs.h>
+#include <lib/time/pit.h>
+#include <lib/x86/general.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -61,6 +60,14 @@ const char *ataErrorMessages[] = {
 };
 
 static uint8_t g_ControlPortByte = 0x00;
+
+// reading from any port seemingly uses at least 30ns as i understand
+void waitNsRough(uint32_t ns) {
+    uint32_t count = DIV_ROUND_UP(ns, 30);
+
+    for (uint32_t i = 0; i < count; ++i)
+        x86_InByte(ATA_PORT_STATUS_COMMAND);
+}
 
 void waitForBSYClear() {
     while (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_BSY)

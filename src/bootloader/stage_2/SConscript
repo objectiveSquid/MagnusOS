@@ -39,7 +39,7 @@ obj_crtn = objects.pop(
     find_index(objects, lambda obj: is_file_name(obj, env["OBJPREFIX"] + "crtn.o"))
 )
 
-# reorder objects
+# reorder objects for crt stuff
 objects = [
     obj_crti,
     env.File(os.path.join(env["TOOLCHAIN_LIBGCC"], "crtbegin.o")),

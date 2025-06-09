@@ -1,4 +1,5 @@
 #include "allocator.h"
+#include <lib/algorithm/arrays.h>
 #include <lib/algorithm/bits.h>
 #include <lib/algorithm/math.h>
 #include <lib/errors/errors.h>
@@ -69,7 +70,7 @@ void *ALLOCATOR_Malloc(size_t size, bool lower) {
         bitIndex = DIV_ROUND_UP((size_t)g_LowestUpperUsableAddress, MEMORY_ALLOCATOR_CHUNK_SIZE); // start searching in upper memory
 
     for (; bitIndex < g_InUseBitsSize && (holeSize * MEMORY_ALLOCATOR_CHUNK_SIZE) < totalSize; ++bitIndex)
-        if (GET_BIT(g_InUseBits, bitIndex))
+        if (GET_ARRAY_BIT(g_InUseBits, bitIndex))
             holeSize = 0;
         else
             ++holeSize;
@@ -80,7 +81,7 @@ void *ALLOCATOR_Malloc(size_t size, bool lower) {
     bitIndex -= holeSize;
 
     for (size_t i = 0; i < holeSize; ++i)
-        SET_BIT(g_InUseBits, bitIndex + i);
+        SET_ARRAY_BIT(g_InUseBits, bitIndex + i);
 
     void *holeSizePtr = (void *)(bitIndex * MEMORY_ALLOCATOR_CHUNK_SIZE);
     *((size_t *)holeSizePtr) = holeSize;
@@ -113,5 +114,5 @@ void free(void *ptr) {
     size_t ptrBitIndex = (size_t)holeSizePtr / MEMORY_ALLOCATOR_CHUNK_SIZE;
 
     for (size_t bitIndex = ptrBitIndex; bitIndex < (ptrBitIndex + (*holeSizePtr)); ++bitIndex)
-        UNSET_BIT(g_InUseBits, bitIndex);
+        UNSET_ARRAY_BIT(g_InUseBits, bitIndex);
 }

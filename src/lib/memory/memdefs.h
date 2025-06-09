@@ -6,11 +6,11 @@
 // 0x00000000 - 0x000003FF - interrupt vector table
 // 0x00000400 - 0x000004FF - BIOS data area
 
-// 0x00007C00 - 0x00007E00 - bootloader stage 1
+// 0x00007C00 - 0x00007DFF - bootloader stage 1
 
-// 0x00000500 - 0x0000FFFF - c stack (a little under 64kb of space)
+// 0x00000500 - 0x0000BFFF - c stack (a little over ~38kb of space)
 
-// 0x00010000 - 0x0002FFFF - bootloader stage 2
+// 0x0000C000 - 0x0002FFFF - bootloader stage 2 (starts under 0xFFFF to make space for 16 bit code)
 
 // memdetect stuff
 #define MEMORY_MEMDETECT_MAX_REGIONS 256

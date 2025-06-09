@@ -1,10 +1,9 @@
 #include "irq.h"
-#include "i8259.h"
-#include "pic.h"
-#include "util/arrays.h"
-#include "util/io.h"
-#include "util/x86.h"
-#include "visual/stdio.h"
+#include <lib/algorithm/arrays.h>
+#include <lib/errors/errors.h>
+#include <lib/interrupt/i8259/i8259.h>
+#include <lib/interrupt/pic/pic.h>
+#include <lib/x86/general.h>
 #include <stddef.h>
 
 #define PIC_REMAP_OFFSET 0x20
@@ -17,13 +16,11 @@ void i686_IRQ_Handler(Registers *registers) {
 
     if (g_IRQHandlers[irq] != NULL)
         g_IRQHandlers[irq](registers);
-    else
-        printf("Unhandled IRQ %d\n", irq);
 
     g_Driver->sendEndOfInterrupt(irq);
 }
 
-void i686_IRQ_Initialize() {
+int i686_IRQ_Initialize() {
     const PICDriver *drivers[] = {
         i8259_GetDriver(),
     };
@@ -32,18 +29,17 @@ void i686_IRQ_Initialize() {
         if (drivers[i]->probe())
             g_Driver = drivers[i];
 
-    if (g_Driver == NULL) {
-        puts("Warning: No PIC driver found!\n");
-        return;
-    }
+    if (g_Driver == NULL)
+        return NO_PIC_DRIVER_FOUND;
 
-    printf("Found PIC driver %s\n", g_Driver->name);
     g_Driver->initialize(PIC_REMAP_OFFSET, PIC_REMAP_OFFSET + 8, false);
 
     for (uint8_t i = 0; i < 16; ++i)
         i686_ISR_RegisterHandler(PIC_REMAP_OFFSET + i, i686_IRQ_Handler);
 
     x86_EnableInterrupts();
+
+    return NO_ERROR;
 }
 
 const PICDriver *i686_IRQ_GetDriver() {

@@ -1,5 +1,4 @@
 #include "mbr.h"
-#include "disk.h"
 #include <stdbool.h>
 #include <stdint.h>
 

@@ -177,8 +177,8 @@ def make_disk(
         2 if filesystem == "fat32" else 1
     )  # ugly
 
-    min_bootloader_stage_2_address = 0x00010000
-    max_bootloader_stage_2_address = 0x00030000
+    min_bootloader_stage_2_address = 0x0000C000
+    max_bootloader_stage_2_address = 0x0002FFFF
     if bootloader_stage_2_size > (
         max_bootloader_stage_2_address - min_bootloader_stage_2_address
     ):

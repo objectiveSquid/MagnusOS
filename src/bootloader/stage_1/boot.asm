@@ -2,16 +2,11 @@ bits 16
 
 ; Same as \r\n
 %define ENDLINE 0x0D, 0x0A
-STAGE_2_LOAD_SEGMENT        equ 0x0
-STAGE_2_LOAD_OFFSET         equ 0x500
+STAGE_2_LOAD_OFFSET         equ 0xC000
 
 %define fat12 1
 %define fat16 2
 %define fat32 3
-
-;
-; FAT12 header
-;
 
 section .fsjump
     jmp short start
@@ -102,8 +97,9 @@ section .entry
         jmp wait_key_and_reboot
 
     .after_disk_extensions_check:
+        mov word [do_not_overwrite], $
         ; es:bx = stage 2 load address
-        mov ax, STAGE_2_LOAD_SEGMENT
+        mov ax, 0 ; always segment 0
         mov es, ax
         mov bx, STAGE_2_LOAD_OFFSET
 
@@ -127,27 +123,27 @@ section .entry
         mov cx, [partition_info.size]
 
         ; setup stack for stage 2
-        mov ax, STAGE_2_LOAD_SEGMENT
+        mov ax, 0 ; always segment 0
         mov ds, ax  ; will eventually be the stage 2 stack segment (ss register)
         mov es, ax
 
     global run_stage_2
     run_stage_2:
         ; far jump to the second stage
-        jmp STAGE_2_LOAD_SEGMENT:STAGE_2_LOAD_OFFSET
+        jmp 0:STAGE_2_LOAD_OFFSET
 
         jmp wait_key_and_reboot                 ;; this should never run
 
         jmp halt                                ;; safeguard, also should never run
 
 section .text
-    disk_error:
-        mov si, msg_disk_failed
+    stage_2_too_big_error:
+        mov si, msg_stage_2_too_big
         call puts
         jmp wait_key_and_reboot
 
-    stage_2_not_found_error:
-        mov si, msg_stage_2_not_found
+    disk_error:
+        mov si, msg_disk_failed
         call puts
         jmp wait_key_and_reboot
 
@@ -253,14 +249,16 @@ section .rodata
         db "Loading MagnusOS...", ENDLINE, 0x00
     msg_disk_failed:
         db "Disk error!", ENDLINE, 0x00
-    msg_stage_2_not_found:
-        db "STAGE2.BIN file not found!", ENDLINE, 0x00
     msg_no_extensions:
         db "No INT-13h extensions!", ENDLINE, 0x00
-    stage_2_filename:
-        db "STAGE2  BIN"
+    msg_stage_2_too_big:
+        db "Stage 2 is too big!", ENDLINE, 0x00
 
 section .data
+    ; for checking that the bootloader stage 2 will not overwrite the disk code and afterwards
+    do_not_overwrite:
+        dw 0
+
     extensions_dap:
         .size           db 0x10
                         db 0
