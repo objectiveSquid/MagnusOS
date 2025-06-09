@@ -1,5 +1,4 @@
 #include "mbr.h"
-#include <stdbool.h>
 #include <stdint.h>
 
 void MBR_InitializePartition(Partition *partitionOut, DISK *disk, uint32_t partitionLBA, uint32_t partitionSize) {

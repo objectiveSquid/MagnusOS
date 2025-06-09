@@ -6,13 +6,5 @@
     "fat.c": [
         "bootloader/stage_2/disk/fat.c",
         "kernel/disk/fat.c"
-    ],
-    "mbr.h": [
-        "bootloader/stage_2/disk/mbr.h",
-        "kernel/disk/mbr.h"
-    ],
-    "mbr.c": [
-        "bootloader/stage_2/disk/mbr.c",
-        "kernel/disk/mbr.c"
     ]
 }

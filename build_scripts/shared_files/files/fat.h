@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mbr.h"
+#include <lib/disk/mbr.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

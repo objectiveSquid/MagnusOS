@@ -1,5 +1,4 @@
 #include "disk/fat.h"
-#include "disk/mbr.h"
 #include "elf/elf.h"
 #include "prep/vbe.h"
 #include "util/x86.h"
@@ -7,6 +6,7 @@
 #include "visual/vga.h"
 #include <lib/algorithm/math.h>
 #include <lib/disk/disk.h>
+#include <lib/disk/mbr.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
