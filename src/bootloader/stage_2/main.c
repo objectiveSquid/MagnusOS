@@ -103,7 +103,7 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
 
     // load kernel
     KernelStart kernelStart;
-    if ((status = ELF_Load32Bit(bootFilesystem, "/boot/kernel.elf", (void **)&kernelStart)) != NO_ERROR) {
+    if ((status = ELF_Load32BitStatic(bootFilesystem, "/boot/kernel.elf", (void **)&kernelStart)) != NO_ERROR) {
         printf("Failed to load kernel elf. Status: %d\n", status);
         return;
     }

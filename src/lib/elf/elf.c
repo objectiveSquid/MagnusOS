@@ -123,7 +123,32 @@ typedef struct {
     uint16_t sectionHeaderStringTableIndex;
 } __attribute__((packed)) ELF_64BitHeader;
 
-int ELF_Load32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entryPoint) {
+int ELF_CheckHeader(ELF_32BitHeader *header) {
+    if (memcmp(header->magic, ELF_MAGIC, sizeof(header->magic)) != 0)
+        return ELF_NOT_AN_ELF_FILE;
+
+    if (header->headerVersion != 1)
+        return ELF_UNSUPPORTED_HEADER_VERSION;
+
+    if (header->elfVersion != 1)
+        return ELF_UNSUPPORTED_ELF_VERSION;
+
+    if (header->bitness != ELF_BITNESS_32BIT)
+        return ELF_UNSUPPORTED_BITNESS;
+
+    if (header->endianness != ELF_ENDIANNESS_LITTLE)
+        return ELF_UNSUPPORTED_ENDIANNESS;
+
+    if (header->instructionSet != ELF_ISA_X86)
+        return ELF_UNSUPPORTED_INSTRUCTION_SET;
+
+    if (header->type != ELF_TYPE_EXECUTABLE)
+        return ELF_UNSUPPORTED_ELF_TYPE;
+
+    return NO_ERROR;
+}
+
+int ELF_Load32BitStatic(FAT_Filesystem *filesystem, const char *filepath, void **entryPoint) {
     int status;
 
     FAT_File *elfFd;
@@ -148,40 +173,8 @@ int ELF_Load32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
     }
 
     // header checks
-    if (memcmp(header->magic, ELF_MAGIC, sizeof(header->magic)) != 0) {
-        status = ELF_NOT_AN_ELF_FILE;
+    if ((status = ELF_CheckHeader(header)) != NO_ERROR)
         goto free_header;
-    }
-
-    if (header->headerVersion != 1) {
-        status = ELF_UNSUPPORTED_HEADER_VERSION;
-        goto free_header;
-    }
-
-    if (header->elfVersion != 1) {
-        status = ELF_UNSUPPORTED_ELF_VERSION;
-        goto free_header;
-    }
-
-    if (header->bitness != ELF_BITNESS_32BIT) {
-        status = ELF_UNSUPPORTED_BITNESS;
-        goto free_header;
-    }
-
-    if (header->endianness != ELF_ENDIANNESS_LITTLE) {
-        status = ELF_UNSUPPORTED_ENDIANNESS;
-        goto free_header;
-    }
-
-    if (header->instructionSet != ELF_ISA_X86) {
-        status = ELF_UNSUPPORTED_INSTRUCTION_SET;
-        goto free_header;
-    }
-
-    if (header->type != ELF_TYPE_EXECUTABLE) {
-        status = ELF_UNSUPPORTED_ELF_TYPE;
-        goto free_header;
-    }
 
     // entry point is where the executable starts
     *entryPoint = (void *)header->programEntryOffset;

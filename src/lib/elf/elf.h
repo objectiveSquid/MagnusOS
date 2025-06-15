@@ -2,4 +2,4 @@
 
 #include <lib/disk/fat.h>
 
-int ELF_Load32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entryPoint);
+int ELF_Load32BitStatic(FAT_Filesystem *filesystem, const char *filepath, void **entryPoint);
