@@ -6,11 +6,13 @@
 #include <lib/errors/errors.h>
 #include <lib/interrupt/irq/irq.h>
 #include <lib/memory/memory.h>
+#include <lib/time/pit.h>
 #include <lib/x86/general.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
+// irqs
 #define PS2_PORT_1_IRQ 1
 #define PS2_PORT_2_IRQ 12
 
@@ -48,8 +50,16 @@
 #define PS2_RESEND 0xFE
 #define PS2_KEY_DETECTION_ERROR_2 0xFF
 
+// status register bits
+#define PS2_STATUS_OUTPUT_BUFFER_FULL 0x01
+#define PS2_STATUS_INPUT_BUFFER_FULL 0x02
+
 // other signals
 #define PS2_NEW_KEYBOARD 0x61
+
+// other
+#define PS2_MAX_EMPTY_BUFFER_COUNT 100
+#define DEFAULT_PS2_TIMEOUT_MS 20
 
 typedef enum {
     LED_SET_IGNORE = 0,
@@ -63,14 +73,25 @@ static uint8_t g_SkipPS2Interrupts = 0;
 static const PICDriver *g_PicDriver = NULL;
 uint8_t g_ScancodesHeld[((ARRAY_SIZE(SCANCODE_SET_2_INDEXES) + 7) / 8)]; // add 7 then divide by 8 to round up
 
-void clearPS2Buffer() {
-    while (x86_InByte(PS2_CMD_PORT) & 1)
+// returns false if the timeout is reached
+bool clearPS2Buffer() {
+    uint16_t readBytes = 0;
+
+    while ((x86_InByte(PS2_CMD_PORT) & PS2_STATUS_OUTPUT_BUFFER_FULL) && (readBytes++ < PS2_MAX_EMPTY_BUFFER_COUNT))
         x86_InByte(PS2_DATA_PORT);
+
+    return readBytes < PS2_MAX_EMPTY_BUFFER_COUNT;
 }
 
-void waitForPS2Controller() {
-    while (x86_InByte(PS2_CMD_PORT) & 0x02)
+// i am NOT checking this 22 times!
+// returns false if the timeout is reached
+bool waitForPS2Controller() {
+    uint64_t endTimeMs = PIT_GetTimeMs() + DEFAULT_PS2_TIMEOUT_MS;
+
+    while ((x86_InByte(PS2_CMD_PORT) & PS2_STATUS_INPUT_BUFFER_FULL) && (PIT_GetTimeMs() < endTimeMs))
         ;
+
+    return PIT_GetTimeMs() < endTimeMs;
 }
 
 bool getPS2Success() {
@@ -137,12 +158,10 @@ void setPS2ControllerConfiguration(bool setIRQ1, bool setIRQ2) {
     else
         FLAG_UNSET(config, 0b1);
 
-    if (false) {
-        if (setIRQ2)
-            FLAG_SET(config, 0b10);
-        else
-            FLAG_UNSET(config, 0b10);
-    }
+    if (setIRQ2)
+        FLAG_SET(config, 0b10);
+    else
+        FLAG_UNSET(config, 0b10);
 
     FLAG_UNSET(config, 0b1000000); // translation
     FLAG_SET(config, 0b10000);     // enable clock signal
@@ -412,7 +431,8 @@ void PS2Set2HandlerPort2(Registers *registers) {
 int PS2_Initialize() {
     // controller initialization
     disablePS2ControllerPorts(true, true); // true, true = port 1 disabled, port 2 disabled
-    clearPS2Buffer();
+    if (!clearPS2Buffer())
+        return TIMEOUT_ERROR;
     setPS2ControllerConfiguration(false, false); // false, false = disable irq1, disable irq2
     if (!runPS2ControllerSelfTest())
         return PS2_SELF_TEST_FAILED;

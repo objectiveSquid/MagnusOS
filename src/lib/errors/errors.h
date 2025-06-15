@@ -33,9 +33,8 @@ Which functions don't need to return errors?
 #define ATA_MEDIA_CHANGED_ERROR 0x119
 #define ATA_UNCORRECTABLE_DATA_ERROR 0x11A
 #define ATA_BAD_BLOCK_DETECTED_ERROR 0x11B
-#define ATA_TIMEOUT_ERROR 0x11C
-#define ATA_DRIVE_DOESNT_EXIST 0x11D
-#define ATA_UNSUPPORTED_DRIVE 0x11E
+#define ATA_DRIVE_DOESNT_EXIST 0x11C
+#define ATA_UNSUPPORTED_DRIVE 0x11D
 
 // filesystem errors
 #define FILESYSTEM_ERROR 0x200
@@ -93,3 +92,7 @@ Which functions don't need to return errors?
 #define PS2_SELF_TEST_FAILED 0x4002
 #define PS2_INTERFACE_TESTS_FAILED 0x4003
 #define NO_PIC_DRIVER_FOUND 0x4004
+
+// time errors
+#define TIME_ERROR 0x8000
+#define TIMEOUT_ERROR 0x8001

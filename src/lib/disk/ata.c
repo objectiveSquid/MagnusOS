@@ -137,7 +137,7 @@ int identify(bool master, ATA_IdentifyData *outputBuffer, uint8_t *errorCodeOutp
         return ATA_DRIVE_DOESNT_EXIST;
 
     if (!waitForBSYClear())
-        return ATA_TIMEOUT_ERROR;
+        return TIMEOUT_ERROR;
 
     // some atapi drives dont follow the specification, so as programmers we need to handle this because drive manufacturers can do whatever the fuck they want, and they just expect us to make shit happen anyway
     // this is a check to see if the drive is actually ata
@@ -148,7 +148,7 @@ int identify(bool master, ATA_IdentifyData *outputBuffer, uint8_t *errorCodeOutp
 
     // wait for data to be ready
     if (!waitForDRQOrERRSet())
-        return ATA_TIMEOUT_ERROR;
+        return TIMEOUT_ERROR;
 
     // error check
     if (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_ERR) {
@@ -247,7 +247,7 @@ int ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
         softwareReset();
 
     if (!waitForBSYClear())
-        return ATA_TIMEOUT_ERROR;
+        return TIMEOUT_ERROR;
 
     if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER)
@@ -259,7 +259,7 @@ int ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
         readSectors28BitLba(lba, count, slaveBit);
     }
     if (!poll())
-        return ATA_TIMEOUT_ERROR;
+        return TIMEOUT_ERROR;
 
     int status;
     if ((status = checkErrors()) != NO_ERROR)
@@ -267,7 +267,7 @@ int ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
 
     for (uint16_t sectorIndex = 0; sectorIndex < count; ++sectorIndex) {
         if (!poll())
-            return ATA_TIMEOUT_ERROR;
+            return TIMEOUT_ERROR;
         if ((status = checkErrors()) != NO_ERROR)
             return status;
         waitNsRough(400);
@@ -316,7 +316,7 @@ int ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
         softwareReset();
 
     if (!waitForBSYClear())
-        return ATA_TIMEOUT_ERROR;
+        return TIMEOUT_ERROR;
 
     if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER)
@@ -328,7 +328,7 @@ int ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
         writeSectors28BitLba(lba, count, slaveBit);
     }
     if (!poll())
-        return ATA_TIMEOUT_ERROR;
+        return TIMEOUT_ERROR;
 
     int status;
     if ((status = checkErrors()) != NO_ERROR)
@@ -336,7 +336,7 @@ int ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
 
     for (uint16_t sectorIndex = 0; sectorIndex < count; ++sectorIndex) {
         if (!poll())
-            return ATA_TIMEOUT_ERROR;
+            return TIMEOUT_ERROR;
         if ((status = checkErrors()) != NO_ERROR)
             return status;
         waitNsRough(400);
