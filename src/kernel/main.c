@@ -66,9 +66,6 @@ void start(uint8_t bootDrive,
 
     puts("Hello from kernel!\n");
 
-    for (;;)
-        ;
-
     // deinitialize/free everything, technically not needed, but ill do it anyway for good measure
     GRAPHICS_DeInitialize();
     FONT_DeInitialize();
