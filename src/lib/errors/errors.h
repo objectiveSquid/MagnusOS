@@ -33,6 +33,9 @@ Which functions don't need to return errors?
 #define ATA_MEDIA_CHANGED_ERROR 0x119
 #define ATA_UNCORRECTABLE_DATA_ERROR 0x11A
 #define ATA_BAD_BLOCK_DETECTED_ERROR 0x11B
+#define ATA_TIMEOUT_ERROR 0x11C
+#define ATA_DRIVE_DOESNT_EXIST 0x11D
+#define ATA_UNSUPPORTED_DRIVE 0x11E
 
 // filesystem errors
 #define FILESYSTEM_ERROR 0x200

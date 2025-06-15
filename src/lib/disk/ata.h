@@ -492,9 +492,9 @@ typedef struct {
 } __attribute__((aligned(2), packed)) ATA_IdentifyData;
 
 typedef struct {
-    bool driveExists;
     ATA_IdentifyData *driveData;
     uint8_t errorCode;
+    int initializationResult;
 } ATA_InitializeDriveOutput;
 
 void ATA_Initialize(ATA_InitializeDriveOutput *masterOutput, ATA_InitializeDriveOutput *slaveOutput);

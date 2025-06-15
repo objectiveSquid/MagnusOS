@@ -49,10 +49,14 @@ void setFrequency(uint16_t hz) {
     x86_OutByte(PIT_CHANNEL_0_PORT, msb);
 }
 
-void PIT_Delay(uint32_t milliseconds) {
-    uint32_t targetTicks = pitTicks + milliseconds;
+void PIT_Delay(uint64_t milliseconds) {
+    uint64_t targetTicks = pitTicks + milliseconds;
     while (pitTicks < targetTicks)
         __asm__ volatile("hlt"); // let the cpu chill until the next interrupt
+}
+
+uint64_t PIT_GetTimeMs() {
+    return pitTicks;
 }
 
 void irq0Handler() {
@@ -61,6 +65,6 @@ void irq0Handler() {
 
 void PIT_Initialize() {
     i686_IRQ_RegisterHandler(PIT_IRQ, irq0Handler);
-    setFrequency(1000);
+    setFrequency(1000); // 1000 hz, 1 ms per tick
     i686_IRQ_GetDriver()->unmask(PIT_IRQ);
 }

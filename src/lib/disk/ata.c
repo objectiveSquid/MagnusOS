@@ -13,6 +13,10 @@
 #define MAX_48_BIT_UNSIGNED_INTEGER 0x1000000000000
 #define MAX_28_BIT_UNSIGNED_INTEGER 0x10000000
 
+// other
+#define DEFAULT_ATA_TIMEOUT_MS 30000 // 30 seconds
+
+// ports
 #define ATA_PORT_DATA 0x1F0
 #define ATA_PORT_ERROR 0x1F1
 #define ATA_PORT_SECTOR_COUNT 0x1F2
@@ -25,6 +29,7 @@
 #define ATA_PORT_ALTERNATE_STATUS 0x3F6
 #define ATA_PORT_CONTROL 0x3F6
 
+// commands
 #define ATA_CMD_READ_SECTORS 0x20
 #define ATA_CMD_WRITE_SECTORS 0x30
 #define ATA_CMD_READ_SECTORS_EXTENDED 0x24  // for 48 bit lba
@@ -69,26 +74,32 @@ void waitNsRough(uint32_t ns) {
         x86_InByte(ATA_PORT_STATUS_COMMAND);
 }
 
-void waitForBSYClear() {
-    while (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_BSY)
+// returns false if the timeout is reached
+bool waitForBSYClear() {
+    uint64_t endTimeMs = PIT_GetTimeMs() + DEFAULT_ATA_TIMEOUT_MS;
+
+    while ((x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_BSY) && PIT_GetTimeMs() < endTimeMs)
         ;
+
+    return PIT_GetTimeMs() < endTimeMs;
 }
 
-void waitForDRQOrERRSet() {
-    while (!(x86_InByte(ATA_PORT_ALTERNATE_STATUS) & (ATA_STATUS_REGISTER_DRQ | ATA_STATUS_REGISTER_ERR)))
-        ;
-}
+// returns false if the timeout is reached
+bool waitForDRQOrERRSet() {
+    uint64_t endTimeMs = PIT_GetTimeMs() + DEFAULT_ATA_TIMEOUT_MS;
 
-void waitForDRQAndBSYClear() {
-    while (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & (ATA_STATUS_REGISTER_BSY | ATA_STATUS_REGISTER_DRQ))
+    while (!(x86_InByte(ATA_PORT_ALTERNATE_STATUS) & (ATA_STATUS_REGISTER_DRQ | ATA_STATUS_REGISTER_ERR)) && PIT_GetTimeMs() < endTimeMs)
         ;
+
+    return PIT_GetTimeMs() < endTimeMs;
 }
 
 // waits for bsy to clear and drq to set
-void poll() {
+bool poll() {
     uint8_t status;
+    uint64_t endTimeMs = PIT_GetTimeMs() + DEFAULT_ATA_TIMEOUT_MS;
 
-    while (true) {
+    while (PIT_GetTimeMs() < endTimeMs) {
         status = x86_InByte(ATA_PORT_ALTERNATE_STATUS);
 
         if (status & ATA_STATUS_REGISTER_BSY)
@@ -98,9 +109,12 @@ void poll() {
 
         break;
     }
+
+    return PIT_GetTimeMs() < endTimeMs;
 }
 
-bool identify(bool master, ATA_IdentifyData *outputBuffer, uint8_t *errorCodeOutput) {
+// returns error
+int identify(bool master, ATA_IdentifyData *outputBuffer, uint8_t *errorCodeOutput) {
     uint16_t *dataBuffer = (uint16_t *)outputBuffer;
 
     uint8_t slaveBit;
@@ -120,31 +134,33 @@ bool identify(bool master, ATA_IdentifyData *outputBuffer, uint8_t *errorCodeOut
 
     // drive does not exist
     if (identifyReturn == 0)
-        return false;
+        return ATA_DRIVE_DOESNT_EXIST;
 
-    waitForBSYClear();
+    if (!waitForBSYClear())
+        return ATA_TIMEOUT_ERROR;
 
     // some atapi drives dont follow the specification, so as programmers we need to handle this because drive manufacturers can do whatever the fuck they want, and they just expect us to make shit happen anyway
     // this is a check to see if the drive is actually ata
     uint8_t lbaMid = x86_InByte(ATA_PORT_LBA_MID);
     uint8_t lbaHigh = x86_InByte(ATA_PORT_LBA_HIGH);
     if (lbaMid != 0x00 || lbaHigh != 0x00)
-        return false;
+        return ATA_UNSUPPORTED_DRIVE;
 
     // wait for data to be ready
-    waitForDRQOrERRSet();
+    if (!waitForDRQOrERRSet())
+        return ATA_TIMEOUT_ERROR;
 
     // error check
     if (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_ERR) {
         if (errorCodeOutput != NULL)
             *errorCodeOutput = x86_InByte(ATA_PORT_ERROR);
-        return false;
+        return ATA_ERROR;
     }
 
     for (uint16_t i = 0; i < 256; ++i)
         dataBuffer[i] = x86_InWord(ATA_PORT_DATA);
 
-    return true;
+    return NO_ERROR;
 }
 
 void softwareReset() {
@@ -229,7 +245,10 @@ int ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
 
     if (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_SRV)
         softwareReset();
-    waitForBSYClear();
+
+    if (!waitForBSYClear())
+        return ATA_TIMEOUT_ERROR;
+
     if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER)
             return ATA_LBA_TOO_LARGE_48BIT_ERROR;
@@ -239,14 +258,16 @@ int ATA_ReadSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
             return ATA_LBA_TOO_LARGE_28BIT_ERROR;
         readSectors28BitLba(lba, count, slaveBit);
     }
-    poll();
+    if (!poll())
+        return ATA_TIMEOUT_ERROR;
 
     int status;
     if ((status = checkErrors()) != NO_ERROR)
         return status;
 
     for (uint16_t sectorIndex = 0; sectorIndex < count; ++sectorIndex) {
-        poll();
+        if (!poll())
+            return ATA_TIMEOUT_ERROR;
         if ((status = checkErrors()) != NO_ERROR)
             return status;
         waitNsRough(400);
@@ -293,7 +314,10 @@ int ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
 
     if (x86_InByte(ATA_PORT_ALTERNATE_STATUS) & ATA_STATUS_REGISTER_SRV)
         softwareReset();
-    waitForBSYClear();
+
+    if (!waitForBSYClear())
+        return ATA_TIMEOUT_ERROR;
+
     if (disk->supports48BitLba && lba > MAX_28_BIT_UNSIGNED_INTEGER) { // 28 bit is faster
         if (lba > ((ATA_IdentifyData *)disk->ataData)->Max48BitLBA || lba > MAX_48_BIT_UNSIGNED_INTEGER)
             return ATA_LBA_TOO_LARGE_48BIT_ERROR;
@@ -303,14 +327,16 @@ int ATA_WriteSectors(uint64_t lba, void *buffer, uint16_t count, DISK *disk) {
             return ATA_LBA_TOO_LARGE_28BIT_ERROR;
         writeSectors28BitLba(lba, count, slaveBit);
     }
-    poll();
+    if (!poll())
+        return ATA_TIMEOUT_ERROR;
 
     int status;
     if ((status = checkErrors()) != NO_ERROR)
         return status;
 
     for (uint16_t sectorIndex = 0; sectorIndex < count; ++sectorIndex) {
-        poll();
+        if (!poll())
+            return ATA_TIMEOUT_ERROR;
         if ((status = checkErrors()) != NO_ERROR)
             return status;
         waitNsRough(400);
@@ -330,6 +356,6 @@ void ATA_Initialize(ATA_InitializeDriveOutput *masterOutput, ATA_InitializeDrive
     g_ControlPortByte = 0x00;
     x86_OutByte(ATA_PORT_CONTROL, g_ControlPortByte); // clear all properties of the control port (recommandation from wiki.osdev.org)
 
-    masterOutput->driveExists = identify(true, masterOutput->driveData, &masterOutput->errorCode);
-    slaveOutput->driveExists = identify(false, slaveOutput->driveData, &slaveOutput->errorCode);
+    masterOutput->initializationResult = identify(true, masterOutput->driveData, &masterOutput->errorCode);
+    slaveOutput->initializationResult = identify(false, slaveOutput->driveData, &slaveOutput->errorCode);
 }

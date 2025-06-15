@@ -23,11 +23,11 @@ int DISK_Initialize(DISK_InitializeResult *resultOutput, DISK *masterDisk, DISK 
 
     ATA_Initialize(&masterOutput, &slaveOutput);
 
-    resultOutput->initializedMasterDisk = masterOutput.driveExists;
-    resultOutput->initializedSlaveDisk = slaveOutput.driveExists;
+    resultOutput->initializedMasterDisk = masterOutput.initializationResult == NO_ERROR;
+    resultOutput->initializedSlaveDisk = slaveOutput.initializationResult == NO_ERROR;
 
-    // spaghetti, maybe de duplicate code?
-    if (masterOutput.driveExists && masterOutput.driveData->Capabilities.LbaSupported) {
+    // spaghetti, maybe de-duplicate code?
+    if (resultOutput->initializedMasterDisk && masterOutput.driveData->Capabilities.LbaSupported) {
         masterDisk->isMaster = true;
         masterDisk->cylinders = masterOutput.driveData->NumberOfCurrentCylinders;
         masterDisk->sectors = masterOutput.driveData->CurrentSectorsPerTrack;
@@ -36,7 +36,7 @@ int DISK_Initialize(DISK_InitializeResult *resultOutput, DISK *masterDisk, DISK 
         masterDisk->ataData = (struct ATA_IdentifyData *)masterOutput.driveData;
     }
 
-    if (slaveOutput.driveExists && slaveOutput.driveData->Capabilities.LbaSupported) {
+    if (resultOutput->initializedSlaveDisk && slaveOutput.driveData->Capabilities.LbaSupported) {
         slaveDisk->isMaster = false;
         slaveDisk->cylinders = slaveOutput.driveData->NumberOfCurrentCylinders;
         slaveDisk->sectors = slaveOutput.driveData->CurrentSectorsPerTrack;
