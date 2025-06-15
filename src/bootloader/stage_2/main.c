@@ -1,4 +1,3 @@
-#include "elf/elf.h"
 #include "prep/vbe.h"
 #include "util/x86.h"
 #include "visual/stdio.h"
@@ -7,6 +6,7 @@
 #include <lib/disk/disk.h>
 #include <lib/disk/fat.h>
 #include <lib/disk/mbr.h>
+#include <lib/elf/elf.h>
 #include <lib/errors/errors.h>
 #include <lib/memory/allocator.h>
 #include <lib/memory/memdefs.h>
@@ -103,7 +103,7 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
 
     // load kernel
     KernelStart kernelStart;
-    if ((status = ELF_Read32Bit(bootFilesystem, "/boot/kernel.elf", (void **)&kernelStart)) != NO_ERROR) {
+    if ((status = ELF_Load32Bit(bootFilesystem, "/boot/kernel.elf", (void **)&kernelStart)) != NO_ERROR) {
         printf("Failed to load kernel elf. Status: %d\n", status);
         return;
     }
