@@ -16,10 +16,8 @@
 
 #define MEMORY_LOAD_KERNEL_CHUNK_SIZE 0x10000
 
-extern void _init();
-
 extern char __bss_start;
-extern char __end;
+extern char __bss_stop;
 
 typedef void (*KernelStart)(uint8_t bootDrive,
                             MEMDETECT_MemoryRegion *memoryRegions,
@@ -29,8 +27,7 @@ typedef void (*KernelStart)(uint8_t bootDrive,
                             VbeModeInfo *vbeModeInfo);
 
 void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partitionSize) {
-    memset(&__bss_start, '\0', (&__end) - (&__bss_start));
-    _init(); // call global constructors
+    memset(&__bss_start, '\0', (&__bss_stop) - (&__bss_start));
 
     clearScreen();
 
@@ -53,7 +50,7 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
             allocatorBitsSize += memoryRegions[index].size / MEMORY_ALLOCATOR_CHUNK_SIZE;
     allocatorBitsSize = BITS2BYTES(allocatorBitsSize);
 
-    uint16_t minKBafter1MB = DIV_ROUND_UP(MEMORY_MAX_KERNEL_SIZE + allocatorBitsSize, 1024);
+    uint16_t minKBafter1MB = DIV_ROUND_UP(allocatorBitsSize, 1024);
     uint16_t contiguousKBAfter1MB;
     if ((contiguousKBAfter1MB = x86_MEMDETECT_GetContiguousKBAfter1MB()) == 0) {
         puts("Failed to get contiguous memory after 1MB, cannot know if there is space for kernel and allocator bits!\n");
@@ -103,7 +100,7 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
 
     // load kernel
     KernelStart kernelStart;
-    if ((status = ELF_Load32BitStatic(bootFilesystem, "/boot/kernel.elf", (void **)&kernelStart)) != NO_ERROR) {
+    if ((status = ELF_Load32Bit(bootFilesystem, "/boot/kernel.elf", (void **)&kernelStart)) != NO_ERROR) {
         printf("Failed to load kernel elf. Status: %d\n", status);
         return;
     }
@@ -113,7 +110,7 @@ void ASMCALL cstart(uint8_t bootDrive, uint32_t partitionLBA, uint32_t partition
     free(bootFilesystem);
 
     // initialize vbe (graphics)
-    VbeModeInfo *selectedVbeModeInfo = ALLOCATOR_Malloc(sizeof(VbeModeInfo), true);
+    VbeModeInfo *selectedVbeModeInfo = ALLOCATOR_Malloc(sizeof(VbeModeInfo), true, false);
     if (selectedVbeModeInfo == NULL || (size_t)selectedVbeModeInfo > (size_t)MEMORY_HIGHEST_BIOS_ADDRESS) {
         puts("Failed to allocate proper memory for VBE data!\n");
         return;

@@ -15,7 +15,8 @@
 #include <lib/time/pit.h>
 #include <stdint.h>
 
-extern void _init();
+extern char __bss_start;
+extern char __bss_stop;
 
 void start(uint8_t bootDrive,
            MEMDETECT_MemoryRegion *memoryRegions,
@@ -23,7 +24,7 @@ void start(uint8_t bootDrive,
            uint32_t partitionLBA,
            uint32_t partitionSize,
            VbeModeInfo *vbeModeInfo) {
-    _init(); // call global constructors
+    memset(&__bss_start, '\0', (&__bss_stop) - (&__bss_start));
 
     // in use bits already initialized by stage 2
     int status;

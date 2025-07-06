@@ -3,8 +3,7 @@ bits 16
 section .entry
 
 extern __bss_start
-extern __end
-extern _init
+extern __bss_stop
 
 extern cstart
 global entry
@@ -44,17 +43,6 @@ entry:
     mov ax, 0x10
     mov ds, ax
     mov ss, ax
-
-    ; empty bss
-    mov edi, __bss_start
-    mov ecx, __end
-    sub ecx, edi
-    mov al, 0
-    cld
-    rep stosb
-
-    ; call global contructors
-    call _init
 
     ; --- partition table entry address parameter
     ; offset

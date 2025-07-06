@@ -52,7 +52,7 @@ int VBE_Initialize(VbeModeInfo *modeInfo) {
     uint16_t pickedMode = UINT16_MAX;
     int status;
 
-    VbeInfoBlock *controllerInfo = (VbeInfoBlock *)ALLOCATOR_Malloc(sizeof(VbeInfoBlock), true);
+    VbeInfoBlock *controllerInfo = (VbeInfoBlock *)ALLOCATOR_Malloc(sizeof(VbeInfoBlock), true, false);
     if ((status = VBE_GetControllerInfo(controllerInfo, NULL)) == NO_ERROR) {
 
         uint16_t *modes = (uint16_t *)(controllerInfo->videoModePtr);

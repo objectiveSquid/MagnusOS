@@ -13,8 +13,8 @@ i686_GDT_Load:
     lgdt [eax]
 
     ; reload code segment
-    mov eax, [ebp + 12] ;; codeSegment
-    push eax
+    mov ax, [ebp + 12] ;; codeSegment
+    push ax
     push .reload_code_segment
     retf
 

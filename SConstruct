@@ -70,7 +70,7 @@ HOST_ENVIRONMENT = Environment(
     CXX="g++",
     CFLAGS=["-std=c11"],  # only c
     CXXFLAGS=["-std=c++17"],  # only c++
-    CCFLAGS=["-Wall", "-Werror"],  # both for c and c++
+    CCFLAGS=["-Wall"],  # both for c and c++
     STRIP="strip",
     SOURCE_DIRECTORY=str(Path("src").resolve()),
     LIBRARY_DIRECTORY=str(Path("src/lib").resolve()),

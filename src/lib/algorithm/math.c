@@ -7,6 +7,13 @@ uint32_t min(uint32_t firstNumber, uint32_t secondNumber) {
         return secondNumber;
 }
 
+uint32_t max(uint32_t firstNumber, uint32_t secondNumber) {
+    if (firstNumber > secondNumber)
+        return firstNumber;
+    else
+        return secondNumber;
+}
+
 // returns 0xFF (255) is no bits are set
 uint8_t findLowestSetBit(uint64_t number) {
     if (number == 0)

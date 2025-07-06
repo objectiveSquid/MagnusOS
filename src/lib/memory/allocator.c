@@ -58,9 +58,12 @@ int ALLOCATOR_Initialize(const MEMDETECT_MemoryRegion *memoryRegions, uint32_t m
 
 // set `lower` to `true` to request memory below 1MB (0x100000)
 // - if none is found memory above 1MB might be returned
-void *ALLOCATOR_Malloc(size_t size, bool lower) {
+void *ALLOCATOR_Malloc(size_t size, bool lower, bool pageAligned) {
     if (size == 0)
         return NULL;
+
+    if (pageAligned)
+        size += PAGE_SIZE;
 
     size_t totalSize = size + CHUNK_HEADER_SIZE;
 
@@ -83,14 +86,21 @@ void *ALLOCATOR_Malloc(size_t size, bool lower) {
     for (size_t i = 0; i < holeSize; ++i)
         SET_ARRAY_BIT(g_InUseBits, bitIndex + i);
 
-    void *holeSizePtr = (void *)(bitIndex * MEMORY_ALLOCATOR_CHUNK_SIZE);
-    *((size_t *)holeSizePtr) = holeSize;
+    // set hole size in header
+    void *headerPtr = (void *)(bitIndex * MEMORY_ALLOCATOR_CHUNK_SIZE);
+    if (pageAligned)
+        headerPtr = (void *)(((uintptr_t)headerPtr + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1));
+    *((size_t *)headerPtr) = holeSize;
 
-    return holeSizePtr + CHUNK_HEADER_SIZE;
+    return headerPtr + CHUNK_HEADER_SIZE;
+}
+
+void *mallocPageAligned(size_t size) {
+    return ALLOCATOR_Malloc(size + PAGE_SIZE, false, true);
 }
 
 void *malloc(size_t size) {
-    return ALLOCATOR_Malloc(size, false);
+    return ALLOCATOR_Malloc(size, false, false);
 }
 
 void *calloc(size_t count, size_t size) {
@@ -110,9 +120,9 @@ void free(void *ptr) {
     if (ptr == NULL)
         return;
 
-    CHUNK_HEADER_TYPE *holeSizePtr = ptr - 4;
-    size_t ptrBitIndex = (size_t)holeSizePtr / MEMORY_ALLOCATOR_CHUNK_SIZE;
+    CHUNK_HEADER_TYPE *headerPtr = ptr - 4;
+    size_t ptrBitIndex = (size_t)headerPtr / MEMORY_ALLOCATOR_CHUNK_SIZE;
 
-    for (size_t bitIndex = ptrBitIndex; bitIndex < (ptrBitIndex + (*holeSizePtr)); ++bitIndex)
+    for (size_t bitIndex = ptrBitIndex; bitIndex < (ptrBitIndex + (*headerPtr)); ++bitIndex)
         UNSET_ARRAY_BIT(g_InUseBits, bitIndex);
 }

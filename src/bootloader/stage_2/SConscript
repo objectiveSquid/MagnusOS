@@ -23,30 +23,11 @@ env.Append(
 
 sources = (
     glob_recursive(env, "*.c")
-    + glob_recursive(env, "*.cpp")
     + glob_recursive(env, "*.asm")
     + glob_recursive(env, "*.c", env["LIBRARY_DIRECTORY"])
-    + glob_recursive(env, "*.cpp", env["LIBRARY_DIRECTORY"])
     + glob_recursive(env, "*.asm", env["LIBRARY_DIRECTORY"])
 )
 objects = env.Object(sources)
-
-# remove global contructor stuff
-obj_crti = objects.pop(
-    find_index(objects, lambda obj: is_file_name(obj, env["OBJPREFIX"] + "crti.o"))
-)
-obj_crtn = objects.pop(
-    find_index(objects, lambda obj: is_file_name(obj, env["OBJPREFIX"] + "crtn.o"))
-)
-
-# reorder objects for crt stuff
-objects = [
-    obj_crti,
-    env.File(os.path.join(env["TOOLCHAIN_LIBGCC"], "crtbegin.o")),
-    *objects,
-    env.File(os.path.join(env["TOOLCHAIN_LIBGCC"], "crtend.o")),
-    obj_crtn,
-]
 
 bootloader_stage_2 = env.Program("bootloader_stage_2.bin", objects)
 

@@ -3,7 +3,7 @@
 - Indentation consists of **4 spaces**, never a tab.
 - There should never be an if/else statement longer than **3 cases**, if it can be a match/switch statement instead.
 - Every file should end with an empty line.
-- **Do not abbreviate** something if it's a normal english word.
+- **Do not abbreviate** something if it's a normal english word. Except if it's part of a standard, then you may abbreviate.
     - Example of what **TO** name something: ***number*_of_calculations**
     - Example of what **NOT TO** name something: **user_input_*str***
 - Constants/defines should be in **UPPER_SNAKE_CASE**.

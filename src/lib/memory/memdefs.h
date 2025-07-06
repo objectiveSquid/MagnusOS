@@ -25,12 +25,7 @@
 // 0x000A0000 - 0x000C7FFF - vga video
 // 0x000C8000 - 0x000FFFFF - BIOS
 
-#define MEMORY_KERNEL_ADDRESS ((void *)0x00100000)
-#define MEMORY_MAX_KERNEL_SIZE 0x100000
-
-// 0x00100000 - 0x001FFFFF - kernel
-
-#define MEMORY_ALLOCATOR_IN_USE_BITS ((void *)0x00200000)
-#define MEMORY_ALLOCATOR_CHUNK_SIZE 512
+#define MEMORY_ALLOCATOR_IN_USE_BITS ((void *)0x00100000)
+#define MEMORY_ALLOCATOR_CHUNK_SIZE 0x1000 // 4 KiB is a typical page size for x86 cpus
 
 // everything after here is upper ram

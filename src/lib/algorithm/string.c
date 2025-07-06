@@ -3,6 +3,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+int strcmp(const char *string1, const char *string2) {
+    while (*string1 && (*string1 == *string2)) {
+        string1++;
+        string2++;
+    }
+    return *(unsigned char *)string1 - *(unsigned char *)string2;
+}
+
 int strncmp(const char *string1, const char *string2, size_t length) {
     if (string1 == NULL || string2 == NULL)
         return -1;
