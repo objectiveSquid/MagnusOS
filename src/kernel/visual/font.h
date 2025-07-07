@@ -5,7 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define EMPTY_CHARACTER {.typed.character = 0, .typed.r = 255, .typed.g = 255, .typed.b = 255}
+#define EMPTY_CHARACTER {.typed.character = 0, .typed.r = 0xFF, .typed.g = 0xFF, .typed.b = 0xFF}
+#define EMPTY_GRAY_CHARACTER {.typed.character = 0, .typed.r = 0xD0, .typed.g = 0xD0, .typed.b = 0xD0}
 
 typedef union {
     uint32_t data;

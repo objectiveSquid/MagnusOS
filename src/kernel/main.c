@@ -62,6 +62,36 @@ void start(uint8_t bootDrive,
     };
     puts("Initialized the PS2 driver!\n");
 
+    // initialize disks
+    DISK masterDisk;
+    DISK slaveDisk;
+    DISK_InitializeResult diskInitializeResult;
+    if ((status = DISK_Initialize(&diskInitializeResult, &masterDisk, &slaveDisk)) != NO_ERROR) {
+        printf("Failed to initialize disks! Status: %d\n", status);
+        return;
+    }
+    if (!diskInitializeResult.initializedMasterDisk) {
+        puts("Failed to initialize master disk!\n");
+        return;
+    }
+    puts("Initialized disks!\n");
+
+    Partition bootPartition;
+    MBR_InitializePartition(&bootPartition, &masterDisk, partitionLBA, partitionSize);
+    puts("Detected boot partition!\n");
+
+    FAT_Filesystem *bootFilesystem = malloc(sizeof(FAT_Filesystem));
+    if (bootFilesystem == NULL) {
+        puts("Failed to allocate memory for filesystem!\n");
+        return;
+    }
+    bootFilesystem->partition = &bootPartition;
+    if ((status = FAT_Initialize(bootFilesystem)) != NO_ERROR) {
+        printf("Failed to initialize FAT. Status: %d\n", status);
+        return;
+    }
+    puts("Initialized FAT!\n");
+
     // everything is now initialized
     clearScreen();
 

@@ -89,7 +89,7 @@ void *ALLOCATOR_Malloc(size_t size, bool lower, bool pageAligned) {
     // set hole size in header
     void *headerPtr = (void *)(bitIndex * MEMORY_ALLOCATOR_CHUNK_SIZE);
     if (pageAligned)
-        headerPtr = (void *)(((uintptr_t)headerPtr + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1));
+        headerPtr = (void *)(((uintptr_t)headerPtr + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1)) - CHUNK_HEADER_SIZE;
     *((size_t *)headerPtr) = holeSize;
 
     return headerPtr + CHUNK_HEADER_SIZE;

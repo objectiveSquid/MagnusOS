@@ -4,4 +4,5 @@
 - Implement DMA instead of polling in ATA driver.
 - Make bootloader stage 2 an elf.
 - Make SCons not pollute the src directory with object files.
-- Function lookups in ELF.
+- Add more function lookups in ELF.
+- A shell? Compile with: sudo .toolchain/i686-elf/bin/i686-elf-gcc shell.c -o shell.elf -ffreestanding -fno-stack-protector -fPIC -pie -nostdlib -nostartfiles -Wl,-e,_start -Wl,--unresolved-symbols=ignore-all

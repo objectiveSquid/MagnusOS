@@ -31,7 +31,7 @@ void putc(char character) {
     E9putc(character);
 #endif
 
-    FONT_Character fontCharacter = EMPTY_CHARACTER;
+    FONT_Character fontCharacter = EMPTY_GRAY_CHARACTER;
     uint16_t screenWidth, screenHeight;
 
     fontCharacter.typed.character = character;

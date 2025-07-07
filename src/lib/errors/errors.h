@@ -75,7 +75,6 @@ Which functions don't need to return errors?
 #define ELF_UNSUPPORTED_RELOCATION_TYPE 0x80B
 #define ELF_UNKNOWN_PLT_RELOCATION_TYPE_ERROR 0x80C
 #define ELF_NO_DYNAMIC_PROGRAM_HEADER_ERROR 0x80D
-#define ELF_NO_DYN_REL_SECTION_ERROR 0x80E
 
 // logic errors
 #define LOGIC_ERROR 0x1000

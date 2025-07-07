@@ -9,6 +9,11 @@
 
 #define ELF_LOAD_SEGMENT_CHUNK_SIZE 0x2000 // 0x2000 = 8 kb
 
+#define SHN_UNDEF 0
+
+#define DT_REL 17
+#define DT_RELA 7
+
 typedef enum {
     ELF_PROGRAMHEADER_EXECUTABLE = 1,
     ELF_PROGRAMHEADER_WRITABLE = 2,
@@ -17,7 +22,7 @@ typedef enum {
 
 typedef enum {
     ELF_PROGRAMHEADER_TYPE_NULL = 0,        // ignore the entry
-    ELF_PROGRAMHEADER_TYPE_LOAD = 1,        // clear `memorySize` bytes at `physicalAddress` to 0, then copy `segmentSize` bytes from `offset` to `virtualAddress`
+    ELF_PROGRAMHEADER_TYPE_LOAD = 1,        // clear `memorySize` bytes at `virtualAddress` to 0, then copy `segmentSize` bytes from `offset` to `virtualAddress`
     ELF_PROGRAMHEADER_TYPE_DYNAMIC = 2,     // requires dynamic linking
     ELF_PROGRAMHEADER_TYPE_INTERPRETED = 3, // contains a file path to an executable to use as an interpreter for the following segment
     ELF_PROGRAMHEADER_TYPE_NOTES = 4,
@@ -109,7 +114,7 @@ typedef struct {
     uint32_t size;
     uint8_t info;
     uint8_t other;
-    uint16_t sectionHeaderIndex;
+    uint16_t shndx; // section header index
 } __attribute__((packed)) ELF_32BitSymbol;
 
 typedef enum {
@@ -213,28 +218,22 @@ int ELF_CheckHeader(Elf32_Hdr *header) {
     return NO_ERROR;
 }
 
+#define ELF32_ST_BIND(i) ((i) >> 4)
+#define ELF32_ST_TYPE(i) ((i) & 0xF)
+
+#define STB_LOCAL 0
+#define STB_GLOBAL 1
+#define STB_WEAK 2
+
 int applyRelocations(void *loadBase, void *symbolTab, void *stringTab, Elf32_Rel *table, uint32_t entryCount) {
     for (uint32_t i = 0; i < entryCount; i++) {
         uint32_t type = ELF32_GET_TYPE(table[i].info);
-        uint32_t symbolIndex = ELF32_GET_SYMBOL(table[i].info);
         uint32_t *targetAddress = (uint32_t *)(loadBase + table[i].offset);
 
         switch (type) {
         case 8: // R_386_RELATIVE
             *targetAddress += (uint32_t)loadBase;
             break;
-        case 5: // R_386_COPY
-            return ELF_UNSUPPORTED_RELOCATION_TYPE;
-        case 6: // R_386_GLOB_DAT
-        case 7: // R_386_JUMP_SLOT
-            if (symbolTab == NULL || stringTab == NULL)
-                return ELF_SYMBOL_LOOKUP_ERROR;
-            ELF_32BitSymbol *symbol = &((ELF_32BitSymbol *)symbolTab)[symbolIndex];
-            const char *symbolName = (char *)(stringTab + symbol->name);
-            symbolName = symbolName; // simply to avoid unused variable warning for now
-
-            // TODO: lookup symbolName in the runtime environment (e.g., kernel symbol table)
-            return ELF_SYMBOL_LOOKUP_ERROR;
         default:
             return ELF_UNSUPPORTED_RELOCATION_TYPE;
         }
@@ -243,90 +242,37 @@ int applyRelocations(void *loadBase, void *symbolTab, void *stringTab, Elf32_Rel
     return NO_ERROR;
 }
 
-int handleDynamicSection(void *loadBase, Elf32_Phdr *dynamicProgramHeader) {
-    int status = NO_ERROR;
+int applyRelocationsA(void *loadBase, void *symbolTab, void *stringTab, Elf32_RelA *table, uint32_t entryCount) {
+    for (uint32_t i = 0; i < entryCount; i++) {
+        uint32_t type = ELF32_GET_TYPE(table[i].info);
+        uint32_t *targetAddress = (uint32_t *)((uint8_t *)loadBase + table[i].offset);
+        int32_t addend = table[i].addend; /* signed 32‑bit */
 
-    if (dynamicProgramHeader == NULL)
-        return ELF_NO_DYNAMIC_PROGRAM_HEADER_ERROR;
-    Elf32_Dyn *dynamicEntries = (Elf32_Dyn *)(loadBase + dynamicProgramHeader->p_vaddr);
-
-    void *relocationTable = NULL;
-    uint32_t relocationTableSize = 0;
-    uint32_t relocationEntrySize = 0;
-
-    void *symbolTab = NULL;
-    void *stringTab = NULL;
-
-    uint32_t pltRelocationType = 0;
-    Elf32_Rel *pltRelocationTable = NULL;
-    uint32_t pltRelocationTableSize = 0;
-    uint32_t pltRelocationTableEntrySize;
-
-    for (Elf32_Dyn *dynamicEntry = dynamicEntries; dynamicEntry->tag != 0; ++dynamicEntry) {
-        switch (dynamicEntry->tag) {
-        case 17: // DT_REL
-            relocationTable = (void *)(loadBase + dynamicEntry->_union.pointer);
+        switch (type) {
+        case 8: /* R_386_RELATIVE */
+            *targetAddress = (uint32_t)loadBase + (uint32_t)addend;
             break;
-        case 18: // DT_RELSZ
-            relocationTableSize = dynamicEntry->_union.value;
-            break;
-        case 6: // DT_SYMTAB
-            symbolTab = (void *)(loadBase + dynamicEntry->_union.pointer);
-            break;
-        case 5: // DT_STRTAB
-            stringTab = (void *)(loadBase + dynamicEntry->_union.pointer);
-            break;
-        case 19: /* DT_RELENT */
-            relocationEntrySize = dynamicEntry->_union.value;
-            break;
-        case 20: /* DT_PLTREL */
-            pltRelocationType = dynamicEntry->_union.value;
-            break;
-        case 23: /* DT_JMPREL */
-            pltRelocationTable = (void *)(loadBase + dynamicEntry->_union.pointer);
-            break;
-        case 2: /* DT_PLTRELSZ */
-            pltRelocationTableSize = dynamicEntry->_union.value;
-            break;
+        default:
+            return ELF_UNSUPPORTED_RELOCATION_TYPE;
         }
-        // other entries wont be handled for now
     }
-
-    if (relocationEntrySize == 0)
-        relocationEntrySize = sizeof(Elf32_Rel); // assume this if DT_RELENT is not present
-
-    if (pltRelocationType == 7)
-        pltRelocationTableEntrySize = sizeof(Elf32_Rel);
-    // not supporting this for now
-    // else if (pltRelocationType == 17)
-    //     pltRelocationTableEntrySize = sizeof(Elf32_RelA);
-    else if (pltRelocationTable != NULL)
-        return ELF_UNKNOWN_PLT_RELOCATION_TYPE_ERROR;
-
-    if (relocationTable != NULL)
-        if ((status = applyRelocations(loadBase, symbolTab, stringTab, (Elf32_Rel *)relocationTable, relocationTableSize / relocationEntrySize)) != NO_ERROR)
-            return status;
-
-    if (pltRelocationTable != NULL)
-        if ((status = applyRelocations(loadBase, symbolTab, stringTab, (Elf32_Rel *)pltRelocationTable, pltRelocationTableSize / pltRelocationTableEntrySize)) != NO_ERROR)
-            return status;
 
     return NO_ERROR;
 }
 
-Elf32_Shdr *findDynRelSectionHeader(Elf32_Hdr *header, Elf32_Shdr *sectionHeaderTable, const char *stringTable) {
-    Elf32_Shdr *dynRelSectionHeader = NULL;
+Elf32_Shdr *findSectionHeader(Elf32_Hdr *header, Elf32_Shdr *sectionHeaderTable, const char *sectionName, const char *stringTable) {
+    Elf32_Shdr *relDynSectionHeader = NULL;
 
     for (size_t i = 0; i < header->e_shnum; i++) {
         Elf32_Shdr *sectionHeader = (Elf32_Shdr *)(&sectionHeaderTable[i]);
-        const char *sectionName = stringTable + sectionHeader->sh_name;
-        if (strcmp(sectionName, ".rel.dyn") == 0) {
-            dynRelSectionHeader = sectionHeader;
+        const char *currentSectionName = stringTable + sectionHeader->sh_name;
+        if (strcmp(currentSectionName, sectionName) == 0) {
+            relDynSectionHeader = sectionHeader;
             break;
         }
     }
 
-    return dynRelSectionHeader;
+    return relDynSectionHeader;
 }
 
 int getStringTable(Elf32_Hdr *header, Elf32_Shdr *sectionHeaderTable, FAT_Filesystem *filesystem, FAT_File *elfFd, char **stringTableOutput) {
@@ -350,7 +296,7 @@ int getStringTable(Elf32_Hdr *header, Elf32_Shdr *sectionHeaderTable, FAT_Filesy
     return status;
 }
 
-int loadSegments(Elf32_Hdr *header, Elf32_Phdr *programHeaderTable, FAT_Filesystem *filesystem, FAT_File *elfFd, uintptr_t loadBase, Elf32_Phdr **dynamicProgramHeaderOutput) {
+int loadSegments(Elf32_Hdr *header, Elf32_Phdr *programHeaderTable, FAT_Filesystem *filesystem, FAT_File *elfFd, uintptr_t loadBase) {
     int status;
     uint32_t readCount;
     Elf32_Phdr *currentProgramHeader = NULL;
@@ -362,11 +308,6 @@ int loadSegments(Elf32_Hdr *header, Elf32_Phdr *programHeaderTable, FAT_Filesyst
     for (size_t i = 0; i < header->e_phnum; ++i) {
         currentProgramHeader = &programHeaderTable[i];
 
-        if (currentProgramHeader->p_type == ELF_PROGRAMHEADER_TYPE_DYNAMIC) {
-            *dynamicProgramHeaderOutput = currentProgramHeader;
-            continue;
-        }
-
         if (currentProgramHeader->p_type != ELF_PROGRAMHEADER_TYPE_LOAD)
             continue;
 
@@ -374,17 +315,22 @@ int loadSegments(Elf32_Hdr *header, Elf32_Phdr *programHeaderTable, FAT_Filesyst
         void *segmentDestination = (void *)(currentProgramHeader->p_vaddr + loadBase);
         memset(segmentDestination, 0, currentProgramHeader->p_memsz);
 
-        if ((status = FAT_Seek(filesystem, elfFd, currentProgramHeader->p_offset, FAT_WHENCE_SET)) != NO_ERROR)
+        if ((status = FAT_Seek(filesystem, elfFd, currentProgramHeader->p_offset, FAT_WHENCE_SET)) != NO_ERROR) {
+            free(loadSegmentBuffer);
             return status;
+        }
 
         // spaghetti
         size_t bytesToRead = currentProgramHeader->p_filesz;
         while (bytesToRead > 0) {
             size_t readNow = min(bytesToRead, ELF_LOAD_SEGMENT_CHUNK_SIZE);
             if ((status = FAT_Read(filesystem, elfFd, readNow, &readCount, loadSegmentBuffer)) == NO_ERROR) {
-                if (readCount != readNow)
+                if (readCount != readNow) {
+                    free(loadSegmentBuffer);
                     return ELF_FILE_TOO_SMALL_ERROR;
+                }
             } else {
+                free(loadSegmentBuffer);
                 return status;
             }
 
@@ -394,8 +340,61 @@ int loadSegments(Elf32_Hdr *header, Elf32_Phdr *programHeaderTable, FAT_Filesyst
     }
 
     free(loadSegmentBuffer);
-
     return NO_ERROR;
+}
+
+int handleRelADynSection(void *loadBase, Elf32_Shdr *sectionHeader, FAT_Filesystem *filesystem, FAT_File *elfFd) {
+    int status;
+
+    Elf32_RelA *sectionBuffer = malloc(sectionHeader->sh_size);
+    if (sectionBuffer == NULL)
+        return FAILED_TO_ALLOCATE_MEMORY_ERROR;
+
+    // read rela.dyn
+    if ((status = FAT_Seek(filesystem, elfFd, sectionHeader->sh_offset, FAT_WHENCE_SET)) != NO_ERROR) {
+        free(sectionBuffer);
+        return status;
+    }
+
+    uint32_t readCount;
+    if ((status = FAT_Read(filesystem, elfFd, sectionHeader->sh_size, &readCount, sectionBuffer)) != NO_ERROR)
+        if (readCount != sectionHeader->sh_size) {
+            free(sectionBuffer);
+            return ELF_FILE_TOO_SMALL_ERROR;
+        }
+
+    // apply relocations
+    status = applyRelocationsA(loadBase, NULL, NULL, sectionBuffer, sectionHeader->sh_size / sizeof(Elf32_RelA));
+
+    free(sectionBuffer);
+    return status;
+}
+
+int handleRelDynSection(void *loadBase, Elf32_Shdr *sectionHeader, FAT_Filesystem *filesystem, FAT_File *elfFd) {
+    int status;
+
+    Elf32_Rel *sectionBuffer = malloc(sectionHeader->sh_size);
+    if (sectionBuffer == NULL)
+        return FAILED_TO_ALLOCATE_MEMORY_ERROR;
+
+    // read .rel.dyn
+    if ((status = FAT_Seek(filesystem, elfFd, sectionHeader->sh_offset, FAT_WHENCE_SET)) != NO_ERROR) {
+        free(sectionBuffer);
+        return status;
+    }
+
+    uint32_t readCount;
+    if ((status = FAT_Read(filesystem, elfFd, sectionHeader->sh_size, &readCount, sectionBuffer)) != NO_ERROR)
+        if (readCount != sectionHeader->sh_size) {
+            free(sectionBuffer);
+            return ELF_FILE_TOO_SMALL_ERROR;
+        }
+
+    // apply relocations
+    status = applyRelocations(loadBase, NULL, NULL, sectionBuffer, sectionHeader->sh_size / sizeof(Elf32_Rel));
+
+    free(sectionBuffer);
+    return status;
 }
 
 int ELF_Load32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entryPoint) {
@@ -404,6 +403,7 @@ int ELF_Load32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
     FAT_File *elfFd;
     if ((status = FAT_Open(filesystem, filepath, &elfFd)) != NO_ERROR)
         return status;
+    FAT_Seek(filesystem, elfFd, 0, FAT_WHENCE_SET); // ignore error, since we are most definitely already at the beginning of the file
 
     Elf32_Hdr *header = malloc(sizeof(Elf32_Hdr));
     if (header == NULL) {
@@ -472,16 +472,8 @@ int ELF_Load32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
     // entry point will be where the executable starts
     *entryPoint = (void *)(header->e_entry + loadBase);
 
-    Elf32_Phdr *dynamicProgramHeader = NULL;
     // load segments into memory
-    if ((status = loadSegments(header, programHeaderTable, filesystem, elfFd, (uintptr_t)loadBase, &dynamicProgramHeader)) != NO_ERROR)
-        goto free_loadbase;
-
-    // handle dynamic program headers
-    status = handleDynamicSection(loadBase, dynamicProgramHeader);
-    if (status == ELF_NO_DYNAMIC_PROGRAM_HEADER_ERROR)
-        status = NO_ERROR;
-    if (status != NO_ERROR)
+    if ((status = loadSegments(header, programHeaderTable, filesystem, elfFd, (uintptr_t)loadBase)) != NO_ERROR)
         goto free_loadbase;
 
     // get sections
@@ -508,34 +500,18 @@ int ELF_Load32Bit(FAT_Filesystem *filesystem, const char *filepath, void **entry
     if ((status = getStringTable(header, sectionHeaderTable, filesystem, elfFd, &stringTable)) != NO_ERROR)
         goto free_string_table_buffer; // its ok to free it even if the allocation fails as if a pointer given to free is NULL the call is ignored
 
-    // find .rel.dyn section
-    Elf32_Shdr *dynRelSectionHeader = findDynRelSectionHeader(header, sectionHeaderTable, stringTable);
-    if (dynRelSectionHeader == NULL) {
-        status = ELF_NO_DYN_REL_SECTION_ERROR;
-        goto free_string_table_buffer;
-    }
+    // find .rel.dyn and .rela.dyn section and handle relocations
+    Elf32_Shdr *relDynSectionHeader = findSectionHeader(header, sectionHeaderTable, ".rel.dyn", stringTable);
+    Elf32_Shdr *relADynSectionHeader = findSectionHeader(header, sectionHeaderTable, ".rela.dyn", stringTable);
 
-    Elf32_Rel *dynRelSection = malloc(dynRelSectionHeader->sh_size);
-    if (dynRelSection == NULL) {
-        status = FAILED_TO_ALLOCATE_MEMORY_ERROR;
-        goto free_string_table_buffer;
-    }
+    if (relDynSectionHeader != NULL)
+        if ((status = handleRelDynSection(loadBase, relDynSectionHeader, filesystem, elfFd)) != NO_ERROR)
+            goto free_string_table_buffer;
 
-    // read .rel.dyn
-    if ((status = FAT_Seek(filesystem, elfFd, dynRelSectionHeader->sh_offset, FAT_WHENCE_SET)) != NO_ERROR)
-        goto free_dynrel_section_buffer;
+    if (relADynSectionHeader != NULL)
+        if ((status = handleRelADynSection(loadBase, relADynSectionHeader, filesystem, elfFd)) != NO_ERROR)
+            goto free_string_table_buffer;
 
-    if ((status = FAT_Read(filesystem, elfFd, dynRelSectionHeader->sh_size, &readCount, dynRelSection)) != NO_ERROR)
-        if (readCount != dynRelSectionHeader->sh_size) {
-            status = ELF_FILE_TOO_SMALL_ERROR;
-            goto free_dynrel_section_buffer;
-        }
-
-    if ((status = applyRelocations(loadBase, NULL, NULL, dynRelSection, dynRelSectionHeader->sh_size / sizeof(Elf32_Rel))) != NO_ERROR)
-        goto free_dynrel_section_buffer;
-
-free_dynrel_section_buffer:
-    free(dynRelSection);
 free_string_table_buffer:
     free(stringTable);
 free_section_table_buffer:
